@@ -51,7 +51,12 @@ const PORT = process.env.PORT || 5000
 // CORS configuration
 const corsOptions = process.env.NODE_ENV === 'production' 
   ? {
-      origin: ['https://kissblow.me', 'https://www.kissblow.me'],
+      origin: [
+        'https://kissblow.me', 
+        'https://www.kissblow.me',
+        'https://atlos.io',
+        'https://merchants.atlos.io'
+      ],
       credentials: true,
       optionsSuccessStatus: 200
     }
@@ -72,6 +77,8 @@ app.use(compression({
   }
 }))
 app.use(cors(corsOptions))
+// Middleware для сохранения raw body для webhook'ов
+app.use('/api/webhooks/atlos', express.raw({ type: 'application/json' }))
 app.use(express.json())
 app.use(express.static('public'))
 
@@ -1464,18 +1471,7 @@ app.post('/api/topup', authenticateToken, async (req, res) => {
       status: 'pending'
     }
     
-    // Сохраняем в базу данных для последующего зачисления
-    db.run(
-      `INSERT INTO payments (payment_id, amount_to_pay, credit_amount, user_id, method, status, created_at) 
-       VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`,
-      [paymentData.payment_id, paymentData.amount_to_pay, paymentData.credit_amount, 
-       paymentData.user_id, paymentData.method, paymentData.status],
-      function(err) {
-        if (err) {
-          console.error('Failed to save payment data:', err)
-        }
-      }
-    )
+    // Платеж уже сохранен в createAtlosPayment - дублирование убрано
     
     res.json({
       message: 'Payment created successfully',
@@ -1563,77 +1559,108 @@ app.post('/api/test-webhook/:orderId', authenticateToken, (req, res) => {
 // Webhook for Atlos notifications
 app.post('/api/webhooks/atlos', (req, res) => {
   try {
-    // Verify webhook signature
+    // Получаем подпись из заголовка 'Signature'
     const signature = req.headers['signature']
-    const hmac = crypto.createHmac('sha256', ATLOS_API_SECRET)
-    hmac.update(JSON.stringify(req.body))
-    const expectedSignature = hmac.digest('hex')
-
+    
+    if (!signature) {
+      console.error('Missing webhook signature')
+      return res.status(401).json({ error: 'Missing signature' })
+    }
+    
+    // Получаем raw body
+    const rawBody = req.body
+    
+    // Создаем HMAC-SHA256 подпись
+    const expectedSignature = crypto
+      .createHmac('sha256', ATLOS_API_SECRET)
+      .update(rawBody)
+      .digest('base64')
+    
+    // Проверяем подпись
     if (signature !== expectedSignature) {
       console.error('Invalid webhook signature')
       return res.status(401).json({ error: 'Invalid signature' })
     }
-
-    const { orderId, status, amount, currency } = req.body
-
-    console.log('Atlos webhook received:', { orderId, status, amount, currency })
-
+    
+    // Парсим JSON данные
+    const webhookData = JSON.parse(rawBody)
+    const { orderId, status, amount, currency } = webhookData
+    
+    console.log('✅ Valid ATLOS webhook received:', { orderId, status, amount, currency })
+    
+    // Обработка всех статусов платежей
     if (status === 'completed' || status === 'confirmed') {
-      // Update payment status
-      db.run(
-        'UPDATE payments SET status = ? WHERE payment_id = ?',
-        ['completed', orderId],
-        (err) => {
+      // Обновляем статус платежа и зачисляем на баланс
+      db.serialize(() => {
+        db.run('BEGIN TRANSACTION')
+        
+        // Проверяем, не обработан ли уже платеж
+        db.get('SELECT status FROM payments WHERE payment_id = ?', [orderId], (err, existingPayment) => {
           if (err) {
-            console.error('Payment update error:', err)
+            db.run('ROLLBACK')
+            console.error('Database error:', err)
             return res.status(500).json({ error: 'Database error' })
           }
-
-          // Update user balance
-          db.get(
-            'SELECT user_id, credit_amount FROM payments WHERE payment_id = ?',
-            [orderId],
-            (err, payment) => {
+          
+          if (existingPayment && existingPayment.status === 'completed') {
+            db.run('ROLLBACK')
+            console.log('Payment already processed:', orderId)
+            return res.json({ status: 'already_processed' })
+          }
+          
+          // Обновляем статус платежа
+          db.run('UPDATE payments SET status = ? WHERE payment_id = ?', ['completed', orderId], (err) => {
+            if (err) {
+              db.run('ROLLBACK')
+              console.error('Payment update error:', err)
+              return res.status(500).json({ error: 'Database error' })
+            }
+            
+            // Зачисляем на баланс
+            db.get('SELECT user_id, credit_amount FROM payments WHERE payment_id = ?', [orderId], (err, payment) => {
               if (err) {
+                db.run('ROLLBACK')
                 console.error('Payment lookup error:', err)
                 return res.status(500).json({ error: 'Database error' })
               }
-
+              
               if (payment) {
-                const creditAmount = payment.credit_amount || amount // Fallback to amount if credit_amount is null
-                db.run(
-                  'UPDATE users SET balance = balance + ? WHERE id = ?',
-                  [creditAmount, payment.user_id],
-                  (err) => {
-                    if (err) {
-                      console.error('Balance update error:', err)
-                      return res.status(500).json({ error: 'Database error' })
-                    }
-
-                    console.log(`Balance updated for user ${payment.user_id}: +$${creditAmount} (paid: $${amount})`)
+                const creditAmount = payment.credit_amount || amount
+                db.run('UPDATE users SET balance = balance + ? WHERE id = ?', [creditAmount, payment.user_id], (err) => {
+                  if (err) {
+                    db.run('ROLLBACK')
+                    console.error('Balance update error:', err)
+                    return res.status(500).json({ error: 'Database error' })
                   }
-                )
+                  
+                  db.run('COMMIT')
+                  console.log(`✅ Balance updated for user ${payment.user_id}: +$${creditAmount} (paid: $${amount})`)
+                  res.json({ status: 'ok' })
+                })
+              } else {
+                db.run('ROLLBACK')
+                console.error('Payment not found:', orderId)
+                res.status(404).json({ error: 'Payment not found' })
               }
-            }
-          )
-        }
-      )
+            })
+          })
+        })
+      })
     } else if (status === 'failed' || status === 'canceled') {
-      // Update payment status to failed
-      db.run(
-        'UPDATE payments SET status = ? WHERE payment_id = ?',
-        ['failed', orderId],
-        (err) => {
-          if (err) {
-            console.error('Payment update error:', err)
-            return res.status(500).json({ error: 'Database error' })
-          }
-          console.log(`Payment ${orderId} marked as failed`)
+      // Обновляем статус на failed
+      db.run('UPDATE payments SET status = ? WHERE payment_id = ?', ['failed', orderId], (err) => {
+        if (err) {
+          console.error('Payment update error:', err)
+          return res.status(500).json({ error: 'Database error' })
         }
-      )
+        console.log(`❌ Payment ${orderId} marked as failed`)
+        res.json({ status: 'ok' })
+      })
+    } else {
+      console.log(`ℹ️ Payment ${orderId} status: ${status}`)
+      res.json({ status: 'ok' })
     }
-
-    res.json({ status: 'ok' })
+    
   } catch (error) {
     console.error('Webhook error:', error)
     res.status(500).json({ error: 'Webhook processing failed' })
@@ -2209,14 +2236,20 @@ app.get('/api/sitemap.xml', async (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
-  console.log(`Atlos integration configured:`)
+  console.log(`🚀 Server running on port ${PORT}`)
+  console.log(`🔗 ATLOS integration configured:`)
   console.log(`- Merchant ID: ${ATLOS_MERCHANT_ID}`)
   console.log(`- API Secret: ${ATLOS_API_SECRET.substring(0, 8)}...`)
-  console.log(`- Webhook URL: http://localhost:${PORT}/api/webhooks/atlos`)
-  console.log('Atlos integration is ready for crypto payments!')
+  
+  // ✅ ПРАВИЛЬНЫЙ webhook URL:
+  const webhookUrl = process.env.NODE_ENV === 'production' 
+    ? 'https://kissblow.me/api/webhooks/atlos'
+    : `http://localhost:${PORT}/api/webhooks/atlos`
+  console.log(`- Webhook URL: ${webhookUrl}`)
+  
+  console.log('✅ ATLOS integration is ready for crypto payments!')
   
   // Check for expired boosts every hour
   setInterval(checkExpiredBoosts, 60 * 60 * 1000) // 1 hour
-  console.log('Auto-renewal system started - checking every hour')
+  console.log('⏰ Auto-renewal system started - checking every hour')
 })
