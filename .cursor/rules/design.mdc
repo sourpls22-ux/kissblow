@@ -1,0 +1,21 @@
+---
+alwaysApply: false
+---
+## Цветовая схема OnlyFans
+- Основной: #00D4FF (onlyfans-pink)
+- Фон: #1A1A1A (onlyfans-dark)
+- Карточки: #2A2A2A (onlyfans-gray)
+- Светлый серый: #3A3A3A (onlyfans-light-gray)
+- Текст: белый/светло-серый
+
+## Компоненты
+- Скругленные углы (rounded-lg, rounded-xl)
+- Тени (shadow-lg, shadow-xl)
+- Градиенты для кнопок
+- Hover эффекты (hover:scale-105, hover:opacity-80)
+
+## Адаптивность
+- Mobile-first подход
+- Breakpoints: sm (640px), md (768px), lg (1024px), xl (1280px)
+- Гибкие сетки (grid, flex)
+- Скрытие элементов на мобильных

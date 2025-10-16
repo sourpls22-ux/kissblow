@@ -1,0 +1,244 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  width: 100%;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  /* Предотвращаем мигание и стабилизируем скроллбар */
+  overflow-y: scroll;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+#root {
+  width: 100%;
+}
+
+/* Предотвращение мигания контента */
+.no-flicker {
+  will-change: auto;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Стабилизация скроллбара */
+html {
+  width: 100%;
+  scrollbar-gutter: stable;
+}
+
+/* Плавные переходы для предотвращения мигания */
+.smooth-transition {
+  transition: opacity 0.1s ease-in-out, transform 0.1s ease-in-out;
+}
+
+/* Dark theme (default) */
+.dark-theme {
+  background-color: #1A1A1A;
+  color: #FFFFFF;
+}
+
+/* Light theme */
+.light-theme {
+  background-color: #FFFFFF;
+  color: #1F2937;
+}
+
+/* Theme-aware utility classes */
+.theme-bg {
+  @apply bg-onlyfans-dark;
+}
+
+.light-theme .theme-bg {
+  @apply bg-white;
+}
+
+.theme-surface {
+  @apply bg-onlyfans-gray;
+}
+
+.light-theme .theme-surface {
+  @apply bg-gray-50;
+}
+
+.theme-text {
+  @apply text-white;
+}
+
+.light-theme .theme-text {
+  @apply text-gray-900;
+}
+
+.theme-text-secondary {
+  @apply text-gray-400;
+}
+
+.light-theme .theme-text-secondary {
+  @apply text-gray-600;
+}
+
+.theme-border {
+  @apply border-gray-700;
+}
+
+.light-theme .theme-border {
+  @apply border-gray-200;
+}
+
+/* Home page gradient */
+.home-gradient {
+  @apply bg-gradient-to-br from-onlyfans-dark to-onlyfans-gray;
+}
+
+.light-theme .home-gradient {
+  @apply bg-gradient-to-br from-white to-gray-50;
+}
+
+/* Simple blue background for left panel */
+.blue-panel {
+  background-color: #00D4FF; /* onlyfans-accent */
+}
+
+/* Input field styles */
+.input-field {
+  @apply w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-onlyfans-accent focus:border-transparent transition-all duration-200;
+}
+
+.dark-theme .input-field {
+  @apply bg-onlyfans-gray border-gray-600 text-white placeholder-gray-400;
+}
+
+/* Textarea styles */
+.textarea-field {
+  @apply w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-onlyfans-accent focus:border-transparent transition-all duration-200 resize-y;
+}
+
+.dark-theme .textarea-field {
+  @apply bg-onlyfans-gray border-gray-600 text-white placeholder-gray-400;
+}
+
+/* Select field styles */
+.select-field {
+  @apply w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-onlyfans-accent focus:border-transparent transition-all duration-200;
+}
+
+.dark-theme .select-field {
+  @apply bg-onlyfans-gray border-gray-600 text-white;
+}
+
+/* Input field with icon styles */
+.input-field-with-icon {
+  @apply w-full pl-10 pr-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-onlyfans-accent focus:border-transparent transition-all duration-200;
+}
+
+.dark-theme .input-field-with-icon {
+  @apply bg-onlyfans-gray border-gray-600 text-white placeholder-gray-400;
+}
+
+/* Hide video controls */
+video::-webkit-media-controls {
+  display: none !important;
+}
+
+video::-webkit-media-controls-panel {
+  display: none !important;
+}
+
+video::-webkit-media-controls-play-button {
+  display: none !important;
+}
+
+video::-webkit-media-controls-timeline {
+  display: none !important;
+}
+
+video::-webkit-media-controls-current-time-display {
+  display: none !important;
+}
+
+video::-webkit-media-controls-time-remaining-display {
+  display: none !important;
+}
+
+video::-webkit-media-controls-mute-button {
+  display: none !important;
+}
+
+video::-webkit-media-controls-volume-slider {
+  display: none !important;
+}
+
+video::-webkit-media-controls-fullscreen-button {
+  display: none !important;
+}
+
+/* Mobile touch support for drag and drop */
+@media (max-width: 640px) {
+  /* Improve touch targets for mobile */
+  [data-sortable-id] {
+    touch-action: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    cursor: grab;
+  }
+  
+  /* Active dragging state */
+  [data-sortable-id]:active {
+    cursor: grabbing;
+    transform: scale(1.05);
+    z-index: 1000;
+  }
+  
+  /* Touch active state - optimized for performance */
+  .touch-active {
+    transform: scale(1.05);
+    z-index: 1000;
+    will-change: transform;
+  }
+  
+  /* Ensure buttons are large enough for touch */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+  }
+  
+  /* Prevent text selection during drag */
+  .dragging {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+  
+  /* Improve touch responsiveness */
+  .group:hover .opacity-0 {
+    opacity: 1 !important;
+  }
+  
+  /* Make drag handle more visible on mobile */
+  .drag-handle {
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: bold;
+  }
+}

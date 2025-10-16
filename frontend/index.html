@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" sizes="16x16" href="/favicon-16x16.svg" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://atlos.io;
+      connect-src 'self' https://challenges.cloudflare.com https://atlos.io https://api.web3modal.org https://pulse.walletconnect.org wss://atlos.io;
+      img-src 'self' data: https://api.web3modal.org https://atlos.io;
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      font-src 'self' data: https://fonts.googleapis.com https://fonts.gstatic.com https://atlos.io;
+      frame-src 'self' https://challenges.cloudflare.com;
+      object-src 'none';
+      base-uri 'self';
+    ">
+    <title>KissBlow.me - Verified Escort Directory | Premium Companions</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"></noscript>
+    <style>
+      /* Critical CSS for above-the-fold content */
+      * { box-sizing: border-box; }
+      body { margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; background-color: #0a0a0a; color: #ffffff; }
+      #root { min-height: 100vh; }
+      .loading { display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #0a0a0a; color: #ffffff; }
+      .container { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
+      header { background-color: #1a1a1a; border-bottom: 1px solid #333; }
+      button { cursor: pointer; border: none; outline: none; }
+      input { outline: none; border: 1px solid #333; background-color: #1a1a1a; color: #ffffff; }
+      .grid { display: grid; gap: 1.5rem; }
+      .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+      @media (min-width: 768px) { .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+      @media (min-width: 1024px) { .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+      @media (min-width: 1280px) { .grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+    </style>
+    <!-- Preload hint for LCP image -->
+    <link rel="preload" as="image" fetchpriority="high">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+    <script async src="https://atlos.io/packages/app/atlos.js"></script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+  </body>
+</html>

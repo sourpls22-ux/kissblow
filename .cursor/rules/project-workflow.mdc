@@ -1,0 +1,78 @@
+# Project Workflow Rules
+
+## 🚀 Deployment Workflow
+
+### Current Setup
+- **Local Development**: Project is developed locally on Windows PC
+- **Production Server**: VPS running Ubuntu with the deployed application
+- **Version Control**: GitHub repository for code synchronization
+
+### Working Mode
+We are working in **deployment mode** where:
+1. **Local changes** are made to the project files
+2. **Changes are committed and pushed** to GitHub repository
+3. **VPS is updated** via `git pull` commands provided to user
+
+### Important Rules
+
+#### ✅ What to Change LOCALLY (and commit to GitHub):
+- **Code files** (`.js`, `.jsx`, `.ts`, `.tsx`, etc.)
+- **Configuration files** (`.json`, `.config.js`, `.env.example`, etc.)
+- **Static assets** (images, fonts, etc.)
+- **Documentation** (`.md` files)
+- **Build configurations** (Vite, Webpack, etc.)
+- **Package dependencies** (`package.json`, `package-lock.json`)
+- **Git configuration** (`.gitignore`, `.gitattributes`)
+
+#### ⚠️ What to Change on VPS (via terminal commands):
+- **Environment variables** (`.env` files with secrets)
+- **Database files** (SQLite databases)
+- **Uploaded user content** (user profiles, images)
+- **Server configurations** (Nginx, PM2, SSL certificates)
+- **System packages** (Node.js, system dependencies)
+- **File permissions** and ownership
+
+#### 🔄 Deployment Process:
+1. **Make changes locally** to project files
+2. **User tests locally** before committing
+3. **User commits and pushes** via GitHub Desktop when ready
+4. **Provide VPS commands** to user:
+   ```bash
+   cd /var/www/kissblow
+   git pull origin main
+   npm run build  # if needed
+   pm2 restart all  # if needed
+   ```
+
+### Current Project Status
+- **Domain**: kissblow.me (HTTPS enabled)
+- **Backend**: Node.js/Express running on port 5000 via PM2
+- **Frontend**: React/Vite built and served via Nginx
+- **Database**: SQLite (preserved during updates)
+- **SSL**: Let's Encrypt certificates
+- **Process Manager**: PM2 with ecosystem.config.cjs
+
+### Key Files to Remember
+- **PM2 Config**: `ecosystem.config.cjs` (CommonJS format for PM2 compatibility)
+- **Environment**: `backend/.env` (contains production secrets)
+- **Build Config**: `frontend/vite.config.js` (with copyPublicDir: true)
+- **Git Ignore**: Properly configured to exclude sensitive files
+
+### Common Issues & Solutions
+- **502 Bad Gateway**: Usually means backend is not running or not listening on port 5000
+- **Missing Environment Variables**: Check PM2 configuration and .env file
+- **Favicon Issues**: Ensure copyPublicDir: true in Vite config
+- **ESM/CommonJS Errors**: Use .cjs extension for PM2 config files
+
+### Communication Pattern
+Every response should include:
+1. **What needs to be changed** (locally vs VPS)
+2. **Step-by-step instructions** for the change
+3. **Commands for VPS** (if needed) after local changes are pushed
+4. **Verification steps** to confirm the fix works
+
+### Security Notes
+- Never commit `.env` files with real secrets
+- Use `.env.example` for templates
+- Database and uploads are preserved during git pull
+- SSL certificates are managed separately from code

@@ -1,0 +1,137 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Production builds
+frontend/dist/
+frontend/build/
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+.env.staging
+
+# Database - ВАЖНО для вашего проекта!
+*.sqlite
+*.sqlite3
+*.db
+database.db
+backend/database.sqlite
+backend/database.sqlite.backup.*
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+*.log
+logs/
+.pm2/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Dependency directories
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# parcel-bundler cache (https://parceljs.org/)
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Gatsby files
+.cache/
+# public - исключаем только backend/public/uploads, но не frontend/public
+backend/public/
+
+# Storybook build outputs
+.out
+.storybook-out
+
+# Temporary folders
+tmp/
+temp/
+
+# Uploads and user content - ВАЖНО для вашего проекта!
+uploads/
+public/uploads/
+backend/uploads/
+backend/uploads/profiles/
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup files
+*.backup
+*.bak
+*.old
+
+# SSL certificates
+*.pem
+*.key
+*.crt
+
+# Deployment files
+deploy.sh
+backup.sh
+
+# Development documentation and scripts - НЕ НУЖНЫ В ПРОДАКШНЕ
+documentation/
+*.bat
+*.ps1

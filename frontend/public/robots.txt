@@ -1,0 +1,29 @@
+User-agent: *
+Allow: /
+
+# Allow public pages
+Allow: /browse
+Allow: /girl/
+Allow: /blog
+Allow: /about
+Allow: /how-it-works
+Allow: /terms
+Allow: /privacy
+Allow: /contact-dmca
+Allow: /login
+Allow: /register
+Allow: /forgot-password
+
+# Disallow private pages
+Disallow: /dashboard/
+Disallow: /settings
+Disallow: /payment-history
+Disallow: /topup
+Disallow: /reset-password/
+Disallow: /girl/*/edit
+Disallow: /api/
+Disallow: /admin/
+
+# Sitemap
+Sitemap: https://kissblow.me/sitemap.xml
+
