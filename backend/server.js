@@ -1584,12 +1584,12 @@ app.post('/api/webhooks/atlos', (req, res) => {
     
     // Парсим JSON данные
     const webhookData = JSON.parse(rawBody)
-    const { orderId, status, amount, currency } = webhookData
+    const { OrderId: orderId, Status: status, Amount: amount, OrderCurrency: currency } = webhookData
     
     console.log('✅ Valid ATLOS webhook received:', { orderId, status, amount, currency })
     
     // Обработка всех статусов платежей
-    if (status === 'completed' || status === 'confirmed') {
+    if (status === 100 || status === 'completed' || status === 'confirmed') {
       // Обновляем статус платежа и зачисляем на баланс
       db.serialize(() => {
         db.run('BEGIN TRANSACTION')
