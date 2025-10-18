@@ -80,6 +80,13 @@ bot.onText(/\/verifications/, async (msg) => {
     
     // Отправляем каждую верификацию отдельным сообщением
     for (const verification of verifications) {
+      console.log(`DEBUG: Processing verification for ${verification.name} (ID: ${verification.id})`);
+      console.log(`DEBUG: verification.image_url: ${verification.image_url}`);
+      console.log(`DEBUG: verification.profile_media: ${JSON.stringify(verification.profile_media)}`);
+      console.log(`DEBUG: verification.verification_photo_url: ${verification.verification_photo_url}`);
+      console.log(`DEBUG: verification.main_photo_filename: ${verification.main_photo_filename}`);
+      console.log(`DEBUG: verification.verification_photo_filename: ${verification.verification_photo_filename}`);
+
       const message = `
 🔍 *VERIFICATION REQUEST #${verification.id}*
 👤 ${verification.name}, ${verification.age}, ${verification.city}
@@ -94,50 +101,65 @@ bot.onText(/\/verifications/, async (msg) => {
       
       // Отправляем все фото профиля
       if (verification.profile_media && verification.profile_media.length > 0) {
+        console.log(`DEBUG: Found ${verification.profile_media.length} profile media files`);
         for (const media of verification.profile_media) {
           try {
             const photoPath = path.join(__dirname, '..', 'uploads', media.filename)
+            console.log(`DEBUG: Trying to send profile photo: ${photoPath}`);
             if (fs.existsSync(photoPath)) {
               await bot.sendPhoto(chatId, fs.createReadStream(photoPath), {
                 caption: `📸 Profile Photo #${media.id}`
               })
+              console.log(`DEBUG: Successfully sent profile photo: ${photoPath}`);
             } else {
-              console.log(`Photo not found: ${photoPath}`)
+              console.log(`DEBUG: Profile photo not found: ${photoPath}`);
             }
           } catch (error) {
             console.error('Error sending profile photo:', error)
           }
         }
+      } else {
+        console.log('DEBUG: No profile_media found or empty array');
       }
       
       // Отправляем основное фото профиля, если есть
       if (verification.main_photo_filename) {
         try {
           const mainPhotoPath = path.join(__dirname, '..', 'uploads', verification.main_photo_filename)
+          console.log(`DEBUG: Trying to send main profile photo: ${mainPhotoPath}`);
           if (fs.existsSync(mainPhotoPath)) {
             await bot.sendPhoto(chatId, fs.createReadStream(mainPhotoPath), {
               caption: '📸 Main Profile Photo'
             })
+            console.log(`DEBUG: Successfully sent main profile photo: ${mainPhotoPath}`);
+          } else {
+            console.log(`DEBUG: Main profile photo not found: ${mainPhotoPath}`);
           }
         } catch (error) {
           console.error('Error sending main profile photo:', error)
         }
+      } else {
+        console.log('DEBUG: No main_photo_filename found');
       }
       
       // Отправляем фото верификации
       if (verification.verification_photo_filename) {
         try {
           const verificationPhotoPath = path.join(__dirname, '..', 'uploads', 'verifications', verification.verification_photo_filename)
+          console.log(`DEBUG: Trying to send verification photo: ${verificationPhotoPath}`);
           if (fs.existsSync(verificationPhotoPath)) {
             await bot.sendPhoto(chatId, fs.createReadStream(verificationPhotoPath), {
               caption: '📸 Verification Photo'
             })
+            console.log(`DEBUG: Successfully sent verification photo: ${verificationPhotoPath}`);
           } else {
-            console.log(`Verification photo not found: ${verificationPhotoPath}`)
+            console.log(`DEBUG: Verification photo not found: ${verificationPhotoPath}`);
           }
         } catch (error) {
           console.error('Error sending verification photo:', error)
         }
+      } else {
+        console.log('DEBUG: No verification_photo_filename found');
       }
       
       // Отправляем кнопки
