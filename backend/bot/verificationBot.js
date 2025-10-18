@@ -104,7 +104,7 @@ bot.onText(/\/verifications/, async (msg) => {
         console.log(`DEBUG: Found ${verification.profile_media.length} profile media files`);
         for (const media of verification.profile_media) {
           try {
-            const photoPath = path.join(__dirname, '..', 'uploads', media.filename)
+            const photoPath = path.join(__dirname, '..', media.filename)
             console.log(`DEBUG: Trying to send profile photo: ${photoPath}`);
             if (fs.existsSync(photoPath)) {
               await bot.sendPhoto(chatId, fs.createReadStream(photoPath), {
@@ -125,7 +125,7 @@ bot.onText(/\/verifications/, async (msg) => {
       // Отправляем основное фото профиля, если есть
       if (verification.main_photo_filename) {
         try {
-          const mainPhotoPath = path.join(__dirname, '..', 'uploads', verification.main_photo_filename)
+          const mainPhotoPath = path.join(__dirname, '..', verification.main_photo_filename)
           console.log(`DEBUG: Trying to send main profile photo: ${mainPhotoPath}`);
           if (fs.existsSync(mainPhotoPath)) {
             await bot.sendPhoto(chatId, fs.createReadStream(mainPhotoPath), {
