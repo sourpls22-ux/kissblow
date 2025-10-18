@@ -185,6 +185,21 @@ const Dashboard = () => {
   const [showCitySuggestions, setShowCitySuggestions] = useState(false)
   const [selectedCityIndex, setSelectedCityIndex] = useState(-1)
   const [cityError, setCityError] = useState(false)
+  const [uploadingProfiles, setUploadingProfiles] = useState(new Set())
+  
+  // Функция для управления состоянием загрузки
+  const setProfileUploading = (profileId, isUploading) => {
+    setUploadingProfiles(prev => {
+      const newSet = new Set(prev)
+      if (isUploading) {
+        newSet.add(profileId)
+      } else {
+        newSet.delete(profileId)
+      }
+      return newSet
+    })
+  }
+  
   const [showTopUpModal, setShowTopUpModal] = useState(false)
   const [pendingProfileId, setPendingProfileId] = useState(null)
   const [showCreateProfileModal, setShowCreateProfileModal] = useState(false)
@@ -864,6 +879,8 @@ const Dashboard = () => {
   }
 
   const handleMediaUpload = async (profileId, file, type) => {
+    setProfileUploading(profileId, true) // Начало загрузки
+    
     try {
       console.log('Starting single media upload:', file.name, file.type, file.size, 'bytes')
       
@@ -902,10 +919,14 @@ const Dashboard = () => {
       } else {
         error(type === 'photo' ? t('dashboard.photoUploadError') : t('dashboard.videoUploadError'))
       }
+    } finally {
+      setProfileUploading(profileId, false) // Конец загрузки
     }
   }
 
   const handleMultipleMediaUpload = async (profileId, files) => {
+    setProfileUploading(profileId, true) // Начало загрузки
+    
     try {
       console.log('Starting multiple media upload:', files.length, 'files')
       const uploadPromises = Array.from(files).map(async (file) => {
@@ -980,6 +1001,8 @@ const Dashboard = () => {
     } catch (err) {
       console.error('Error uploading multiple media:', err)
       error(t('dashboard.photoUploadError'))
+    } finally {
+      setProfileUploading(profileId, false) // Конец загрузки
     }
   }
 
@@ -1088,16 +1111,15 @@ const Dashboard = () => {
     const newIndex = currentIndex - 1
     const newOrder = arrayMove(photosOnly, currentIndex, newIndex)
     
-    // Обновляем локальное состояние
-    const updatedMedia = profileMedia.map(media => {
-      if (media.type === 'photo') {
-        const newPhoto = newOrder.find(p => p.id === media.id)
-        return newPhoto ? { ...media, order_index: newOrder.indexOf(newPhoto) } : media
-      }
-      return media
-    })
+    // Обновляем локальное состояние - переупорядочиваем массив
+    const videos = profileMedia.filter(media => media.type === 'video')
+    const updatedPhotos = newOrder.map((photo, index) => ({
+      ...photo,
+      order_index: index
+    }))
+    const newMediaOrder = [...updatedPhotos, ...videos]
     
-    setProfileMedia(updatedMedia)
+    setProfileMedia(newMediaOrder)
     
     // Отправляем на сервер
     try {
@@ -1136,16 +1158,15 @@ const Dashboard = () => {
     const newIndex = currentIndex + 1
     const newOrder = arrayMove(photosOnly, currentIndex, newIndex)
     
-    // Обновляем локальное состояние
-    const updatedMedia = profileMedia.map(media => {
-      if (media.type === 'photo') {
-        const newPhoto = newOrder.find(p => p.id === media.id)
-        return newPhoto ? { ...media, order_index: newOrder.indexOf(newPhoto) } : media
-      }
-      return media
-    })
+    // Обновляем локальное состояние - переупорядочиваем массив
+    const videos = profileMedia.filter(media => media.type === 'video')
+    const updatedPhotos = newOrder.map((photo, index) => ({
+      ...photo,
+      order_index: index
+    }))
+    const newMediaOrder = [...updatedPhotos, ...videos]
     
-    setProfileMedia(updatedMedia)
+    setProfileMedia(newMediaOrder)
     
     // Отправляем на сервер
     try {
@@ -1998,13 +2019,23 @@ const Dashboard = () => {
                      
                      {/* Upload Buttons */}
                      <div className="flex space-x-3 mb-3 justify-center">
-                      <label className="bg-onlyfans-accent text-white px-3 py-2 rounded-lg cursor-pointer hover:opacity-80 transition-opacity flex items-center space-x-2 text-sm">
-                        <Edit size={14} />
-<span>{t('dashboard.buttons.uploadMedia')}</span>
+                      <label className={`${uploadingProfiles.has(editingProfile.id) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} bg-onlyfans-accent text-white px-3 py-2 rounded-lg hover:opacity-80 transition-opacity flex items-center space-x-2 text-sm`}>
+                        {uploadingProfiles.has(editingProfile.id) ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            <span>Uploading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Edit size={14} />
+                            <span>{t('dashboard.buttons.uploadMedia')}</span>
+                          </>
+                        )}
                         <input
                           type="file"
                           accept="image/*,video/*"
                           multiple
+                          disabled={uploadingProfiles.has(editingProfile.id)}
                           onChange={async (e) => {
                             console.log('File input changed:', e.target.files)
                             if (e.target.files && e.target.files.length > 0 && editingProfile) {
@@ -2046,46 +2077,6 @@ const Dashboard = () => {
                               }
                             } else {
                               console.log('No files selected or no editing profile')
-                            }
-                          }}
-                          onInput={async (e) => {
-                            console.log('File input onInput triggered:', e.target.files)
-                            // Дублируем логику onChange для Chrome iOS
-                            if (e.target.files && e.target.files.length > 0 && editingProfile) {
-                              console.log('Files selected via onInput:', e.target.files.length, 'editingProfile:', editingProfile.id)
-                              
-                              // Проверяем размер файлов
-                              const files = Array.from(e.target.files)
-                              const maxPhotoSize = 30 * 1024 * 1024 // 30MB
-                              const maxVideoSize = 150 * 1024 * 1024 // 150MB
-                              
-                              const oversizedPhotos = files.filter(file => 
-                                file.type.startsWith('image/') && file.size > maxPhotoSize
-                              )
-                              const oversizedVideos = files.filter(file => 
-                                file.type.startsWith('video/') && file.size > maxVideoSize
-                              )
-                              
-                              if (oversizedPhotos.length > 0) {
-                                error(`Some photos are too large (max 30MB)`)
-                                return
-                              }
-                              
-                              if (oversizedVideos.length > 0) {
-                                error(`Some videos are too large (max 150MB)`)
-                                return
-                              }
-                              
-                              // Обрабатываем файлы (конвертируем PNG в JPEG)
-                              const processedFiles = await processFiles(files)
-                              
-                              if (processedFiles.length === 1) {
-                                const file = processedFiles[0]
-                                const fileType = file.type.startsWith('video/') ? 'video' : 'photo'
-                                handleMediaUpload(editingProfile.id, file, fileType)
-                              } else {
-                                handleMultipleMediaUpload(editingProfile.id, processedFiles)
-                              }
                             }
                           }}
                           className="hidden"
