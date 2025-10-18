@@ -11,7 +11,12 @@ const SEOHead = ({
 }) => {
   const fullTitle = title ? `${title} | KissBlow.me` : 'KissBlow.me - Verified Escort Directory'
   const fullDescription = description || 'Discover verified escort services worldwide. Professional profiles, secure booking, and trusted standards. Your verified escort directory.'
-  const fullUrl = url || (typeof window !== 'undefined' ? window.location.href : '')
+  
+  // Исправляем URL валидацию - убираем preload если URL невалидный
+  const fullUrl = url && url.trim() !== '' && url.startsWith('http') 
+    ? url 
+    : (typeof window !== 'undefined' ? window.location.href : '')
+  
   const fullImage = image && typeof image === 'string' && image.startsWith('http') 
     ? image 
     : `${typeof window !== 'undefined' ? window.location.origin : ''}${image || '/og-image.jpg'}`
@@ -22,7 +27,7 @@ const SEOHead = ({
       <title>{fullTitle}</title>
       <meta name="description" content={fullDescription} />
       {keywords && <meta name="keywords" content={keywords} />}
-      <link rel="canonical" href={fullUrl} />
+      {fullUrl && fullUrl.startsWith('http') && <link rel="canonical" href={fullUrl} />}
       
       {/* Open Graph Tags */}
       <meta property="og:title" content={fullTitle} />

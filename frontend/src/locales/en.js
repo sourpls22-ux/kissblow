@@ -851,6 +851,7 @@ export const en = {
     about: 'About',
     aboutSite: 'About Us',
     howItWorks: 'How it works',
+    blogGuides: 'Blog & Guides',
     contact: 'Contact',
     contactUs: 'Contact Us',
     aboutUs: 'About Us',
