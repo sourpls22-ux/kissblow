@@ -1186,32 +1186,6 @@ app.post('/api/profiles/:id/verify', authenticateToken, (req, res) => {
 
               console.log('Verification created with code:', verificationCode)
               
-              // Уведомление в Telegram о новой верификации
-              if (process.env.TELEGRAM_BOT_TOKEN && process.env.ADMIN_TELEGRAM_ID) {
-                const TelegramBot = require('node-telegram-bot-api')
-                const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN)
-                
-                // Получаем количество ожидающих верификаций
-                db.get(
-                  `SELECT COUNT(*) as count FROM profile_verifications WHERE status = 'pending'`,
-                  (err, result) => {
-                    if (!err && result) {
-                      const count = result.count
-                      const message = `🔔 *Новая верификация!*\n\nОжидают верификации: *${count}* анкет\n\nНажмите /verifications для просмотра`
-                      
-                      bot.sendMessage(process.env.ADMIN_TELEGRAM_ID, message, { 
-                        parse_mode: 'Markdown',
-                        reply_markup: {
-                          inline_keyboard: [[
-                            { text: '👀 Посмотреть', callback_data: 'view_verifications' }
-                          ]]
-                        }
-                      }).catch(err => console.error('Error sending notification:', err))
-                    }
-                  }
-                )
-              }
-              
               res.json({
                 message: 'Verification started',
                 verificationCode: verificationCode,

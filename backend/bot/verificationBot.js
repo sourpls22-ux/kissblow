@@ -43,13 +43,15 @@ bot.onText(/\/start/, (msg) => {
 Добро пожаловать! Этот бот предназначен для модерации верификаций профилей.
 
 *Доступные команды:*
+/status - Показать количество ожидающих верификаций
 /verifications - Показать ожидающие верификации
 /help - Помощь
 
 *Функции:*
-• Просмотр заявок на верификацию
+• Просмотр заявок на верификацию по одной
 • Одобрение/отклонение через кнопки
 • Просмотр фото профиля и фото с кодом
+• Подробная информация об аккаунте и анкете
   `
   
   bot.sendMessage(chatId, welcomeMessage, { parse_mode: 'Markdown' })
@@ -57,16 +59,22 @@ bot.onText(/\/start/, (msg) => {
 
 // Функция для отправки одной верификации
 const sendSingleVerification = async (chatId, verification) => {
+  // Добавляем отладочную информацию
+  console.log('DEBUG: Verification data:', JSON.stringify(verification, null, 2))
+  
   const message = `
 🔍 *VERIFICATION REQUEST #${verification.id}*
-👤 ${verification.name}, ${verification.age}, ${verification.city}
-📅 ${new Date(verification.created_at).toLocaleString('ru-RU')}
-🔢 Код: *${verification.verification_code}*
+👤 *Анкета:* ${verification.name}, ${verification.age}, ${verification.city}
+📅 *Создана:* ${new Date(verification.created_at).toLocaleString('ru-RU')}
+🔢 *Код верификации:* *${verification.verification_code}*
 
-👤 Пользователь: ${verification.user_email}
+👤 *Аккаунт пользователя:*
+📧 Email: ${verification.user_email}
 💰 Баланс: $${verification.balance || 0}
-📸 Фото профиля: ${verification.profile_media ? verification.profile_media.length : 0}
-📸 Фото верификации: ${verification.verification_photo_filename ? 'Да' : 'Нет'}
+
+📸 *Фотографии:*
+• Фото профиля: ${verification.profile_media ? verification.profile_media.length : 0}
+• Фото верификации: ${verification.verification_photo_filename ? 'Да' : 'Нет'}
   `
   
   // Собираем все фото для отправки одним сообщением
@@ -188,6 +196,44 @@ bot.onText(/\/verifications/, async (msg) => {
   } catch (error) {
     console.error('Verifications error:', error)
     bot.sendMessage(chatId, `❌ Ошибка получения верификаций: ${error.message}`)
+  }
+})
+
+// Команда /status - показать количество ожидающих верификаций
+bot.onText(/\/status/, async (msg) => {
+  const chatId = msg.chat.id
+  
+  if (chatId.toString() !== ADMIN_ID) {
+    bot.sendMessage(chatId, '❌ У вас нет доступа к этому боту.')
+    return
+  }
+  
+  try {
+    const response = await axios.get(`${API_BASE_URL}/api/admin/verifications`, {
+      headers: {
+        'X-Admin-Key': process.env.ADMIN_API_KEY || 'kissblow-admin-2024-verification-bot-key-12345'
+      }
+    })
+    const verifications = response.data
+    
+    const message = `📊 *Статус верификаций*\n\nОжидают верификации: *${verifications.length}* анкет`
+    
+    const keyboard = {
+      inline_keyboard: [
+        [
+          { text: '👀 Посмотреть верификации', callback_data: 'view_verifications' }
+        ]
+      ]
+    }
+    
+    bot.sendMessage(chatId, message, { 
+      parse_mode: 'Markdown',
+      reply_markup: keyboard
+    })
+    
+  } catch (error) {
+    console.error('Status error:', error)
+    bot.sendMessage(chatId, `❌ Ошибка получения статуса: ${error.message}`)
   }
 })
 
@@ -318,6 +364,7 @@ bot.onText(/\/help/, (msg) => {
 🆘 *Помощь по командам верификации*
 
 /start - Приветствие и основная информация
+/status - Показать количество ожидающих верификаций
 /verifications - Показать ожидающие верификации
 /help - Эта справка
 
@@ -326,6 +373,7 @@ bot.onText(/\/help/, (msg) => {
 • Сравнение кода на фото с кодом в заявке
 • Одобрение или отклонение через кнопки
 • Автоматическое обновление статуса профиля
+• Показ подробной информации об аккаунте и анкете
 
 *Безопасность:*
 • Доступ только для администратора
