@@ -35,12 +35,56 @@ const TopUp = () => {
       }
     }
     
+    // Обработчики событий ATLOS
+    const handleAtlosSuccess = (event) => {
+      console.log('ATLOS payment completed successfully:', event.detail)
+      // Обновляем страницу через 2 секунды
+      setTimeout(() => {
+        window.location.reload()
+      }, 2000)
+    }
+
+    const handleAtlosCancel = (event) => {
+      console.log('ATLOS payment canceled:', event.detail)
+      // Можно добавить уведомление пользователю
+    }
+
+    const handleAtlosEvent = (event) => {
+      console.log('ATLOS event received:', event.type, event.detail)
+      if (event.detail && event.detail.type) {
+        switch (event.detail.type) {
+          case 'success':
+          case 'completed':
+            handleAtlosSuccess(event)
+            break
+          case 'canceled':
+          case 'cancelled':
+            handleAtlosCancel(event)
+            break
+        }
+      }
+    }
+    
     window.addEventListener('error', handleAtlosError)
     window.addEventListener('unhandledrejection', handleUnhandledRejection)
+    
+    // Добавляем слушатели событий ATLOS
+    window.addEventListener('atlos-payment-success', handleAtlosEvent)
+    window.addEventListener('atlos-payment-canceled', handleAtlosEvent)
+    window.addEventListener('atlos-payment-completed', handleAtlosEvent)
+    window.addEventListener('atlos-payment-cancelled', handleAtlosEvent)
+    
+    // Универсальный слушатель для всех событий ATLOS
+    window.addEventListener('atlos-event', handleAtlosEvent)
     
     return () => {
       window.removeEventListener('error', handleAtlosError)
       window.removeEventListener('unhandledrejection', handleUnhandledRejection)
+      window.removeEventListener('atlos-payment-success', handleAtlosEvent)
+      window.removeEventListener('atlos-payment-canceled', handleAtlosEvent)
+      window.removeEventListener('atlos-payment-completed', handleAtlosEvent)
+      window.removeEventListener('atlos-payment-cancelled', handleAtlosEvent)
+      window.removeEventListener('atlos-event', handleAtlosEvent)
     }
   }, [])
   
