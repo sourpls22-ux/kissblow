@@ -620,7 +620,14 @@ const Girl = () => {
               {/* Имя и локация */}
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-2">
-                  <h1 className="text-2xl font-bold theme-text">{profile.name}</h1>
+                  <div className="flex items-center space-x-3">
+                    <h1 className="text-2xl font-bold theme-text">{profile.name}</h1>
+                    {profile.is_verified && (
+                      <div className="bg-green-500 text-white px-2 py-1 rounded text-sm font-medium">
+                        Verified
+                      </div>
+                    )}
+                  </div>
                   {getMinPrice() && (
                     <span className="text-onlyfans-accent font-semibold text-lg">
                       ${getMinPrice()}

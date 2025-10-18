@@ -188,6 +188,11 @@ const Dashboard = () => {
   const [pendingProfileId, setPendingProfileId] = useState(null)
   const [showCreateProfileModal, setShowCreateProfileModal] = useState(false)
   const [isCreatingProfile, setIsCreatingProfile] = useState(false)
+  const [showVerificationModal, setShowVerificationModal] = useState(false)
+  const [verificationProfile, setVerificationProfile] = useState(null)
+  const [verificationCode, setVerificationCode] = useState('')
+  const [verificationStatus, setVerificationStatus] = useState(null)
+  const [verificationPhotoUploaded, setVerificationPhotoUploaded] = useState(false)
   const [turnstileToken, setTurnstileToken] = useState('')
   const [turnstileError, setTurnstileError] = useState('')
   const [showTurnstile, setShowTurnstile] = useState(false)
@@ -288,23 +293,24 @@ const Dashboard = () => {
     }))
   }
 
+  // Функция для загрузки данных
+  const fetchData = async () => {
+    try {
+      const profilesResponse = await axios.get('/api/user/profiles')
+      setProfiles(profilesResponse.data)
+    } catch (error) {
+      console.error('Failed to fetch data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
     if (!isAuthenticated || !token) {
       if (!isAuthenticated) {
         navigate('/login')
       }
       return
-    }
-
-    const fetchData = async () => {
-      try {
-        const profilesResponse = await axios.get('/api/user/profiles')
-        setProfiles(profilesResponse.data)
-      } catch (error) {
-        console.error('Failed to fetch data:', error)
-      } finally {
-        setLoading(false)
-      }
     }
 
     fetchData()
@@ -1111,6 +1117,109 @@ const Dashboard = () => {
     }
   }
 
+  // Verification functions
+  const handleStartVerification = async (profile) => {
+    try {
+      // First check if there's already a pending verification
+      try {
+        const statusResponse = await axios.get(`/api/profiles/${profile.id}/verify/status`)
+        
+        if (statusResponse.data && statusResponse.data.status === 'pending') {
+          // Show existing verification modal
+          setVerificationCode(statusResponse.data.verification_code)
+          setVerificationProfile(profile)
+          setVerificationPhotoUploaded(!!statusResponse.data.verification_photo_url)
+          setShowVerificationModal(true)
+          return
+        }
+      } catch (statusErr) {
+        // If status check fails (404), it means no verification exists, continue to create new one
+        if (statusErr.response?.status !== 404) {
+          console.log('Error checking verification status:', statusErr.message)
+        }
+      }
+      
+      // Start new verification
+      const response = await axios.post(`/api/profiles/${profile.id}/verify`)
+      
+      setVerificationCode(response.data.verificationCode)
+      setVerificationProfile(profile)
+      setVerificationPhotoUploaded(false)
+      setShowVerificationModal(true)
+      success('Verification code generated! Please take a selfie with this code.')
+    } catch (err) {
+      // If verification already in progress, show existing verification
+      if (err.response?.status === 400 && err.response?.data?.error === 'Verification already in progress') {
+        try {
+          const statusResponse = await axios.get(`/api/profiles/${profile.id}/verify/status`)
+          setVerificationCode(statusResponse.data.verification_code)
+          setVerificationProfile(profile)
+          setVerificationPhotoUploaded(!!statusResponse.data.verification_photo_url)
+          setShowVerificationModal(true)
+          return
+        } catch (statusErr) {
+          console.error('Failed to get existing verification:', statusErr)
+        }
+      }
+      
+      error(err.response?.data?.error || 'Failed to start verification')
+    }
+  }
+
+  const handleUploadVerificationPhoto = async (file) => {
+    if (!verificationProfile) return
+
+    const formData = new FormData()
+    formData.append('verificationPhoto', file)
+
+    try {
+      await axios.post(`/api/profiles/${verificationProfile.id}/verify/upload`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      success('Verification photo uploaded! Waiting for admin approval.')
+      setVerificationPhotoUploaded(true)
+      // Don't close modal, just update status
+    } catch (err) {
+      console.error('Failed to upload verification photo:', err)
+      error(err.response?.data?.error || 'Failed to upload verification photo')
+    }
+  }
+
+  const checkVerificationStatus = async (profileId) => {
+    try {
+      const response = await axios.get(`/api/profiles/${profileId}/verify/status`)
+      setVerificationStatus(response.data)
+    } catch (err) {
+      console.error('Failed to check verification status:', err)
+    }
+  }
+
+  const handleCancelVerification = async () => {
+    if (!verificationProfile) return
+
+    try {
+      await axios.delete(`/api/profiles/${verificationProfile.id}/verify`)
+      success('Verification cancelled successfully.')
+      closeVerificationModal()
+      
+      // Refresh profiles to update verification status
+      fetchData()
+    } catch (err) {
+      console.error('Failed to cancel verification:', err)
+      error(err.response?.data?.error || 'Failed to cancel verification')
+    }
+  }
+
+  const closeVerificationModal = () => {
+    setShowVerificationModal(false)
+    setVerificationProfile(null)
+    setVerificationCode('')
+    setVerificationStatus(null)
+    setVerificationPhotoUploaded(false)
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center theme-bg">
@@ -1190,8 +1299,10 @@ const Dashboard = () => {
                         </div>
                       </Link>
                     )}
+                    
+                    
                     {/* Статус профиля */}
-                    <div className="absolute top-2 right-2">
+                    <div className="absolute top-2 left-2">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                         profile.is_active 
                           ? 'bg-green-500 text-white' 
@@ -1214,9 +1325,25 @@ const Dashboard = () => {
                   
                   {/* Информация о профиле */}
                   <div className="p-4 sm:p-5 flex-1 flex flex-col">
-                    <h4 className="theme-text font-semibold text-base sm:text-lg mb-2 truncate">
-                      {capitalizeName(profile.name) || t('dashboard.messages.newProfile')}
-                    </h4>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="theme-text font-semibold text-base sm:text-lg truncate">
+                        {capitalizeName(profile.name) || t('dashboard.messages.newProfile')}
+                      </h4>
+                      
+                      {/* Verification Button/Status */}
+                      {!profile.is_verified ? (
+                        <button 
+                          onClick={() => handleStartVerification(profile)}
+                          className="bg-onlyfans-accent text-white px-2 py-1 rounded text-xs hover:opacity-80 transition-colors flex-shrink-0"
+                        >
+                          <span className="hidden sm:inline">Verify</span>
+                        </button>
+                      ) : (
+                        <div className="px-2 py-1 rounded text-xs bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 flex-shrink-0">
+                          <span className="hidden sm:inline">Verified</span>
+                        </div>
+                      )}
+                    </div>
                     
                     {/* Краткая информация */}
                     <div className="flex items-center space-x-2 text-sm theme-text-secondary mb-3">
@@ -2006,6 +2133,124 @@ const Dashboard = () => {
                       {isCreatingProfile ? 'Verifying...' : 'Create Profile'}
                     </button>
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Verification Modal */}
+          {showVerificationModal && (
+            <div 
+              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                  closeVerificationModal()
+                }
+              }}
+            >
+              <div className="theme-surface rounded-lg p-6 w-full max-w-md border theme-border">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-semibold theme-text">Profile Verification</h3>
+                  <button
+                    onClick={closeVerificationModal}
+                    className="theme-text-secondary hover:theme-text transition-colors"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {!verificationPhotoUploaded ? (
+                    <>
+                      <div className="text-center">
+                        <div className="bg-blue-100 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-700 rounded-lg p-4 mb-4">
+                          <p className="text-sm theme-text-secondary mb-2">
+                            Write this code on a piece of paper:
+                          </p>
+                          <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 tracking-wider">
+                            {verificationCode}
+                          </div>
+                        </div>
+                        
+                        <p className="text-sm theme-text-secondary mb-4">
+                          Take a selfie holding the paper with the code clearly visible, then upload the photo below.
+                        </p>
+                      </div>
+
+                      <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files[0]
+                            if (file) {
+                              handleUploadVerificationPhoto(file)
+                            }
+                          }}
+                          className="hidden"
+                          id="verification-photo-upload"
+                        />
+                        <label
+                          htmlFor="verification-photo-upload"
+                          className="cursor-pointer flex flex-col items-center space-y-2"
+                        >
+                          <Camera size={32} className="text-gray-400" />
+                          <span className="text-sm theme-text-secondary">
+                            Click to upload verification photo
+                          </span>
+                        </label>
+                      </div>
+
+                      <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+                        <p className="text-sm text-blue-700 dark:text-blue-300">
+                          {t('dashboard.verificationTip')}
+                        </p>
+                      </div>
+
+                      <div className="flex space-x-3">
+                        <button
+                          onClick={closeVerificationModal}
+                          className="flex-1 px-4 py-2 border theme-border rounded-lg theme-text hover:opacity-80 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-center">
+                        <div className="bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg p-4 mb-4">
+                          <div className="flex items-center justify-center space-x-2 mb-2">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-600"></div>
+                            <span className="text-yellow-600 dark:text-yellow-400 font-semibold">
+                              Verification in Progress
+                            </span>
+                          </div>
+                          <p className="text-sm theme-text-secondary">
+                            Your verification photo has been uploaded and is being reviewed by our team.
+                          </p>
+                          <p className="text-xs theme-text-secondary mt-2">
+                            Expected review time: up to 24 hours
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex space-x-3">
+                        <button
+                          onClick={handleCancelVerification}
+                          className="flex-1 px-4 py-2 border border-red-500 text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                        >
+                          Cancel Verification
+                        </button>
+                        <button
+                          onClick={closeVerificationModal}
+                          className="flex-1 px-4 py-2 bg-onlyfans-accent text-white rounded-lg hover:opacity-80 transition-colors"
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

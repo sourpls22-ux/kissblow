@@ -1,39 +1,17 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronDown, ChevronRight, MapPin, ChevronLeft, ChevronRight as ChevronRightIcon } from 'lucide-react'
+import { ChevronDown, ChevronRight, MapPin } from 'lucide-react'
 import { useTranslation } from '../hooks/useTranslation'
 import { countriesData } from '../data/countriesData'
 
 const CountriesSection = () => {
   const { t } = useTranslation()
   const [expandedCountry, setExpandedCountry] = useState(null)
-  const [currentPage, setCurrentPage] = useState(0)
-  
-  const countriesPerPage = 6
-  const totalPages = Math.ceil(countriesData.length / countriesPerPage)
-  
-  // Получаем страны для текущей страницы
-  const startIndex = currentPage * countriesPerPage
-  const endIndex = startIndex + countriesPerPage
-  const currentCountries = countriesData.slice(startIndex, endIndex)
 
   const toggleCountry = (countryName) => {
     setExpandedCountry(expandedCountry === countryName ? null : countryName)
   }
 
-  const goToNextPage = () => {
-    if (currentPage < totalPages - 1) {
-      setCurrentPage(currentPage + 1)
-      setExpandedCountry(null) // Закрываем все открытые страны при переходе
-    }
-  }
-
-  const goToPrevPage = () => {
-    if (currentPage > 0) {
-      setCurrentPage(currentPage - 1)
-      setExpandedCountry(null) // Закрываем все открытые страны при переходе
-    }
-  }
 
   const renderCountryCard = (country) => {
     const isExpanded = expandedCountry === country.name
@@ -88,59 +66,10 @@ const CountriesSection = () => {
         {t('browse.seoSections.browseByCountry')}
       </h2>
       
-      {/* Компактный аккордеон с 6 странами */}
-      <div className="max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
-          {currentCountries.map((country) => renderCountryCard(country))}
-        </div>
-        
-        {/* Пагинация */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center space-x-4 mt-6">
-            <button
-              onClick={goToPrevPage}
-              disabled={currentPage === 0}
-              className="flex items-center space-x-1 px-3 py-2 text-sm border theme-border text-theme-text rounded-lg hover:bg-onlyfans-accent/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ChevronLeft size={16} />
-              <span>Previous</span>
-            </button>
-            
-            <div className="flex items-center space-x-2">
-              {Array.from({ length: totalPages }, (_, index) => (
-                <button
-                  key={index}
-                  onClick={() => {
-                    setCurrentPage(index)
-                    setExpandedCountry(null)
-                  }}
-                  className={`w-8 h-8 text-sm rounded-lg transition-colors ${
-                    currentPage === index
-                      ? 'bg-onlyfans-accent text-white'
-                      : 'theme-text-secondary hover:bg-onlyfans-accent/10'
-                  }`}
-                >
-                  {index + 1}
-                </button>
-              ))}
-            </div>
-            
-            <button
-              onClick={goToNextPage}
-              disabled={currentPage === totalPages - 1}
-              className="flex items-center space-x-1 px-3 py-2 text-sm border theme-border text-theme-text rounded-lg hover:bg-onlyfans-accent/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span>Next</span>
-              <ChevronRightIcon size={16} />
-            </button>
-          </div>
-        )}
-        
-        {/* Информация о странице */}
-        <div className="text-center mt-4">
-          <p className="theme-text-secondary text-sm">
-            Showing {startIndex + 1}-{Math.min(endIndex, countriesData.length)} of {countriesData.length} countries
-          </p>
+      {/* Сетка 4 колонки для всех стран */}
+      <div className="max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          {countriesData.map((country) => renderCountryCard(country))}
         </div>
       </div>
     </div>

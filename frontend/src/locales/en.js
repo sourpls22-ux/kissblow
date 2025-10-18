@@ -283,6 +283,7 @@ export const en = {
     videoUploaded: 'Video uploaded successfully!',
     videoUploadError: 'Failed to upload video',
     videosUploaded: 'Videos uploaded successfully!',
+    verificationTip: '💡 Tip: Make sure your face is clearly visible in the photo. Hold the paper with the code so that both your face and the code are clearly readable. Good lighting and a clear background will help with faster approval.',
     videosUploadError: 'Failed to upload videos',
     mediaGallery: 'Media Gallery',
     atLeastOnePhoto: '(at least 1 photo)',

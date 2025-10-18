@@ -506,7 +506,14 @@ const Browse = () => {
               
               <div className="p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="theme-text font-semibold text-lg">{profile.name}</h3>
+                  <div className="flex items-center space-x-2">
+                    <h3 className="theme-text font-semibold text-lg">{profile.name}</h3>
+                    {profile.is_verified && (
+                      <div className="bg-green-500 text-white px-2 py-1 rounded text-xs font-medium">
+                        Verified
+                      </div>
+                    )}
+                  </div>
                   {getMinPrice(profile) && (
                     <span className="text-onlyfans-accent font-semibold">${getMinPrice(profile)}</span>
                   )}
