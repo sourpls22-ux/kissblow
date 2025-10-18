@@ -247,6 +247,56 @@ const Dashboard = () => {
     return name.charAt(0).toUpperCase() + name.slice(1)
   }
 
+  // Функция конвертации любого изображения в JPEG
+  const convertImageToJPEG = (file) => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      const img = new Image()
+      
+      img.onload = () => {
+        canvas.width = img.width
+        canvas.height = img.height
+        
+        // Заливаем белым фоном (для прозрачных изображений)
+        ctx.fillStyle = '#FFFFFF'
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+        
+        // Рисуем изображение
+        ctx.drawImage(img, 0, 0)
+        
+        canvas.toBlob((blob) => {
+          const jpegFile = new File([blob], file.name.replace(/\.[^/.]+$/, '.jpg'), {
+            type: 'image/jpeg',
+            lastModified: Date.now()
+          })
+          console.log(`Image converted: ${file.name} (${file.type}) -> JPEG (${file.size} -> ${blob.size} bytes)`)
+          resolve(jpegFile)
+        }, 'image/jpeg', 0.9)
+      }
+      
+      img.src = URL.createObjectURL(file)
+    })
+  }
+
+  // Функция обработки файлов - конвертируем ВСЕ изображения в JPEG
+  const processFiles = async (files) => {
+    const processedFiles = []
+    
+    for (const file of files) {
+      if (file.type.startsWith('image/')) {
+        console.log('Converting image to JPEG:', file.name, file.type)
+        const jpegFile = await convertImageToJPEG(file)
+        processedFiles.push(jpegFile)
+      } else {
+        // Видео не трогаем
+        processedFiles.push(file)
+      }
+    }
+    
+    return processedFiles
+  }
+
   
 
   // Подсчет статистики профилей
@@ -1955,7 +2005,7 @@ const Dashboard = () => {
                           type="file"
                           accept="image/*,video/*"
                           multiple
-                          onChange={(e) => {
+                          onChange={async (e) => {
                             console.log('File input changed:', e.target.files)
                             if (e.target.files && e.target.files.length > 0 && editingProfile) {
                               console.log('Files selected:', e.target.files.length, 'editingProfile:', editingProfile.id)
@@ -1982,21 +2032,23 @@ const Dashboard = () => {
                                 return
                               }
                               
-                              // Загружаем файлы как есть (без сжатия)
-                              if (files.length === 1) {
-                                const file = files[0]
+                              // Обрабатываем файлы (конвертируем PNG в JPEG)
+                              const processedFiles = await processFiles(files)
+                              
+                              if (processedFiles.length === 1) {
+                                const file = processedFiles[0]
                                 console.log('Single file upload:', file.name, file.type, file.size)
                                 const fileType = file.type.startsWith('video/') ? 'video' : 'photo'
                                 handleMediaUpload(editingProfile.id, file, fileType)
                               } else {
-                                console.log('Multiple files upload:', files.length)
-                                handleMultipleMediaUpload(editingProfile.id, files)
+                                console.log('Multiple files upload:', processedFiles.length)
+                                handleMultipleMediaUpload(editingProfile.id, processedFiles)
                               }
                             } else {
                               console.log('No files selected or no editing profile')
                             }
                           }}
-                          onInput={(e) => {
+                          onInput={async (e) => {
                             console.log('File input onInput triggered:', e.target.files)
                             // Дублируем логику onChange для Chrome iOS
                             if (e.target.files && e.target.files.length > 0 && editingProfile) {
@@ -2024,13 +2076,15 @@ const Dashboard = () => {
                                 return
                               }
                               
-                              // Загружаем файлы как есть (без сжатия)
-                              if (files.length === 1) {
-                                const file = files[0]
+                              // Обрабатываем файлы (конвертируем PNG в JPEG)
+                              const processedFiles = await processFiles(files)
+                              
+                              if (processedFiles.length === 1) {
+                                const file = processedFiles[0]
                                 const fileType = file.type.startsWith('video/') ? 'video' : 'photo'
                                 handleMediaUpload(editingProfile.id, file, fileType)
                               } else {
-                                handleMultipleMediaUpload(editingProfile.id, files)
+                                handleMultipleMediaUpload(editingProfile.id, processedFiles)
                               }
                             }
                           }}
