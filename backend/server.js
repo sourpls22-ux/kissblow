@@ -799,6 +799,16 @@ app.get('/api/user/profiles/:id', authenticateToken, (req, res) => {
   )
 })
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    version: '1.0.0'
+  })
+})
+
 // Profiles routes
 app.get('/api/profiles', (req, res) => {
   const { city } = req.query
