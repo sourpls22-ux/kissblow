@@ -38,7 +38,9 @@ module.exports = {
         SMTP_PASS: 'fc2a921dc5121aa28db22736',
         TURNSTILE_SECRET_KEY: '0x4AAAAAAB55qsf9O0xRE1LdFIiEjgACTqY',
         TURNSTILE_SITE_KEY: '0x4AAAAAAB55qr99duHk2JQk',
-        DB_PATH: './database.sqlite'
+        DB_PATH: './database.sqlite',
+        TELEGRAM_BOT_TOKEN: '7762390260:AAHBTsEZXFl1VL200pZO54qicwuEKomhnYY',
+        ADMIN_TELEGRAM_ID: '1119283257'
       }
     },
     {
@@ -93,7 +95,8 @@ module.exports = {
         NODE_ENV: 'production',
         TELEGRAM_BOT_TOKEN: '7762390260:AAHBTsEZXFl1VL200pZO54qicwuEKomhnYY',
         ADMIN_TELEGRAM_ID: '1119283257',
-        BACKEND_URL: 'https://kissblow.me'
+        BACKEND_URL: 'https://kissblow.me',
+        ADMIN_API_KEY: 'kissblow-admin-2024-verification-bot-key-12345'
       }
     }
   ]

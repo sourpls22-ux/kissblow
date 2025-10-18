@@ -55,6 +55,109 @@ bot.onText(/\/start/, (msg) => {
   bot.sendMessage(chatId, welcomeMessage, { parse_mode: 'Markdown' })
 })
 
+// Функция для отправки одной верификации
+const sendSingleVerification = async (chatId, verification) => {
+  const message = `
+🔍 *VERIFICATION REQUEST #${verification.id}*
+👤 ${verification.name}, ${verification.age}, ${verification.city}
+📅 ${new Date(verification.created_at).toLocaleString('ru-RU')}
+🔢 Код: *${verification.verification_code}*
+
+👤 Пользователь: ${verification.user_email}
+💰 Баланс: $${verification.balance || 0}
+📸 Фото профиля: ${verification.profile_media ? verification.profile_media.length : 0}
+📸 Фото верификации: ${verification.verification_photo_filename ? 'Да' : 'Нет'}
+  `
+  
+  // Собираем все фото для отправки одним сообщением
+  const photos = []
+  
+  // Добавляем все фото профиля
+  if (verification.profile_media && verification.profile_media.length > 0) {
+    for (const media of verification.profile_media) {
+      try {
+        const photoPath = path.join(__dirname, '..', media.filename)
+        if (fs.existsSync(photoPath)) {
+          photos.push({
+            type: 'photo',
+            media: fs.createReadStream(photoPath),
+            caption: photos.length === 0 ? `📸 Profile Photos` : undefined
+          })
+        }
+      } catch (error) {
+        console.error('Error adding profile photo:', error)
+      }
+    }
+  }
+  
+  // Добавляем основное фото профиля, если есть
+  if (verification.main_photo_filename) {
+    try {
+      const mainPhotoPath = path.join(__dirname, '..', verification.main_photo_filename)
+      if (fs.existsSync(mainPhotoPath)) {
+        photos.push({
+          type: 'photo',
+          media: fs.createReadStream(mainPhotoPath),
+          caption: photos.length === 0 ? `📸 Main Profile Photo` : undefined
+        })
+      }
+    } catch (error) {
+      console.error('Error adding main profile photo:', error)
+    }
+  }
+  
+  // Добавляем фото верификации
+  if (verification.verification_photo_filename) {
+    try {
+      const verificationPhotoPath = path.join(__dirname, '..', 'uploads', 'verifications', verification.verification_photo_filename)
+      if (fs.existsSync(verificationPhotoPath)) {
+        photos.push({
+          type: 'photo',
+          media: fs.createReadStream(verificationPhotoPath),
+          caption: photos.length === 0 ? `📸 Verification Photo` : undefined
+        })
+      }
+    } catch (error) {
+      console.error('Error adding verification photo:', error)
+    }
+  }
+  
+  // Отправляем кнопки
+  const keyboard = {
+    inline_keyboard: [
+      [
+        { text: '✅ Approve', callback_data: `verify_approve_${verification.id}` },
+        { text: '❌ Reject', callback_data: `verify_reject_${verification.id}` }
+      ]
+    ]
+  }
+  
+  if (photos.length > 0) {
+    // Отправляем все фото одним сообщением
+    try {
+      await bot.sendMediaGroup(chatId, photos)
+      
+      // Отправляем кнопки отдельным сообщением
+      bot.sendMessage(chatId, 'Выберите действие:', { 
+        reply_markup: keyboard 
+      })
+    } catch (error) {
+      console.error('Error sending media group:', error)
+      // Fallback: отправляем текстовое сообщение с кнопками
+      bot.sendMessage(chatId, message, { 
+        parse_mode: 'Markdown',
+        reply_markup: keyboard
+      })
+    }
+  } else {
+    // Если нет фото, отправляем только текстовое сообщение с кнопками
+    bot.sendMessage(chatId, message, { 
+      parse_mode: 'Markdown',
+      reply_markup: keyboard
+    })
+  }
+}
+
 // Команда /verifications
 bot.onText(/\/verifications/, async (msg) => {
   const chatId = msg.chat.id
@@ -78,108 +181,9 @@ bot.onText(/\/verifications/, async (msg) => {
       return
     }
     
-    // Отправляем каждую верификацию отдельным сообщением
-    for (const verification of verifications) {
-      const message = `
-🔍 *VERIFICATION REQUEST #${verification.id}*
-👤 ${verification.name}, ${verification.age}, ${verification.city}
-📅 ${new Date(verification.created_at).toLocaleString('ru-RU')}
-🔢 Код: *${verification.verification_code}*
-
-👤 Пользователь: ${verification.user_email}
-💰 Баланс: $${verification.balance || 0}
-📸 Фото профиля: ${verification.profile_media ? verification.profile_media.length : 0}
-📸 Фото верификации: ${verification.verification_photo_filename ? 'Да' : 'Нет'}
-      `
-      
-      // Собираем все фото для отправки одним сообщением
-      const photos = []
-      
-      // Добавляем все фото профиля
-      if (verification.profile_media && verification.profile_media.length > 0) {
-        for (const media of verification.profile_media) {
-          try {
-            const photoPath = path.join(__dirname, '..', media.filename)
-            if (fs.existsSync(photoPath)) {
-              photos.push({
-                type: 'photo',
-                media: fs.createReadStream(photoPath),
-                caption: photos.length === 0 ? `📸 Profile Photos` : undefined
-              })
-            }
-          } catch (error) {
-            console.error('Error adding profile photo:', error)
-          }
-        }
-      }
-      
-      // Добавляем основное фото профиля, если есть
-      if (verification.main_photo_filename) {
-        try {
-          const mainPhotoPath = path.join(__dirname, '..', verification.main_photo_filename)
-          if (fs.existsSync(mainPhotoPath)) {
-            photos.push({
-              type: 'photo',
-              media: fs.createReadStream(mainPhotoPath),
-              caption: photos.length === 0 ? `📸 Main Profile Photo` : undefined
-            })
-          }
-        } catch (error) {
-          console.error('Error adding main profile photo:', error)
-        }
-      }
-      
-      // Добавляем фото верификации
-      if (verification.verification_photo_filename) {
-        try {
-          const verificationPhotoPath = path.join(__dirname, '..', 'uploads', 'verifications', verification.verification_photo_filename)
-          if (fs.existsSync(verificationPhotoPath)) {
-            photos.push({
-              type: 'photo',
-              media: fs.createReadStream(verificationPhotoPath),
-              caption: photos.length === 0 ? `📸 Verification Photo` : undefined
-            })
-          }
-        } catch (error) {
-          console.error('Error adding verification photo:', error)
-        }
-      }
-      
-      // Отправляем кнопки
-      const keyboard = {
-        inline_keyboard: [
-          [
-            { text: '✅ Approve', callback_data: `verify_approve_${verification.id}` },
-            { text: '❌ Reject', callback_data: `verify_reject_${verification.id}` }
-          ]
-        ]
-      }
-      
-      if (photos.length > 0) {
-        // Отправляем все фото одним сообщением
-        try {
-          await bot.sendMediaGroup(chatId, photos)
-          
-          // Отправляем кнопки отдельным сообщением
-          bot.sendMessage(chatId, 'Выберите действие:', { 
-            reply_markup: keyboard 
-          })
-        } catch (error) {
-          console.error('Error sending media group:', error)
-          // Fallback: отправляем текстовое сообщение с кнопками
-          bot.sendMessage(chatId, message, { 
-            parse_mode: 'Markdown',
-            reply_markup: keyboard
-          })
-        }
-      } else {
-        // Если нет фото, отправляем только текстовое сообщение с кнопками
-        bot.sendMessage(chatId, message, { 
-          parse_mode: 'Markdown',
-          reply_markup: keyboard
-        })
-      }
-    }
+    // Показываем только первую верификацию
+    const verification = verifications[0]
+    await sendSingleVerification(chatId, verification)
     
   } catch (error) {
     console.error('Verifications error:', error)
@@ -200,7 +204,27 @@ bot.on('callback_query', async (callbackQuery) => {
   try {
     if (data === 'view_verifications') {
       // Обработка кнопки "Посмотреть"
-      handleVerificationsCommand(callbackQuery.message)
+      const chatId = callbackQuery.message.chat.id
+      
+      try {
+        const response = await axios.get(`${API_BASE_URL}/api/admin/verifications`, {
+          headers: {
+            'X-Admin-Key': process.env.ADMIN_API_KEY || 'kissblow-admin-2024-verification-bot-key-12345'
+          }
+        })
+        const verifications = response.data
+        
+        if (verifications.length === 0) {
+          bot.sendMessage(chatId, '✅ Нет ожидающих верификаций')
+        } else {
+          // Показываем первую верификацию
+          await sendSingleVerification(chatId, verifications[0])
+        }
+      } catch (error) {
+        console.error('Verifications error:', error)
+        bot.sendMessage(chatId, `❌ Ошибка получения верификаций: ${error.message}`)
+      }
+      
       bot.answerCallbackQuery(callbackQuery.id, { text: '📋 Загружаю верификации...' })
       return
     }
@@ -216,7 +240,7 @@ bot.on('callback_query', async (callbackQuery) => {
       
       bot.answerCallbackQuery(callbackQuery.id, { text: '✅ Верификация одобрена!' })
       
-      // Проверяем, есть ли еще верификации
+      // Показываем следующую верификацию или сообщение об отсутствии
       try {
         const response = await axios.get(`${API_BASE_URL}/api/admin/verifications`, {
           headers: { 'X-Admin-Key': process.env.ADMIN_API_KEY || 'kissblow-admin-2024-verification-bot-key-12345' }
@@ -225,7 +249,8 @@ bot.on('callback_query', async (callbackQuery) => {
         if (response.data.length === 0) {
           bot.sendMessage(chatId, '✅ Нет ожидающих верификаций')
         } else {
-          bot.sendMessage(chatId, `📋 Осталось верификаций: ${response.data.length}`)
+          // Показываем следующую верификацию
+          await sendSingleVerification(chatId, response.data[0])
         }
       } catch (error) {
         console.error('Error checking remaining verifications:', error)
@@ -250,7 +275,7 @@ bot.on('callback_query', async (callbackQuery) => {
       
       bot.answerCallbackQuery(callbackQuery.id, { text: '❌ Верификация отклонена!' })
       
-      // Проверяем, есть ли еще верификации
+      // Показываем следующую верификацию или сообщение об отсутствии
       try {
         const response = await axios.get(`${API_BASE_URL}/api/admin/verifications`, {
           headers: { 'X-Admin-Key': process.env.ADMIN_API_KEY || 'kissblow-admin-2024-verification-bot-key-12345' }
@@ -259,7 +284,8 @@ bot.on('callback_query', async (callbackQuery) => {
         if (response.data.length === 0) {
           bot.sendMessage(chatId, '✅ Нет ожидающих верификаций')
         } else {
-          bot.sendMessage(chatId, `📋 Осталось верификаций: ${response.data.length}`)
+          // Показываем следующую верификацию
+          await sendSingleVerification(chatId, response.data[0])
         }
       } catch (error) {
         console.error('Error checking remaining verifications:', error)
