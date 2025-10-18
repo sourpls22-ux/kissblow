@@ -48,12 +48,18 @@ const Login = () => {
         navigate('/dashboard')
       } else {
         setError(result.error)
+        // Сбрасываем токен при неудачной попытке входа
+        setTurnstileToken('')
+        setShowTurnstile(false)
       }
       
       setLoading(false)
     } catch (error) {
       console.error('Login error:', error)
       setError('Login failed. Please try again.')
+      // Сбрасываем токен при ошибке
+      setTurnstileToken('')
+      setShowTurnstile(false)
       setLoading(false)
     }
   }
@@ -83,10 +89,14 @@ const Login = () => {
       } else {
         console.log('Login failed:', result.error)
         setError(result.error)
+        // Сбрасываем токен при неудачной попытке входа
+        setTurnstileToken('')
       }
     } catch (error) {
       console.error('Login error:', error)
       setError('Login failed. Please try again.')
+      // Сбрасываем токен при ошибке
+      setTurnstileToken('')
     }
     
     setLoading(false)

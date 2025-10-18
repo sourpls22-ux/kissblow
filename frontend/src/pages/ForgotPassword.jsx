@@ -49,6 +49,9 @@ const ForgotPassword = () => {
       setLoading(false)
     } catch (err) {
       setError(err.response?.data?.error || t('auth.passwordResetError'))
+      // Сбрасываем токен при ошибке
+      setTurnstileToken('')
+      setShowTurnstile(false)
       setLoading(false)
     }
   }
@@ -70,6 +73,8 @@ const ForgotPassword = () => {
     } catch (err) {
       console.log('Password reset failed:', err.response?.data?.error)
       setError(err.response?.data?.error || t('auth.passwordResetError'))
+      // Сбрасываем токен при неудачной попытке сброса пароля
+      setTurnstileToken('')
     }
     
     setLoading(false)

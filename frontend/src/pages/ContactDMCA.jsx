@@ -70,10 +70,14 @@ const ContactDMCA = () => {
       } else {
         console.log('Contact form submission failed')
         error('Failed to send message. Please try again.')
+        // Сбрасываем токен при неудачной отправке
+        setTurnstileToken('')
       }
     } catch (err) {
       console.error('Contact form submission error:', err)
       error('Failed to send message. Please try again.')
+      // Сбрасываем токен при ошибке
+      setTurnstileToken('')
     }
     
     setLoading(false)
@@ -194,11 +198,17 @@ const ContactDMCA = () => {
         setTurnstileToken('')
       } else {
         error('Failed to send message. Please try again.')
+        // Сбрасываем токен при неудачной отправке
+        setTurnstileToken('')
+        setShowTurnstile(false)
       }
       
       setLoading(false)
     } catch (err) {
       error('Failed to send message. Please try again.')
+      // Сбрасываем токен при ошибке
+      setTurnstileToken('')
+      setShowTurnstile(false)
       setLoading(false)
     }
   }

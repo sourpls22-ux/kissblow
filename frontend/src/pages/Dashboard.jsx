@@ -460,6 +460,9 @@ const Dashboard = () => {
     } catch (err) {
       console.error('Failed to create profile:', err)
       error(t('dashboard.profileCreateError'))
+      // Сбрасываем токен при ошибке
+      setTurnstileToken('')
+      setShowTurnstile(false)
     }
     
     setIsCreatingProfile(false)
@@ -482,6 +485,8 @@ const Dashboard = () => {
     } catch (err) {
       console.error('Failed to create profile:', err)
       error(t('dashboard.profileCreateError'))
+      // Сбрасываем токен при ошибке
+      setTurnstileToken('')
     }
     
     setIsCreatingProfile(false)

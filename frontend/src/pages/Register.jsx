@@ -62,12 +62,18 @@ const Register = () => {
         }
       } else {
         setError(result.error)
+        // Сбрасываем токен при неудачной попытке регистрации
+        setTurnstileToken('')
+        setShowTurnstile(false)
       }
       
       setLoading(false)
     } catch (error) {
       console.error('Registration error:', error)
       setError('Registration failed. Please try again.')
+      // Сбрасываем токен при ошибке
+      setTurnstileToken('')
+      setShowTurnstile(false)
       setLoading(false)
     }
   }
@@ -104,10 +110,14 @@ const Register = () => {
       } else {
         console.log('Registration failed:', result.error)
         setError(result.error)
+        // Сбрасываем токен при неудачной попытке регистрации
+        setTurnstileToken('')
       }
     } catch (error) {
       console.error('Registration error:', error)
       setError('Registration failed. Please try again.')
+      // Сбрасываем токен при ошибке
+      setTurnstileToken('')
     }
     
     setLoading(false)
