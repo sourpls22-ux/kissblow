@@ -197,7 +197,6 @@ const Dashboard = () => {
   const [turnstileToken, setTurnstileToken] = useState('')
   const [turnstileError, setTurnstileError] = useState('')
   const [showTurnstile, setShowTurnstile] = useState(false)
-  const [isCompressing, setIsCompressing] = useState(false)
   const turnstileRef = useRef(null)
   const cityInputRef = useRef(null)
   
@@ -248,58 +247,6 @@ const Dashboard = () => {
     return name.charAt(0).toUpperCase() + name.slice(1)
   }
 
-  // Функция сжатия изображений
-  const compressImage = (file, maxWidth = 1920, quality = 0.85) => {
-    return new Promise((resolve) => {
-      const canvas = document.createElement('canvas')
-      const ctx = canvas.getContext('2d')
-      const img = new Image()
-      
-      img.onload = () => {
-        // Вычисляем новые размеры
-        const ratio = Math.min(maxWidth / img.width, maxWidth / img.height)
-        const newWidth = img.width * ratio
-        const newHeight = img.height * ratio
-        
-        canvas.width = newWidth
-        canvas.height = newHeight
-        
-        // Рисуем сжатое изображение
-        ctx.drawImage(img, 0, 0, newWidth, newHeight)
-        
-        // Конвертируем в blob
-        canvas.toBlob((blob) => {
-          console.log(`Image compressed: ${file.size} -> ${blob.size} bytes`)
-          resolve(blob)
-        }, 'image/jpeg', quality)
-      }
-      
-      img.src = URL.createObjectURL(file)
-    })
-  }
-
-  // Функция обработки файлов с сжатием
-  const processFiles = async (files) => {
-    const processedFiles = []
-    
-    for (const file of files) {
-      if (file.type.startsWith('image/')) {
-        // Сжимаем изображения
-        console.log('Compressing image:', file.name)
-        const compressedBlob = await compressImage(file)
-        const compressedFile = new File([compressedBlob], file.name, {
-          type: 'image/jpeg',
-          lastModified: Date.now()
-        })
-        processedFiles.push(compressedFile)
-      } else {
-        // Видео не сжимаем
-        processedFiles.push(file)
-      }
-    }
-    
-    return processedFiles
-  }
   
 
   // Подсчет статистики профилей
@@ -2001,12 +1948,6 @@ const Dashboard = () => {
                      
                      {/* Upload Buttons */}
                      <div className="flex space-x-3 mb-3 justify-center">
-                      {isCompressing && (
-                        <div className="text-center py-2">
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-onlyfans-accent mx-auto mb-2"></div>
-                          <p className="text-sm theme-text-secondary">Compressing images...</p>
-                        </div>
-                      )}
                       <label className="bg-onlyfans-accent text-white px-3 py-2 rounded-lg cursor-pointer hover:opacity-80 transition-opacity flex items-center space-x-2 text-sm">
                         <Edit size={14} />
 <span>{t('dashboard.buttons.uploadMedia')}</span>
@@ -2014,7 +1955,7 @@ const Dashboard = () => {
                           type="file"
                           accept="image/*,video/*"
                           multiple
-                          onChange={async (e) => {
+                          onChange={(e) => {
                             console.log('File input changed:', e.target.files)
                             if (e.target.files && e.target.files.length > 0 && editingProfile) {
                               console.log('Files selected:', e.target.files.length, 'editingProfile:', editingProfile.id)
@@ -2041,29 +1982,21 @@ const Dashboard = () => {
                                 return
                               }
                               
-                              setIsCompressing(true)
-                              
-                              try {
-                                // Обрабатываем файлы (сжимаем изображения)
-                                const processedFiles = await processFiles(files)
-                                
-                                if (processedFiles.length === 1) {
-                                  const file = processedFiles[0]
-                                  console.log('Single file upload:', file.name, file.type, file.size)
-                                  const fileType = file.type.startsWith('video/') ? 'video' : 'photo'
-                                  handleMediaUpload(editingProfile.id, file, fileType)
-                                } else {
-                                  console.log('Multiple files upload:', processedFiles.length)
-                                  handleMultipleMediaUpload(editingProfile.id, processedFiles)
-                                }
-                              } finally {
-                                setIsCompressing(false)
+                              // Загружаем файлы как есть (без сжатия)
+                              if (files.length === 1) {
+                                const file = files[0]
+                                console.log('Single file upload:', file.name, file.type, file.size)
+                                const fileType = file.type.startsWith('video/') ? 'video' : 'photo'
+                                handleMediaUpload(editingProfile.id, file, fileType)
+                              } else {
+                                console.log('Multiple files upload:', files.length)
+                                handleMultipleMediaUpload(editingProfile.id, files)
                               }
                             } else {
                               console.log('No files selected or no editing profile')
                             }
                           }}
-                          onInput={async (e) => {
+                          onInput={(e) => {
                             console.log('File input onInput triggered:', e.target.files)
                             // Дублируем логику onChange для Chrome iOS
                             if (e.target.files && e.target.files.length > 0 && editingProfile) {
@@ -2091,21 +2024,13 @@ const Dashboard = () => {
                                 return
                               }
                               
-                              setIsCompressing(true)
-                              
-                              try {
-                                // Обрабатываем файлы (сжимаем изображения)
-                                const processedFiles = await processFiles(files)
-                                
-                                if (processedFiles.length === 1) {
-                                  const file = processedFiles[0]
-                                  const fileType = file.type.startsWith('video/') ? 'video' : 'photo'
-                                  handleMediaUpload(editingProfile.id, file, fileType)
-                                } else {
-                                  handleMultipleMediaUpload(editingProfile.id, processedFiles)
-                                }
-                              } finally {
-                                setIsCompressing(false)
+                              // Загружаем файлы как есть (без сжатия)
+                              if (files.length === 1) {
+                                const file = files[0]
+                                const fileType = file.type.startsWith('video/') ? 'video' : 'photo'
+                                handleMediaUpload(editingProfile.id, file, fileType)
+                              } else {
+                                handleMultipleMediaUpload(editingProfile.id, files)
                               }
                             }
                           }}
