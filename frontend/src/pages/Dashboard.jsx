@@ -2081,8 +2081,8 @@ const Dashboard = () => {
                      
                      {/* Upload Buttons */}
                      <div className="flex space-x-3 mb-3 justify-center">
-                      <label className={`${uploadingProfiles.has(editingProfile.id) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} bg-onlyfans-accent text-white px-3 py-2 rounded-lg hover:opacity-80 transition-opacity flex items-center space-x-2 text-sm`}>
-                        {uploadingProfiles.has(editingProfile.id) ? (
+                      <label className={`${uploadingProfiles.has(editingProfile.id) && !uploadingVideo ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} bg-onlyfans-accent text-white px-3 py-2 rounded-lg hover:opacity-80 transition-opacity flex items-center space-x-2 text-sm`}>
+                        {uploadingProfiles.has(editingProfile.id) && !uploadingVideo ? (
                           <>
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                             <span>Uploading...</span>
@@ -2097,7 +2097,7 @@ const Dashboard = () => {
                           type="file"
                           accept="image/*,video/*"
                           multiple
-                          disabled={uploadingProfiles.has(editingProfile.id)}
+                          disabled={uploadingProfiles.has(editingProfile.id) && !uploadingVideo}
                           onChange={async (e) => {
                             console.log('File input changed:', e.target.files)
                             if (e.target.files && e.target.files.length > 0 && editingProfile) {
@@ -2149,7 +2149,7 @@ const Dashboard = () => {
                         {uploadingVideo ? (
                           <>
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            <span>Converting...</span>
+                            <span>Uploading...</span>
                           </>
                         ) : (
                           <>
@@ -2182,9 +2182,6 @@ const Dashboard = () => {
                       </label>
                     </div>
                     
-                     <p className="text-xs theme-text-secondary mb-3">
-                       {t('dashboard.photoUploadHint')} | {t('dashboard.videoUploadHint')}
-                     </p>
                      
                      {/* Media Grid with Drag & Drop */}
                      {profileMedia.length > 0 ? (
