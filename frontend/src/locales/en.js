@@ -238,6 +238,7 @@ export const en = {
     notFoundTitle: 'Profile Not Found',
     notFoundMessage: 'Sorry, the profile you are looking for does not exist or has been removed.',
     backToBrowse: 'Back to Browse',
+    backToDashboard: 'Back to Dashboard',
     searchForProfiles: 'Search for profiles',
     orTry: 'or try searching for other profiles',
     searchDescription: 'Use the search above to find profiles in your city, or browse all available profiles by clicking the "Back to Browse" button.'
