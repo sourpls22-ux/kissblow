@@ -1049,6 +1049,9 @@ const Dashboard = () => {
         ))
       }
       
+      // Сброс состояния загрузки видео при удалении
+      setUploadingVideo(false)
+      
       success('Media deleted successfully!')
     } catch (err) {
       console.error('Failed to delete media:', err)
@@ -1237,6 +1240,7 @@ const Dashboard = () => {
     setCitySuggestions([])
     setSelectedCityIndex(-1)
     setCityError(false)
+    setUploadingVideo(false) // Сброс состояния загрузки видео
   }
 
   // Хуки для правильного поведения модальных окон (после объявления всех функций)
