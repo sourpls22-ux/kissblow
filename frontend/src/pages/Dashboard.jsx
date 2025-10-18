@@ -2075,7 +2075,8 @@ const Dashboard = () => {
                        <span>{t('dashboard.mediaGallery')} <span className="text-red-500">*</span> <span className="text-sm text-gray-500">{t('dashboard.atLeastOnePhoto')}</span></span>
                      </label>
                      <p className="text-xs text-gray-500 mb-3 text-center">
-                       Максимальный размер: фото до 30MB, видео до 150MB
+                       Максимальный размер: фото до 30MB, видео до 150MB<br/>
+                       Поддерживаемые форматы: MP4, AVI, MOV, WMV, FLV, WEBM (автоматически конвертируются в MP4)
                      </p>
                      
                      {/* Upload Buttons */}
@@ -2148,7 +2149,7 @@ const Dashboard = () => {
                         {uploadingVideo ? (
                           <>
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            <span>Uploading...</span>
+                            <span>Converting...</span>
                           </>
                         ) : (
                           <>

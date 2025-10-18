@@ -9,6 +9,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
 import sharp from 'sharp'
+import ffmpeg from 'fluent-ffmpeg'
 import dotenv from 'dotenv'
 import axios from 'axios'
 import crypto from 'crypto'
@@ -17,6 +18,35 @@ dotenv.config()
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+
+// Video conversion function
+const convertVideo = (inputPath, outputPath) => {
+  return new Promise((resolve, reject) => {
+    ffmpeg(inputPath)
+      .output(outputPath)
+      .videoCodec('libx264')
+      .audioCodec('aac')
+      .format('mp4')
+      .videoBitrate('1000k')
+      .audioBitrate('128k')
+      .size('1280x720')
+      .on('start', (commandLine) => {
+        console.log('FFmpeg process started:', commandLine)
+      })
+      .on('progress', (progress) => {
+        console.log('Processing: ' + progress.percent + '% done')
+      })
+      .on('end', () => {
+        console.log('Video conversion completed')
+        resolve()
+      })
+      .on('error', (err) => {
+        console.error('Video conversion error:', err)
+        reject(err)
+      })
+      .run()
+  })
+}
 
 // Cloudflare Turnstile verification
 const verifyTurnstileToken = async (token) => {
@@ -1600,7 +1630,7 @@ app.delete('/api/profiles/:id', authenticateToken, (req, res) => {
 })
 
 // Upload profile media route (photos and videos)
-app.post('/api/profiles/:id/media', authenticateToken, upload.single('media'), (req, res) => {
+app.post('/api/profiles/:id/media', authenticateToken, upload.single('media'), async (req, res) => {
   const { id } = req.params
   const { type } = req.body // 'photo' or 'video'
 
@@ -1682,8 +1712,34 @@ app.post('/api/profiles/:id/media', authenticateToken, upload.single('media'), (
             )
           }
 
-          // Create the media URL
-          const mediaUrl = `/uploads/profiles/${req.file.filename}`
+          // Handle video conversion
+          let finalFilename = req.file.filename
+          let mediaUrl = `/uploads/profiles/${req.file.filename}`
+          
+          if (type === 'video') {
+            const inputPath = req.file.path
+            const outputFilename = `video-${Date.now()}.mp4`
+            const outputPath = path.join(__dirname, 'uploads', 'profiles', outputFilename)
+            
+            try {
+              console.log('Starting video conversion...')
+              await convertVideo(inputPath, outputPath)
+              
+              // Delete original file
+              fs.unlinkSync(inputPath)
+              
+              // Update filename and URL
+              finalFilename = outputFilename
+              mediaUrl = `/uploads/profiles/${outputFilename}`
+              
+              console.log('Video converted successfully:', outputFilename)
+            } catch (error) {
+              console.error('Video conversion failed:', error)
+              // Delete original file on conversion failure
+              fs.unlinkSync(inputPath)
+              return res.status(500).json({ error: 'Video conversion failed' })
+            }
+          }
           
           // Get next order index
           db.get(
