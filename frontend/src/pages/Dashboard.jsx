@@ -814,6 +814,7 @@ const Dashboard = () => {
 
   const handleMediaUpload = async (profileId, file, type) => {
     try {
+      console.log('Starting single media upload:', file.name, file.type, file.size, 'bytes')
       const formData = new FormData()
       formData.append('media', file)
       formData.append('type', type)
@@ -823,6 +824,7 @@ const Dashboard = () => {
           'Content-Type': 'multipart/form-data',
         },
       })
+      console.log('Single file uploaded successfully:', file.name)
 
       // Refresh profile media
       if (editingProfile && editingProfile.id === profileId) {
@@ -849,6 +851,7 @@ const Dashboard = () => {
 
   const handleMultipleMediaUpload = async (profileId, files) => {
     try {
+      console.log('Starting multiple media upload:', files.length, 'files')
       const uploadPromises = Array.from(files).map(async (file) => {
         const formData = new FormData()
         formData.append('media', file)
@@ -856,14 +859,16 @@ const Dashboard = () => {
         formData.append('type', fileType)
 
         try {
+          console.log('Uploading file:', file.name, file.type, file.size, 'bytes')
           const response = await axios.post(`/api/profiles/${profileId}/media`, formData, {
             headers: {
               'Content-Type': 'multipart/form-data',
             },
           })
+          console.log('File uploaded successfully:', file.name)
           return { success: true, data: response.data, type: fileType }
         } catch (error) {
-          console.error('Error uploading media:', error)
+          console.error('Error uploading media:', file.name, error)
           return { success: false, error, type: fileType }
         }
       })
@@ -877,6 +882,7 @@ const Dashboard = () => {
       const hasVideos = successfulUploads.some(result => result.type === 'video')
       
       if (successfulUploads.length > 0) {
+        console.log('Successful uploads:', successfulUploads.length)
         // Refresh profile media
         if (editingProfile && editingProfile.id === profileId) {
           await fetchProfileMedia(profileId)
@@ -900,6 +906,7 @@ const Dashboard = () => {
       }
 
       if (failedUploads.length > 0) {
+        console.log('Failed uploads:', failedUploads.length)
         const failedPhotos = failedUploads.filter(result => result.type === 'photo')
         const failedVideos = failedUploads.filter(result => result.type === 'video')
         
@@ -1940,14 +1947,20 @@ const Dashboard = () => {
                           accept="image/*,video/*"
                           multiple
                           onChange={(e) => {
+                            console.log('File input changed:', e.target.files)
                             if (e.target.files && e.target.files.length > 0 && editingProfile) {
+                              console.log('Files selected:', e.target.files.length, 'editingProfile:', editingProfile.id)
                               if (e.target.files.length === 1) {
                                 const file = e.target.files[0]
+                                console.log('Single file upload:', file.name, file.type, file.size)
                                 const fileType = file.type.startsWith('video/') ? 'video' : 'photo'
                                 handleMediaUpload(editingProfile.id, file, fileType)
                               } else {
+                                console.log('Multiple files upload:', e.target.files.length)
                                 handleMultipleMediaUpload(editingProfile.id, e.target.files)
                               }
+                            } else {
+                              console.log('No files selected or no editing profile')
                             }
                           }}
                           className="hidden"
