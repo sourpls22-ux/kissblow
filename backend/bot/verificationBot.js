@@ -80,13 +80,6 @@ bot.onText(/\/verifications/, async (msg) => {
     
     // Отправляем каждую верификацию отдельным сообщением
     for (const verification of verifications) {
-      console.log(`DEBUG: Processing verification for ${verification.name} (ID: ${verification.id})`);
-      console.log(`DEBUG: verification.image_url: ${verification.image_url}`);
-      console.log(`DEBUG: verification.profile_media: ${JSON.stringify(verification.profile_media)}`);
-      console.log(`DEBUG: verification.verification_photo_url: ${verification.verification_photo_url}`);
-      console.log(`DEBUG: verification.main_photo_filename: ${verification.main_photo_filename}`);
-      console.log(`DEBUG: verification.verification_photo_filename: ${verification.verification_photo_filename}`);
-
       const message = `
 🔍 *VERIFICATION REQUEST #${verification.id}*
 👤 ${verification.name}, ${verification.age}, ${verification.city}
@@ -96,70 +89,57 @@ bot.onText(/\/verifications/, async (msg) => {
 👤 Пользователь: ${verification.user_email}
       `
       
-      // Отправляем основное сообщение
-      bot.sendMessage(chatId, message, { parse_mode: 'Markdown' })
+      // Собираем все фото для отправки одним сообщением
+      const photos = []
       
-      // Отправляем все фото профиля
+      // Добавляем все фото профиля
       if (verification.profile_media && verification.profile_media.length > 0) {
-        console.log(`DEBUG: Found ${verification.profile_media.length} profile media files`);
         for (const media of verification.profile_media) {
           try {
             const photoPath = path.join(__dirname, '..', media.filename)
-            console.log(`DEBUG: Trying to send profile photo: ${photoPath}`);
             if (fs.existsSync(photoPath)) {
-              await bot.sendPhoto(chatId, fs.createReadStream(photoPath), {
-                caption: `📸 Profile Photo #${media.id}`
+              photos.push({
+                type: 'photo',
+                media: fs.createReadStream(photoPath),
+                caption: photos.length === 0 ? `📸 Profile Photos` : undefined
               })
-              console.log(`DEBUG: Successfully sent profile photo: ${photoPath}`);
-            } else {
-              console.log(`DEBUG: Profile photo not found: ${photoPath}`);
             }
           } catch (error) {
-            console.error('Error sending profile photo:', error)
+            console.error('Error adding profile photo:', error)
           }
         }
-      } else {
-        console.log('DEBUG: No profile_media found or empty array');
       }
       
-      // Отправляем основное фото профиля, если есть
+      // Добавляем основное фото профиля, если есть
       if (verification.main_photo_filename) {
         try {
           const mainPhotoPath = path.join(__dirname, '..', verification.main_photo_filename)
-          console.log(`DEBUG: Trying to send main profile photo: ${mainPhotoPath}`);
           if (fs.existsSync(mainPhotoPath)) {
-            await bot.sendPhoto(chatId, fs.createReadStream(mainPhotoPath), {
-              caption: '📸 Main Profile Photo'
+            photos.push({
+              type: 'photo',
+              media: fs.createReadStream(mainPhotoPath),
+              caption: photos.length === 0 ? `📸 Main Profile Photo` : undefined
             })
-            console.log(`DEBUG: Successfully sent main profile photo: ${mainPhotoPath}`);
-          } else {
-            console.log(`DEBUG: Main profile photo not found: ${mainPhotoPath}`);
           }
         } catch (error) {
-          console.error('Error sending main profile photo:', error)
+          console.error('Error adding main profile photo:', error)
         }
-      } else {
-        console.log('DEBUG: No main_photo_filename found');
       }
       
-      // Отправляем фото верификации
+      // Добавляем фото верификации
       if (verification.verification_photo_filename) {
         try {
           const verificationPhotoPath = path.join(__dirname, '..', 'uploads', 'verifications', verification.verification_photo_filename)
-          console.log(`DEBUG: Trying to send verification photo: ${verificationPhotoPath}`);
           if (fs.existsSync(verificationPhotoPath)) {
-            await bot.sendPhoto(chatId, fs.createReadStream(verificationPhotoPath), {
-              caption: '📸 Verification Photo'
+            photos.push({
+              type: 'photo',
+              media: fs.createReadStream(verificationPhotoPath),
+              caption: photos.length === 0 ? `📸 Verification Photo` : undefined
             })
-            console.log(`DEBUG: Successfully sent verification photo: ${verificationPhotoPath}`);
-          } else {
-            console.log(`DEBUG: Verification photo not found: ${verificationPhotoPath}`);
           }
         } catch (error) {
-          console.error('Error sending verification photo:', error)
+          console.error('Error adding verification photo:', error)
         }
-      } else {
-        console.log('DEBUG: No verification_photo_filename found');
       }
       
       // Отправляем кнопки
@@ -172,7 +152,27 @@ bot.onText(/\/verifications/, async (msg) => {
         ]
       }
       
-      bot.sendMessage(chatId, 'Выберите действие:', { reply_markup: keyboard })
+      if (photos.length > 0) {
+        // Отправляем все фото одним сообщением с кнопками
+        try {
+          await bot.sendMediaGroup(chatId, photos, {
+            reply_markup: keyboard
+          })
+        } catch (error) {
+          console.error('Error sending media group:', error)
+          // Fallback: отправляем текстовое сообщение с кнопками
+          bot.sendMessage(chatId, message, { 
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+          })
+        }
+      } else {
+        // Если нет фото, отправляем только текстовое сообщение с кнопками
+        bot.sendMessage(chatId, message, { 
+          parse_mode: 'Markdown',
+          reply_markup: keyboard
+        })
+      }
     }
     
   } catch (error) {
