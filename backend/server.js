@@ -1313,10 +1313,10 @@ app.get('/api/admin/verifications', authenticateAdmin, (req, res) => {
 
                 // Добавляем медиа файлы к верификации
                 verification.profile_media = mediaFiles
-                  .filter(media => media.filename) // Фильтруем только файлы с именем
+                  .filter(media => media.url) // Фильтруем только файлы с URL
                   .map(media => ({
                     id: media.id,
-                    filename: media.filename,
+                    filename: media.url, // Используем url как filename
                     type: media.type
                   }))
 
