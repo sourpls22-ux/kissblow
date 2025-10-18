@@ -286,6 +286,7 @@ export const en = {
     videosUploaded: 'Videos uploaded successfully!',
     verificationTip: '💡 Tip: Make sure your face is clearly visible in the photo. Hold the paper with the code so that both your face and the code are clearly readable. Good lighting and a clear background will help with faster approval.',
     photoDragTip: '💡 Tip: Photos can be dragged to reorder. The first photo will be the main photo that users see first.',
+    photoDragTipMobile: '💡 Tip: Use ↑↓ arrows to reorder photos. The first photo will be the main photo that users see first.',
     videosUploadError: 'Failed to upload videos',
     mediaGallery: 'Media Gallery',
     atLeastOnePhoto: '(at least 1 photo)',

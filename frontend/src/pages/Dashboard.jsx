@@ -83,7 +83,10 @@ const SortableMediaItem = ({ media, editingProfile, onDeleteMedia, isMainPhoto, 
         ) : (
           <video
             src={media.url}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover rounded-lg"
+            playsInline
+            controls
+            preload="metadata"
             onError={(e) => {
               console.error('Failed to load video:', media.url)
               e.target.style.display = 'none'
@@ -179,7 +182,7 @@ const SortableMediaItem = ({ media, editingProfile, onDeleteMedia, isMainPhoto, 
       
       {/* Can't drag video message */}
       {media.type === 'video' && (
-        <div className="absolute bottom-2 right-2 bg-red-500/90 text-white rounded px-2 py-1 text-xs font-medium pointer-events-none">
+        <div className="absolute top-2 left-2 bg-red-500/90 text-white rounded px-2 py-1 text-xs font-medium pointer-events-none">
           Can't drag video
         </div>
       )}
@@ -2075,8 +2078,8 @@ const Dashboard = () => {
                        <span>{t('dashboard.mediaGallery')} <span className="text-red-500">*</span> <span className="text-sm text-gray-500">{t('dashboard.atLeastOnePhoto')}</span></span>
                      </label>
                      <p className="text-xs text-gray-500 mb-3 text-center">
-                       Максимальный размер: фото до 30MB, видео до 150MB<br/>
-                       Поддерживаемые форматы: MP4, AVI, MOV, WMV, FLV, WEBM (автоматически конвертируются в MP4)
+                       {t('dashboard.photoUploadHint')}<br/>
+                       {t('dashboard.videoUploadHint')}
                      </p>
                      
                      {/* Upload Buttons */}
@@ -2220,7 +2223,8 @@ const Dashboard = () => {
                     {profileMedia.length > 0 && (
                       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mt-3">
                         <p className="text-xs text-blue-700 dark:text-blue-300">
-                          {t('dashboard.photoDragTip')}
+                          <span className="hidden sm:inline">{t('dashboard.photoDragTip')}</span>
+                          <span className="sm:hidden">{t('dashboard.photoDragTipMobile')}</span>
                         </p>
                       </div>
                     )}
