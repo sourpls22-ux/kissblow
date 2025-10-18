@@ -904,6 +904,9 @@ app.post('/api/profiles/:id/activate', authenticateToken, (req, res) => {
                     return res.status(500).json({ error: 'Database error' })
                   }
 
+                  // Schedule boost renewal
+                  scheduleBoostRenewal(id, req.user.id, boostExpiry.toISOString())
+
                   res.json({
                     message: 'Profile activated successfully',
                     newBalance: newBalance,
@@ -954,6 +957,13 @@ app.post('/api/profiles/:id/deactivate', authenticateToken, (req, res) => {
             return res.status(500).json({ error: 'Database error' })
           }
 
+          // Clear any scheduled boost renewal for this profile
+          if (activeBoostTimers.has(id)) {
+            clearTimeout(activeBoostTimers.get(id))
+            activeBoostTimers.delete(id)
+            console.log(`🗑️ Cleared boost timer for deactivated profile ${id}`)
+          }
+          
           console.log('Profile deactivated successfully:', id)
           res.json({
             message: 'Profile deactivated successfully'
@@ -967,7 +977,7 @@ app.post('/api/profiles/:id/deactivate', authenticateToken, (req, res) => {
 // Boost profile route
 app.post('/api/profiles/:id/boost', authenticateToken, (req, res) => {
   const { id } = req.params
-  const BOOST_COST = 0.0 // $0 for boost (testing)
+  const BOOST_COST = 1.0 // $1 for boost
 
   // Check if profile exists and belongs to user
   db.get(
@@ -1024,6 +1034,9 @@ app.post('/api/profiles/:id/boost', authenticateToken, (req, res) => {
                   if (err) {
                     return res.status(500).json({ error: 'Database error' })
                   }
+
+                  // Schedule boost renewal
+                  scheduleBoostRenewal(id, req.user.id, boostExpiry.toISOString())
 
                   res.json({
                     message: 'Profile boosted successfully',
@@ -1861,7 +1874,114 @@ app.post('/api/profiles/:id/like', authenticateToken, (req, res) => {
   )
 })
 
-// Function to check and process expired boosts
+// Store active boost timers
+const activeBoostTimers = new Map()
+
+// Function to schedule boost renewal for a specific profile
+const scheduleBoostRenewal = (profileId, userId, boostExpiryTime) => {
+  // Clear existing timer if any
+  if (activeBoostTimers.has(profileId)) {
+    clearTimeout(activeBoostTimers.get(profileId))
+  }
+
+  const now = new Date()
+  const expiryTime = new Date(boostExpiryTime)
+  const timeUntilExpiry = expiryTime.getTime() - now.getTime()
+
+  if (timeUntilExpiry <= 0) {
+    // Already expired, process immediately
+    processBoostRenewal(profileId, userId)
+    return
+  }
+
+  console.log(`⏰ Scheduled boost renewal for profile ${profileId} in ${Math.round(timeUntilExpiry / 1000 / 60)} minutes`)
+
+  const timer = setTimeout(() => {
+    processBoostRenewal(profileId, userId)
+    activeBoostTimers.delete(profileId)
+  }, timeUntilExpiry)
+
+  activeBoostTimers.set(profileId, timer)
+}
+
+// Function to process boost renewal for a specific profile
+const processBoostRenewal = (profileId, userId) => {
+  console.log(`🔄 Processing boost renewal for profile ${profileId}`)
+  
+  // Check if profile is still active and get user balance
+  db.get(
+    `SELECT p.id, p.is_active, u.balance 
+     FROM profiles p 
+     JOIN users u ON p.user_id = u.id 
+     WHERE p.id = ? AND p.user_id = ?`,
+    [profileId, userId],
+    (err, profile) => {
+      if (err) {
+        console.error('Error checking profile for renewal:', err)
+        return
+      }
+
+      if (!profile) {
+        console.log(`Profile ${profileId} not found or access denied`)
+        return
+      }
+
+      if (!profile.is_active) {
+        console.log(`Profile ${profileId} is inactive, skipping renewal`)
+        return
+      }
+
+      // Check if user has enough balance for renewal
+      if (profile.balance >= 1.0) {
+        // Deduct $1 and extend boost for another 24 hours
+        const newBalance = profile.balance - 1.0
+        const newBoostExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000)
+        
+        db.run(
+          'UPDATE users SET balance = ? WHERE id = ?',
+          [newBalance, userId],
+          (err) => {
+            if (err) {
+              console.error('Error updating user balance:', err)
+              return
+            }
+            
+            db.run(
+              'UPDATE profiles SET boost_expires_at = ?, last_payment_at = CURRENT_TIMESTAMP WHERE id = ?',
+              [newBoostExpiry.toISOString(), profileId],
+              (err) => {
+                if (err) {
+                  console.error('Error updating profile boost:', err)
+                  return
+                }
+                console.log(`✅ Auto-renewed boost for profile ${profileId}, charged $1, new balance: ${newBalance}`)
+                
+                // Schedule next renewal
+                scheduleBoostRenewal(profileId, userId, newBoostExpiry.toISOString())
+              }
+            )
+          }
+        )
+      } else {
+        console.log(`❌ Profile ${profileId} boost expired, insufficient balance: ${profile.balance}`)
+        // Remove boost status but keep profile active
+        db.run(
+          'UPDATE profiles SET boost_expires_at = NULL WHERE id = ?',
+          [profileId],
+          (err) => {
+            if (err) {
+              console.error('Error removing expired boost:', err)
+              return
+            }
+            console.log(`Removed expired boost for profile ${profileId} (insufficient balance < $1)`)
+          }
+        )
+      }
+    }
+  )
+}
+
+// Function to check and process expired boosts (fallback for missed timers)
 const checkExpiredBoosts = () => {
   const now = new Date()
   
@@ -1879,49 +1999,37 @@ const checkExpiredBoosts = () => {
         return
       }
 
+      if (profiles.length > 0) {
+        console.log(`⚠️ Found ${profiles.length} profiles with expired boosts (fallback check)`)
+      }
+
       profiles.forEach(profile => {
-        // Check if user has enough balance for renewal
-        if (profile.balance >= 1.0) {
-          // Deduct $1 and extend boost for another 24 hours
-          const newBalance = profile.balance - 1.0
-          const newBoostExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000)
-          
-          db.run(
-            'UPDATE users SET balance = ? WHERE id = ?',
-            [newBalance, profile.user_id],
-            (err) => {
-              if (err) {
-                console.error('Error updating user balance:', err)
-                return
-              }
-              
-              db.run(
-                'UPDATE profiles SET boost_expires_at = ?, last_payment_at = CURRENT_TIMESTAMP WHERE id = ?',
-                [newBoostExpiry.toISOString(), profile.id],
-                (err) => {
-                  if (err) {
-                    console.error('Error updating profile boost:', err)
-                    return
-                  }
-                  console.log(`Auto-renewed boost for profile ${profile.id}, charged $1, new balance: ${newBalance}`)
-                }
-              )
-            }
-          )
-        } else {
-          // Not enough balance ($1), just remove boost status but keep profile active
-          db.run(
-            'UPDATE profiles SET boost_expires_at = NULL WHERE id = ?',
-            [profile.id],
-            (err) => {
-              if (err) {
-                console.error('Error removing expired boost:', err)
-                return
-              }
-              console.log(`Removed expired boost for profile ${profile.id} (insufficient balance < $1)`)
-            }
-          )
-        }
+        processBoostRenewal(profile.id, profile.user_id)
+      })
+    }
+  )
+}
+
+// Function to load existing active boosts and schedule their renewals
+const loadAndScheduleActiveBoosts = () => {
+  console.log('🔄 Loading active boosts and scheduling renewals...')
+  
+  db.all(
+    `SELECT p.id, p.user_id, p.boost_expires_at 
+     FROM profiles p 
+     WHERE p.is_active = 1 
+     AND p.boost_expires_at IS NOT NULL 
+     AND datetime(p.boost_expires_at) > datetime('now')`,
+    (err, profiles) => {
+      if (err) {
+        console.error('Error loading active boosts:', err)
+        return
+      }
+
+      console.log(`📋 Found ${profiles.length} active boosts`)
+      
+      profiles.forEach(profile => {
+        scheduleBoostRenewal(profile.id, profile.user_id, profile.boost_expires_at)
       })
     }
   )
@@ -2249,7 +2357,10 @@ app.listen(PORT, () => {
   
   console.log('✅ ATLOS integration is ready for crypto payments!')
   
-  // Check for expired boosts every hour
-  setInterval(checkExpiredBoosts, 60 * 60 * 1000) // 1 hour
-  console.log('⏰ Auto-renewal system started - checking every hour')
+  // Load existing active boosts and schedule their renewals
+  loadAndScheduleActiveBoosts()
+  
+  // Fallback check every 6 hours (in case timers are missed)
+  setInterval(checkExpiredBoosts, 6 * 60 * 60 * 1000) // 6 hours
+  console.log('⏰ Auto-renewal system started - precise timing with 6h fallback')
 })

@@ -399,7 +399,7 @@ const Girl = () => {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Breadcrumbs */}
         <div className="mb-6">
-          <Breadcrumbs path={`/girl/${profile?.id}`} />
+    <Breadcrumbs path={`/girl/${profile?.id}`} profileName={profile?.name} />
         </div>
         
         {/* Кнопка Back */}
@@ -726,7 +726,7 @@ const Girl = () => {
                       <Globe size={18} className="text-onlyfans-accent" />
                       <span className="theme-text-secondary">{t('girl.website')}:</span>
                     </div>
-                    <span className="theme-text text-onlyfans-accent font-medium">localhost.com</span>
+                    <span className="theme-text text-onlyfans-accent font-medium">{profile.website}</span>
                   </div>
                 )}
                 {!profile.phone && !profile.telegram && !profile.whatsapp && !profile.website && (

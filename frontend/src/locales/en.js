@@ -337,7 +337,7 @@ export const en = {
     buttons: {
       edit: 'Edit',
       delete: 'Delete',
-      boost: 'Boost',
+      boost: 'Boost $1',
       uploadMedia: 'Upload Media',
       cancel: 'Cancel',
       save: 'Save',
@@ -357,7 +357,7 @@ export const en = {
     },
     messages: {
       newProfile: 'New Profile',
-      profileActivationFree: 'Profile activation is now free for testing. No payment required.',
+      profileActivationFree: 'Insufficient balance to activate profile. Please top up your account to continue.',
       pleaseSelectCity: 'Please select a city from the list',
       nameRequired: 'Name is required',
       ageRequired: 'Age is required',

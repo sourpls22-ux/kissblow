@@ -51,7 +51,7 @@ const SortableMediaItem = ({ media, editingProfile, onDeleteMedia, isMainPhoto, 
     <div 
       ref={setNodeRef} 
       style={style} 
-      className={`relative group ${media.type === 'video' ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'} ${isMainPhoto ? 'ring-2 ring-blue-500' : ''} ${isDragging ? 'shadow-2xl scale-105' : ''}`}
+      className={`relative group ${media.type === 'video' ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'} ${isMainPhoto ? 'ring-2 ring-red-500' : ''} ${isDragging ? 'shadow-2xl scale-105' : ''}`}
       {...(media.type === 'photo' ? attributes : {})}
       {...(media.type === 'photo' ? listeners : {})}
       onTouchStart={(e) => {
@@ -67,7 +67,7 @@ const SortableMediaItem = ({ media, editingProfile, onDeleteMedia, isMainPhoto, 
         }
       }}
     >
-      <div className="aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-onlyfans-accent/20 to-onlyfans-dark/20">
+      <div className="aspect-[4/5] rounded-lg overflow-hidden bg-gradient-to-br from-onlyfans-accent/20 to-onlyfans-dark/20">
         {media.type === 'photo' ? (
           <img
             src={media.url}
@@ -159,7 +159,7 @@ const SortableMediaItem = ({ media, editingProfile, onDeleteMedia, isMainPhoto, 
       
       {/* Main Photo Indicator - над иконкой photo */}
       {isMainPhoto && media.type === 'photo' && (
-        <div className="absolute bottom-8 left-2 bg-blue-500 text-white rounded px-2 py-1 text-xs font-medium z-20 pointer-events-none">
+        <div className="absolute bottom-8 left-2 bg-red-500 text-white rounded px-2 py-1 text-xs font-medium z-20 pointer-events-none">
           main
         </div>
       )}
@@ -1169,13 +1169,14 @@ const Dashboard = () => {
               profiles.map((profile) => (
                 <div key={profile.id} className="theme-surface border theme-border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 flex flex-col group">
                   {/* Фотография профиля */}
-                  <div className="relative h-40 sm:h-48">
+                  <div className="relative h-56 sm:h-64 overflow-hidden">
                     {(profile.main_photo_url || profile.image_url || profile.first_photo_url) && (profile.main_photo_url || profile.image_url || profile.first_photo_url) !== null ? (
                       <Link to={`/girl/${profile.id}`} state={{ from: 'dashboard' }} className="block w-full h-full">
                         <img 
                           src={profile.main_photo_url || profile.image_url || profile.first_photo_url} 
                           alt={capitalizeName(profile.name)}
-                          className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-200 will-change-transform"
+                          className="w-full h-full object-cover object-center cursor-pointer hover:scale-105 transition-transform duration-300 will-change-transform"
+                          loading="lazy"
                           onError={(e) => {
                             console.error('Failed to load profile image:', profile.main_photo_url || profile.image_url || profile.first_photo_url)
                             e.target.style.display = 'none'
@@ -1212,7 +1213,7 @@ const Dashboard = () => {
                   </div>
                   
                   {/* Информация о профиле */}
-                  <div className="p-3 sm:p-4 flex-1 flex flex-col">
+                  <div className="p-4 sm:p-5 flex-1 flex flex-col">
                     <h4 className="theme-text font-semibold text-base sm:text-lg mb-2 truncate">
                       {capitalizeName(profile.name) || t('dashboard.messages.newProfile')}
                     </h4>
@@ -1288,6 +1289,15 @@ const Dashboard = () => {
               </div>
             )}
           </div>
+          
+          {/* Boost System Tip */}
+          {profiles.length > 0 && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mt-4">
+              <p className="text-xs text-blue-700 dark:text-blue-300">
+                💡 <strong>Tip:</strong> Boost your profile for $1 to appear at the top of search results. Your boost automatically renews every 24 hours if you have sufficient balance. Inactive profiles won't appear in search results and won't be charged - keep them active to stay visible.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Personal Content Sales */}

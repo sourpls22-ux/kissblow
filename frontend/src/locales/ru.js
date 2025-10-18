@@ -332,7 +332,7 @@ export const ru = {
     buttons: {
       edit: 'Изменить',
       delete: 'Удалить',
-      boost: 'Продвинуть',
+      boost: 'Продвинуть $1',
       uploadMedia: 'Загрузить медиа',
       cancel: 'Отмена',
       save: 'Сохранить',
@@ -352,7 +352,7 @@ export const ru = {
     },
     messages: {
       newProfile: 'Новый профиль',
-      profileActivationFree: 'Активация профиля теперь бесплатна для тестирования. Платеж не требуется.',
+      profileActivationFree: 'Недостаточно средств для активации профиля. Пожалуйста, пополните баланс для продолжения.',
       pleaseSelectCity: 'Пожалуйста, выберите город из списка',
       nameRequired: 'Имя обязательно',
       ageRequired: 'Возраст обязателен',

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { ChevronRight, Home } from 'lucide-react'
 import { generateBreadcrumbSchema } from '../utils/schemaMarkup'
 
-const Breadcrumbs = ({ path, className = '' }) => {
+const Breadcrumbs = ({ path, profileName = null, className = '' }) => {
   const pathSegments = path.split('/').filter(Boolean)
   
   const breadcrumbItems = [
@@ -39,7 +39,11 @@ const Breadcrumbs = ({ path, className = '' }) => {
     else if (segment === 'payment-history') displayName = 'Payment History'
     else {
       // For dynamic segments like profile IDs or blog post IDs
-      if (index === 0 && segment.match(/^\d+$/)) {
+      if (index === 1 && segment.match(/^\d+$/) && pathSegments[0] === 'girl') {
+        // This is a profile ID after 'girl' - use profile name
+        displayName = profileName || 'Profile'
+        isClickable = false // Don't make profile ID clickable
+      } else if (index === 0 && segment.match(/^\d+$/)) {
         displayName = 'Profile'
         isClickable = false // Don't make profile ID clickable
       } else if (index === 1 && segment.match(/^\d+$/)) {

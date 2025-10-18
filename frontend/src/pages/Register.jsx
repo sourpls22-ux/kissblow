@@ -234,9 +234,16 @@ const Register = () => {
                 onClick={() => setFormData({...formData, accountType: 'member'})}
                 className={`p-4 rounded-lg border-2 transition-all ${
                   formData.accountType === 'member'
-                    ? 'border-[#00bfff] bg-[#00bfff] bg-opacity-10'
-                    : 'border-gray-300 dark:border-gray-600 hover:border-[#00bfff]'
+                    ? 'border-[#00bfff] bg-[#00bfff] bg-opacity-10 shadow-lg'
+                    : 'border-gray-300 dark:border-gray-600 hover:border-[#00bfff] hover:shadow-md'
                 }`}
+                style={{
+                  border: formData.accountType === 'member' 
+                    ? '2px solid #00bfff' 
+                    : document.documentElement.classList.contains('dark') 
+                      ? '2px solid #4b5563' 
+                      : '2px solid #d1d5db'
+                }}
               >
                 <div className="text-center">
                   <div className={`text-lg font-bold mb-1 ${
@@ -254,9 +261,16 @@ const Register = () => {
                 onClick={() => setFormData({...formData, accountType: 'model'})}
                 className={`p-4 rounded-lg border-2 transition-all ${
                   formData.accountType === 'model'
-                    ? 'border-pink-500 bg-pink-500 bg-opacity-10'
-                    : 'border-gray-300 dark:border-gray-600 hover:border-pink-500'
+                    ? 'border-pink-500 bg-pink-500 bg-opacity-10 shadow-lg'
+                    : 'border-gray-300 dark:border-gray-600 hover:border-pink-500 hover:shadow-md'
                 }`}
+                style={{
+                  border: formData.accountType === 'model' 
+                    ? '2px solid #ec4899' 
+                    : document.documentElement.classList.contains('dark') 
+                      ? '2px solid #4b5563' 
+                      : '2px solid #d1d5db'
+                }}
               >
                 <div className="text-center">
                   <div className={`text-lg font-bold mb-1 ${
