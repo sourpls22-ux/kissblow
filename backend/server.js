@@ -98,6 +98,22 @@ const storage = multer.diskStorage({
   }
 })
 
+// Multer configuration for verification photos
+const verificationStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = path.join(__dirname, 'uploads', 'verifications')
+    // Ensure directory exists
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true })
+    }
+    cb(null, uploadPath)
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+    cb(null, 'verification-' + uniqueSuffix + path.extname(file.originalname))
+  }
+})
+
 const upload = multer({
   storage: storage,
   limits: {
@@ -109,6 +125,21 @@ const upload = multer({
       cb(null, true)
     } else {
       cb(new Error('Only image and video files are allowed'), false)
+    }
+  }
+})
+
+const verificationUpload = multer({
+  storage: verificationStorage,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit for verification photos
+  },
+  fileFilter: (req, file, cb) => {
+    // Only allow images for verification
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true)
+    } else {
+      cb(new Error('Only image files are allowed for verification'), false)
     }
   }
 })
@@ -192,6 +223,40 @@ app.get('/uploads/profiles/:filename', async (req, res) => {
   }
 })
 
+// Serve verification photos
+app.get('/uploads/verifications/:filename', (req, res) => {
+  try {
+    const { filename } = req.params
+    const imagePath = path.join(__dirname, 'uploads', 'verifications', filename)
+    
+    // Check if file exists
+    if (!fs.existsSync(imagePath)) {
+      return res.status(404).send('Image not found')
+    }
+    
+    // Set appropriate content type
+    const ext = path.extname(filename).toLowerCase()
+    if (ext === '.jpg' || ext === '.jpeg') {
+      res.set('Content-Type', 'image/jpeg')
+    } else if (ext === '.png') {
+      res.set('Content-Type', 'image/png')
+    } else if (ext === '.webp') {
+      res.set('Content-Type', 'image/webp')
+    }
+    
+    // Set cache headers
+    res.set('Cache-Control', 'public, max-age=31536000') // 1 year
+    res.set('Expires', new Date(Date.now() + 31536000000).toUTCString())
+    
+    // Send the file
+    res.sendFile(imagePath)
+    
+  } catch (error) {
+    console.error('Error serving verification image:', error)
+    res.status(500).send('Error serving image')
+  }
+})
+
 // Serve other uploaded files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 
@@ -239,6 +304,7 @@ db.serialize(() => {
       image_url TEXT,
       main_photo_id INTEGER,
       is_active BOOLEAN DEFAULT 1,
+      is_verified BOOLEAN DEFAULT 0,
       boost_expires_at DATETIME,
       last_payment_at DATETIME,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -350,6 +416,22 @@ db.serialize(() => {
       status TEXT DEFAULT 'pending',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users (id)
+    )
+  `)
+
+  // Profile verifications table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS profile_verifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      profile_id INTEGER NOT NULL,
+      verification_code VARCHAR(4) NOT NULL,
+      verification_photo_url TEXT,
+      status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      reviewed_at DATETIME,
+      reviewed_by INTEGER,
+      FOREIGN KEY (profile_id) REFERENCES profiles (id) ON DELETE CASCADE,
+      FOREIGN KEY (reviewed_by) REFERENCES users (id)
     )
   `)
 
@@ -1047,6 +1129,264 @@ app.post('/api/profiles/:id/boost', authenticateToken, (req, res) => {
               )
             }
           )
+        }
+      )
+    }
+  )
+})
+
+// Verification routes
+// Start verification process
+app.post('/api/profiles/:id/verify', authenticateToken, (req, res) => {
+  const { id } = req.params
+  
+  // Check if profile exists and belongs to user
+  db.get(
+    'SELECT id, is_verified FROM profiles WHERE id = ? AND user_id = ?',
+    [id, req.user.id],
+    (err, profile) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' })
+      }
+
+      if (!profile) {
+        return res.status(404).json({ error: 'Profile not found' })
+      }
+
+      if (profile.is_verified) {
+        return res.status(400).json({ error: 'Profile already verified' })
+      }
+
+      // Check if there's already a pending verification
+      db.get(
+        'SELECT id FROM profile_verifications WHERE profile_id = ? AND status = "pending"',
+        [id],
+        (err, existingVerification) => {
+          if (err) {
+            return res.status(500).json({ error: 'Database error' })
+          }
+
+          if (existingVerification) {
+            return res.status(400).json({ error: 'Verification already in progress' })
+          }
+
+          // Generate 4-digit verification code
+          const verificationCode = Math.floor(1000 + Math.random() * 9000).toString()
+          console.log('Generated verification code:', verificationCode)
+
+          // Create verification record
+          db.run(
+            'INSERT INTO profile_verifications (profile_id, verification_code, status) VALUES (?, ?, "pending")',
+            [id, verificationCode],
+            function(err) {
+              if (err) {
+                console.error('Database error creating verification:', err)
+                return res.status(500).json({ error: 'Database error' })
+              }
+
+              console.log('Verification created with code:', verificationCode)
+              res.json({
+                message: 'Verification started',
+                verificationCode: verificationCode,
+                verificationId: this.lastID
+              })
+            }
+          )
+        }
+      )
+    }
+  )
+})
+
+// Upload verification photo
+app.post('/api/profiles/:id/verify/upload', authenticateToken, verificationUpload.single('verificationPhoto'), (req, res) => {
+  const { id } = req.params
+
+  if (!req.file) {
+    return res.status(400).json({ error: 'No photo uploaded' })
+  }
+
+  // Check if verification exists and belongs to user
+  db.get(
+    'SELECT id FROM profile_verifications WHERE profile_id = ? AND status = "pending"',
+    [id],
+    (err, verification) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' })
+      }
+
+      if (!verification) {
+        return res.status(404).json({ error: 'No pending verification found' })
+      }
+
+      // Update verification with photo URL
+      const photoUrl = `/uploads/verifications/${req.file.filename}`
+      
+      db.run(
+        'UPDATE profile_verifications SET verification_photo_url = ? WHERE id = ?',
+        [photoUrl, verification.id],
+        (err) => {
+          if (err) {
+            return res.status(500).json({ error: 'Database error' })
+          }
+
+          res.json({
+            message: 'Verification photo uploaded successfully',
+            photoUrl: photoUrl
+          })
+        }
+      )
+    }
+  )
+})
+
+// Get verification status
+app.get('/api/profiles/:id/verify/status', authenticateToken, (req, res) => {
+  const { id } = req.params
+
+  db.get(
+    `SELECT pv.*, p.name, p.city, p.age 
+     FROM profile_verifications pv 
+     JOIN profiles p ON pv.profile_id = p.id 
+     WHERE pv.profile_id = ? AND p.user_id = ? 
+     ORDER BY pv.created_at DESC LIMIT 1`,
+    [id, req.user.id],
+    (err, verification) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' })
+      }
+
+      if (!verification) {
+        return res.status(404).json({ error: 'No verification found' })
+      }
+
+      res.json(verification)
+    }
+  )
+})
+
+// Admin routes for verification management
+// Get all pending verifications
+app.get('/api/admin/verifications', authenticateToken, (req, res) => {
+  // Check if user is admin (you can add admin check here)
+  db.all(
+    `SELECT pv.*, p.name, p.city, p.age, p.image_url, u.email as user_email
+     FROM profile_verifications pv 
+     JOIN profiles p ON pv.profile_id = p.id 
+     JOIN users u ON p.user_id = u.id 
+     WHERE pv.status = "pending" 
+     ORDER BY pv.created_at ASC`,
+    (err, verifications) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' })
+      }
+
+      res.json(verifications)
+    }
+  )
+})
+
+// Approve verification
+app.post('/api/admin/verifications/:id/approve', authenticateToken, (req, res) => {
+  const { id } = req.params
+
+  db.run(
+    'UPDATE profile_verifications SET status = "approved", reviewed_at = CURRENT_TIMESTAMP, reviewed_by = ? WHERE id = ?',
+    [req.user.id, id],
+    function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' })
+      }
+
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Verification not found' })
+      }
+
+      // Get profile_id to update profile
+      db.get(
+        'SELECT profile_id FROM profile_verifications WHERE id = ?',
+        [id],
+        (err, verification) => {
+          if (err) {
+            return res.status(500).json({ error: 'Database error' })
+          }
+
+          // Update profile as verified
+          db.run(
+            'UPDATE profiles SET is_verified = 1 WHERE id = ?',
+            [verification.profile_id],
+            (err) => {
+              if (err) {
+                return res.status(500).json({ error: 'Database error' })
+              }
+
+              res.json({ message: 'Verification approved successfully' })
+            }
+          )
+        }
+      )
+    }
+  )
+})
+
+// Reject verification
+app.post('/api/admin/verifications/:id/reject', authenticateToken, (req, res) => {
+  const { id } = req.params
+
+  db.run(
+    'UPDATE profile_verifications SET status = "rejected", reviewed_at = CURRENT_TIMESTAMP, reviewed_by = ? WHERE id = ?',
+    [req.user.id, id],
+    function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' })
+      }
+
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Verification not found' })
+      }
+
+      res.json({ message: 'Verification rejected successfully' })
+    }
+  )
+})
+
+// Cancel verification (user can cancel their own verification)
+app.delete('/api/profiles/:id/verify', authenticateToken, (req, res) => {
+  const { id } = req.params
+
+  // Check if verification exists and belongs to user
+  db.get(
+    'SELECT id, verification_photo_url FROM profile_verifications WHERE profile_id = ? AND status = "pending"',
+    [id],
+    (err, verification) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' })
+      }
+
+      if (!verification) {
+        return res.status(404).json({ error: 'No pending verification found' })
+      }
+
+      // Delete verification record
+      db.run(
+        'DELETE FROM profile_verifications WHERE id = ?',
+        [verification.id],
+        function(err) {
+          if (err) {
+            return res.status(500).json({ error: 'Database error' })
+          }
+
+          // Delete verification photo file if exists
+          if (verification.verification_photo_url) {
+            const photoPath = path.join(__dirname, 'uploads', 'verifications', path.basename(verification.verification_photo_url))
+            fs.unlink(photoPath, (err) => {
+              if (err) {
+                console.log('Could not delete verification photo:', err.message)
+              }
+            })
+          }
+
+          res.json({ message: 'Verification cancelled successfully' })
         }
       )
     }
