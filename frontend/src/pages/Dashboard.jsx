@@ -96,7 +96,7 @@ const SortableMediaItem = ({ media, editingProfile, onDeleteMedia, isMainPhoto, 
       
       {/* Video Icon - только для видео */}
       {media.type === 'video' && (
-        <div className="absolute top-2 left-2 bg-[#02c464] text-white rounded-lg px-2 py-1 text-xs font-medium pointer-events-none flex items-center space-x-1">
+        <div className="absolute bottom-2 left-2 bg-[#02c464] text-white rounded-lg px-2 py-1 text-xs font-medium pointer-events-none flex items-center space-x-1">
           <Video size={12} />
           <span>{t('dashboard.video')}</span>
         </div>
@@ -198,6 +198,7 @@ const Dashboard = () => {
   const [selectedCityIndex, setSelectedCityIndex] = useState(-1)
   const [cityError, setCityError] = useState(false)
   const [uploadingProfiles, setUploadingProfiles] = useState(new Set())
+  const [uploadingVideo, setUploadingVideo] = useState(false)
   
   // Функция для управления состоянием загрузки
   const setProfileUploading = (profileId, isUploading) => {
@@ -892,6 +893,9 @@ const Dashboard = () => {
 
   const handleMediaUpload = async (profileId, file, type) => {
     setProfileUploading(profileId, true) // Начало загрузки
+    if (type === 'video') {
+      setUploadingVideo(true) // Начало загрузки видео
+    }
     
     try {
       console.log('Starting single media upload:', file.name, file.type, file.size, 'bytes')
@@ -942,6 +946,7 @@ const Dashboard = () => {
       }
     } finally {
       setProfileUploading(profileId, false) // Конец загрузки
+      setUploadingVideo(false) // Конец загрузки видео
     }
   }
 
@@ -2084,7 +2089,7 @@ const Dashboard = () => {
                         ) : (
                           <>
                             <Edit size={14} />
-                            <span>{t('dashboard.buttons.uploadMedia')}</span>
+                            <span>Upload Photo</span>
                           </>
                         )}
                         <input
@@ -2139,12 +2144,22 @@ const Dashboard = () => {
                         />
                       </label>
                       
-                      <label className="bg-green-600 text-white px-3 py-2 rounded-lg cursor-pointer hover:opacity-80 transition-opacity flex items-center space-x-2 text-sm">
-                        <Edit size={14} />
-                        <span>{t('dashboard.uploadVideo')}</span>
+                      <label className={`${uploadingVideo ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} bg-green-600 text-white px-3 py-2 rounded-lg hover:opacity-80 transition-opacity flex items-center space-x-2 text-sm`}>
+                        {uploadingVideo ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            <span>Uploading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Edit size={14} />
+                            <span>{t('dashboard.uploadVideo')}</span>
+                          </>
+                        )}
                         <input
                           type="file"
                           accept="video/*"
+                          disabled={uploadingVideo}
                           onChange={(e) => {
                             console.log('Video input changed:', e.target.files)
                             if (e.target.files && e.target.files.length > 0 && editingProfile) {
@@ -2207,7 +2222,7 @@ const Dashboard = () => {
                     {profileMedia.length > 0 && (
                       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mt-3">
                         <p className="text-xs text-blue-700 dark:text-blue-300">
-                          {t('dashboard.verificationTip')}
+                          {t('dashboard.photoDragTip')}
                         </p>
                       </div>
                     )}
