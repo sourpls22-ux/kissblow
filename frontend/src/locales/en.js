@@ -1020,7 +1020,7 @@ export const en = {
     contact: 'Contact',
     contactUs: 'Contact Us',
     aboutUs: 'About Us',
-    aboutUsText: 'About Us',
+    aboutUsText: 'KissBlow.me is a modern, secure platform connecting adults worldwide for meaningful companionship. We prioritize safety, privacy, and professional service in everything we do.',
     learnMore: 'Learn More >'
   },
 
