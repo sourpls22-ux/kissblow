@@ -1288,12 +1288,51 @@ app.get('/api/admin/verifications', authenticateAdmin, (req, res) => {
      JOIN users u ON p.user_id = u.id 
      WHERE pv.status = "pending" 
      ORDER BY pv.created_at ASC`,
-    (err, verifications) => {
+    async (err, verifications) => {
       if (err) {
         return res.status(500).json({ error: 'Database error' })
       }
 
-      res.json(verifications)
+      // Для каждой верификации получаем все медиа файлы профиля
+      const verificationsWithMedia = await Promise.all(
+        verifications.map(async (verification) => {
+          return new Promise((resolve, reject) => {
+            // Получаем все медиа файлы профиля
+            db.all(
+              `SELECT * FROM media WHERE profile_id = ? ORDER BY created_at ASC`,
+              [verification.profile_id],
+              (err, mediaFiles) => {
+                if (err) {
+                  reject(err)
+                  return
+                }
+
+                // Добавляем медиа файлы к верификации
+                verification.profile_media = mediaFiles.map(media => ({
+                  id: media.id,
+                  filename: media.filename,
+                  url: `/uploads/${media.filename}`,
+                  type: media.type
+                }))
+
+                // Добавляем URL для фото верификации
+                if (verification.verification_photo_url) {
+                  verification.verification_photo_url = `/uploads/verifications/${verification.verification_photo_url}`
+                }
+
+                // Добавляем URL для основного фото профиля
+                if (verification.image_url) {
+                  verification.image_url = `/uploads/${verification.image_url}`
+                }
+
+                resolve(verification)
+              }
+            )
+          })
+        })
+      )
+
+      res.json(verificationsWithMedia)
     }
   )
 })

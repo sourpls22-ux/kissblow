@@ -86,8 +86,10 @@ bot.onText(/\/verifications/, async (msg) => {
 📅 ${new Date(verification.created_at).toLocaleString('ru-RU')}
 🔢 Код: *${verification.verification_code}*
 
-📸 *Profile Photo:*
-${verification.image_url ? `${API_BASE_URL}${verification.image_url}` : 'Нет фото'}
+📸 *Profile Photos:*
+${verification.profile_media && verification.profile_media.length > 0 
+  ? verification.profile_media.map(media => `${API_BASE_URL}${media.url}`).join('\n')
+  : 'Нет фото профиля'}
 
 📸 *Verification Photo:*
 ${verification.verification_photo_url ? `${API_BASE_URL}${verification.verification_photo_url}` : 'Не загружено'}
