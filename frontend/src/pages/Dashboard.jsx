@@ -1525,14 +1525,14 @@ const Dashboard = () => {
                       <div className="grid grid-cols-2 gap-2">
                         <button 
                           onClick={() => handleEditProfile(profile)}
-                          className="border theme-border px-3 py-2 rounded text-sm theme-text hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center space-x-1"
+                          className="border-2 border-white dark:border-white border-gray-300 bg-white/10 dark:bg-white/10 bg-gray-100 text-white dark:text-white text-gray-700 px-3 py-2 rounded text-sm hover:bg-white dark:hover:bg-white hover:text-gray-900 dark:hover:text-gray-900 transition-colors flex items-center justify-center space-x-1"
                         >
                           <Edit size={14} />
                           <span>{t('dashboard.buttons.edit')}</span>
                         </button>
                         <button 
                           onClick={() => handleDeleteProfile(profile.id)}
-                          className="border border-red-500 text-red-500 px-3 py-2 rounded text-sm hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center space-x-1"
+                          className="border-2 border-red-500 bg-red-500/10 text-red-500 px-3 py-2 rounded text-sm hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center space-x-1"
                         >
                           <Trash2 size={14} />
                           <span>{t('dashboard.buttons.delete')}</span>
@@ -2200,7 +2200,7 @@ const Dashboard = () => {
                      <button
                        type="button"
                        onClick={closeEditModal}
-                       className="flex-1 px-3 py-2 theme-border border rounded-lg theme-text hover:opacity-80 transition-colors text-sm"
+                       className="flex-1 px-3 py-2 border-2 border-white dark:border-white border-gray-300 bg-white/10 dark:bg-white/10 bg-gray-100 text-white dark:text-white text-gray-700 rounded-lg hover:bg-white dark:hover:bg-white hover:text-gray-900 dark:hover:text-gray-900 transition-colors text-sm"
                      >
                        {t('common.cancel')}
                      </button>
@@ -2322,7 +2322,7 @@ const Dashboard = () => {
                         setShowCreateProfileModal(false)
                         setTurnstileToken('')
                       }}
-                      className="flex-1 px-4 py-2 border theme-border rounded-lg theme-text hover:opacity-80 transition-colors"
+                      className="flex-1 px-4 py-2 border-2 border-white dark:border-white border-gray-300 bg-white/10 dark:bg-white/10 bg-gray-100 text-white dark:text-white text-gray-700 rounded-lg hover:bg-white dark:hover:bg-white hover:text-gray-900 dark:hover:text-gray-900 transition-colors"
                     >
                       Cancel
                     </button>
@@ -2411,7 +2411,7 @@ const Dashboard = () => {
                       <div className="flex space-x-3">
                         <button
                           onClick={closeVerificationModal}
-                          className="flex-1 px-4 py-2 border theme-border rounded-lg theme-text hover:opacity-80 transition-colors"
+                          className="flex-1 px-4 py-2 border-2 border-white dark:border-white border-gray-300 bg-white/10 dark:bg-white/10 bg-gray-100 text-white dark:text-white text-gray-700 rounded-lg hover:bg-white dark:hover:bg-white hover:text-gray-900 dark:hover:text-gray-900 transition-colors"
                         >
                           {t('common.cancel')}
                         </button>

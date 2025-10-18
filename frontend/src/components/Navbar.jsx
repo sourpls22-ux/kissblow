@@ -247,7 +247,7 @@ const Navbar = () => {
               <>
                 <Link 
                   to="/login" 
-                  className="flex items-center justify-center space-x-1 sm:space-x-2 theme-text hover:text-onlyfans-accent transition-colors min-h-[44px] min-w-[44px] p-2"
+                  className="flex items-center justify-center space-x-1 sm:space-x-2 border-2 border-white dark:border-white border-gray-300 bg-white/10 dark:bg-white/10 bg-gray-100 text-white dark:text-white text-gray-700 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-white dark:hover:bg-white hover:text-gray-900 dark:hover:text-gray-900 transition-colors text-sm sm:text-sm font-medium min-h-[36px]"
                 >
                   <User size={20} className="sm:w-5 sm:h-5" />
                   <span>{t('nav.login')}</span>

@@ -438,94 +438,191 @@ const Browse = () => {
             </p>
           </div>
 
-          {/* Search Section */}
-          <div className="flex items-center justify-end mb-6">
-            {/* Search Field */}
-            <div className="relative flex-1 max-w-md" ref={inputRef}>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-                onFocus={() => setShowSuggestions(true)}
-                onClick={() => setShowSuggestions(true)}
-                placeholder={t('browse.searchPlaceholder')}
-                className="input-field pl-4 pr-4 py-2 w-full h-10 smooth-transition"
-                autoComplete="off"
-                style={{ willChange: 'auto' }}
-              />
+          {/* Desktop: All buttons on one level */}
+          <div className="hidden sm:flex items-center justify-between mb-6">
+            {/* Left side: Search and Filters */}
+            <div className="flex items-center space-x-3">
+              {/* Search Field */}
+              <div className="relative w-64" ref={inputRef}>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={handleInputChange}
+                  onKeyDown={handleKeyDown}
+                  onFocus={() => setShowSuggestions(true)}
+                  onClick={() => setShowSuggestions(true)}
+                  placeholder={t('browse.searchPlaceholder')}
+                  className="input-field pl-4 pr-4 py-2 w-full h-10 smooth-transition"
+                  autoComplete="off"
+                  style={{ willChange: 'auto' }}
+                />
+                
+                {/* Автокомплит выпадающее меню */}
+                {showSuggestions && (
+                  <div 
+                    ref={suggestionsRef}
+                    className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto"
+                  >
+                    {filteredCities.length > 0 ? (
+                      filteredCities.map((city, index) => {
+                        // Убираем суффиксы для отображения
+                        const displayCity = city.replace(/\s+(UK|CA|US|AU|CL|VE)$/, '')
+                        return (
+                          <div
+                            key={city}
+                            onClick={() => handleCitySelect(city)}
+                            className={`px-4 py-3 cursor-pointer flex items-center space-x-2 transition-colors ${
+                              index === selectedIndex 
+                                ? 'bg-onlyfans-accent text-white' 
+                                : 'hover:bg-gray-100 text-gray-800'
+                            }`}
+                          >
+                            <MapPin size={16} className="flex-shrink-0" />
+                            <span className="truncate">{displayCity}</span>
+                          </div>
+                        )
+                      })
+                    ) : (
+                      <div className="px-4 py-3 text-gray-500 text-center">
+                        No cities found
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
               
-              {/* Автокомплит выпадающее меню */}
-              {showSuggestions && (
-                <div 
-                  ref={suggestionsRef}
-                  className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto"
-                >
-                  {filteredCities.length > 0 ? (
-                    filteredCities.map((city, index) => {
-                      // Убираем суффиксы для отображения
-                      const displayCity = city.replace(/\s+(UK|CA|US|AU|CL|VE)$/, '')
-                      return (
-                        <div
-                          key={city}
-                          onClick={() => handleCitySelect(city)}
-                          className={`px-4 py-3 cursor-pointer flex items-center space-x-2 transition-colors ${
-                            index === selectedIndex 
-                              ? 'bg-onlyfans-accent text-white' 
-                              : 'hover:bg-gray-100 text-gray-800'
-                          }`}
-                        >
-                          <MapPin size={16} className="flex-shrink-0" />
-                          <span className="truncate">{displayCity}</span>
-                        </div>
-                      )
-                    })
-                  ) : (
-                    <div className="px-4 py-3 text-gray-500 text-center">
-                      No cities found
-                    </div>
-                  )}
-                </div>
-              )}
+              {/* Search Button */}
+              <button 
+                onClick={handleSearch}
+                className="flex items-center space-x-2 bg-onlyfans-accent text-white px-4 py-2 h-10 rounded-lg hover:opacity-80 transition-colors"
+              >
+                <Search size={16} />
+                <span>Search</span>
+              </button>
+              
+              {/* Filters Button */}
+              <button
+                onClick={() => setShowFilters(true)}
+                className="flex items-center space-x-2 border-2 border-white dark:border-white border-gray-300 bg-white/10 dark:bg-white/10 bg-gray-100 text-white dark:text-white text-gray-700 px-4 py-2 h-10 rounded-lg hover:bg-white dark:hover:bg-white hover:text-gray-900 dark:hover:text-gray-900 transition-colors"
+              >
+                <Filter size={16} />
+                <span>Filters</span>
+              </button>
             </div>
             
-            {/* Search Button */}
-            <button 
-              onClick={handleSearch}
-              className="flex items-center space-x-2 bg-onlyfans-accent text-white px-4 py-2 h-10 rounded-lg hover:opacity-80 transition-colors ml-2"
-            >
-              <Search size={16} />
-              <span>Search</span>
-            </button>
+            {/* Right side: Browse and Refresh */}
+            <div className="flex items-center space-x-3">
+              <Link
+                to="/browse"
+                state={{ clearFilters: true }}
+                className="flex items-center space-x-2 bg-onlyfans-accent text-white px-4 py-2 h-10 rounded-lg hover:opacity-80 transition-colors"
+              >
+                <Globe size={16} />
+                <span>Browse</span>
+              </Link>
+              
+              <button
+                onClick={fetchProfiles}
+                disabled={loading}
+                className="flex items-center space-x-2 bg-onlyfans-accent text-white px-4 py-2 h-10 rounded-lg hover:opacity-80 transition-colors disabled:opacity-50"
+              >
+                <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+                <span>Refresh</span>
+              </button>
+            </div>
           </div>
 
-          {/* Action Buttons Section */}
-          <div className="flex items-center justify-center sm:justify-start space-x-3 mb-6">
-            <Link
-              to="/browse"
-              state={{ clearFilters: true }}
-              className="flex items-center space-x-2 bg-onlyfans-accent text-white px-4 py-2 h-10 rounded-lg hover:opacity-80 transition-colors"
-            >
-              <Globe size={16} />
-              <span>Browse</span>
-            </Link>
-            
-            <button
-              onClick={fetchProfiles}
-              disabled={loading}
-              className="flex items-center space-x-2 bg-onlyfans-accent text-white px-4 py-2 h-10 rounded-lg hover:opacity-80 transition-colors disabled:opacity-50"
-            >
-              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-              <span>Refresh</span>
-            </button>
-            
-            <button
-              onClick={() => setShowFilters(true)}
-              className="flex items-center space-x-2 border theme-border text-theme-text px-4 py-2 h-10 rounded-lg hover:bg-onlyfans-accent/10 transition-colors"
-            >
-              <Filter size={16} />
-              <span>Filters</span>
-            </button>
+          {/* Mobile: Keep current layout */}
+          <div className="sm:hidden mb-6">
+            {/* Search Section */}
+            <div className="flex items-center justify-end mb-6">
+              {/* Search Field */}
+              <div className="relative flex-1 max-w-md" ref={inputRef}>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={handleInputChange}
+                  onKeyDown={handleKeyDown}
+                  onFocus={() => setShowSuggestions(true)}
+                  onClick={() => setShowSuggestions(true)}
+                  placeholder={t('browse.searchPlaceholder')}
+                  className="input-field pl-4 pr-4 py-2 w-full h-10 smooth-transition"
+                  autoComplete="off"
+                  style={{ willChange: 'auto' }}
+                />
+                
+                {/* Автокомплит выпадающее меню */}
+                {showSuggestions && (
+                  <div 
+                    ref={suggestionsRef}
+                    className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto"
+                  >
+                    {filteredCities.length > 0 ? (
+                      filteredCities.map((city, index) => {
+                        // Убираем суффиксы для отображения
+                        const displayCity = city.replace(/\s+(UK|CA|US|AU|CL|VE)$/, '')
+                        return (
+                          <div
+                            key={city}
+                            onClick={() => handleCitySelect(city)}
+                            className={`px-4 py-3 cursor-pointer flex items-center space-x-2 transition-colors ${
+                              index === selectedIndex 
+                                ? 'bg-onlyfans-accent text-white' 
+                                : 'hover:bg-gray-100 text-gray-800'
+                            }`}
+                          >
+                            <MapPin size={16} className="flex-shrink-0" />
+                            <span className="truncate">{displayCity}</span>
+                          </div>
+                        )
+                      })
+                    ) : (
+                      <div className="px-4 py-3 text-gray-500 text-center">
+                        No cities found
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              {/* Search Button */}
+              <button 
+                onClick={handleSearch}
+                className="flex items-center space-x-2 bg-onlyfans-accent text-white px-4 py-2 h-10 rounded-lg hover:opacity-80 transition-colors ml-2"
+              >
+                <Search size={16} />
+                <span>Search</span>
+              </button>
+            </div>
+
+            {/* Action Buttons Section */}
+            <div className="flex items-center justify-center space-x-3">
+              <Link
+                to="/browse"
+                state={{ clearFilters: true }}
+                className="flex items-center space-x-2 bg-onlyfans-accent text-white px-4 py-2 h-10 rounded-lg hover:opacity-80 transition-colors"
+              >
+                <Globe size={16} />
+                <span>Browse</span>
+              </Link>
+              
+              <button
+                onClick={fetchProfiles}
+                disabled={loading}
+                className="flex items-center space-x-2 bg-onlyfans-accent text-white px-4 py-2 h-10 rounded-lg hover:opacity-80 transition-colors disabled:opacity-50"
+              >
+                <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+                <span>Refresh</span>
+              </button>
+              
+              <button
+                onClick={() => setShowFilters(true)}
+                className="flex items-center space-x-2 border-2 border-white dark:border-white border-gray-300 bg-white/10 dark:bg-white/10 bg-gray-100 text-white dark:text-white text-gray-700 px-4 py-2 h-10 rounded-lg hover:bg-white dark:hover:bg-white hover:text-gray-900 dark:hover:text-gray-900 transition-colors"
+              >
+                <Filter size={16} />
+                <span>Filters</span>
+              </button>
+            </div>
           </div>
         </div>
 
