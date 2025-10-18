@@ -510,7 +510,7 @@ const Girl = () => {
                 {/* Миниатюры медиа */}
                 {getAllMedia().length > 1 && (
                   <div className="mb-4">
-                    <h4 className="theme-text font-medium mb-3 text-sm">{t('girl.mediaGallery')}</h4>
+                    <h4 className="theme-text font-medium mb-3 text-sm">{t('mediaGallery')}</h4>
                     <div className="grid grid-cols-4 gap-2">
                       {getAllMedia().slice(0, 8).map((media, index) => (
                         <div 

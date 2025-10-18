@@ -502,18 +502,32 @@ export const adminCommands = {
 
   // Обработка действий с лайками
   async handleLikeAction(bot, chatId, data, db) {
-    const [action, type, id] = data.split('_')
+    const parts = data.split('_')
     
-    switch (type) {
-      case 'details':
-        await this.showLikeDetails(bot, chatId, id, db)
-        break
-      case 'add':
-        await this.addLikes(bot, chatId, id, db)
-        break
-      case 'remove':
-        await this.removeLikes(bot, chatId, id, db)
-        break
+    if (parts[1] === 'add' && parts[2] === 'confirm') {
+      // like_add_confirm_profileId_count
+      const profileId = parts[3]
+      const count = parts[4]
+      await this.confirmAddLikes(bot, chatId, profileId, count, db)
+    } else if (parts[1] === 'remove' && parts[2] === 'confirm') {
+      // like_remove_confirm_profileId_count
+      const profileId = parts[3]
+      const count = parts[4]
+      await this.confirmRemoveLikes(bot, chatId, profileId, count, db)
+    } else {
+      const [action, type, id] = data.split('_')
+      
+      switch (type) {
+        case 'details':
+          await this.showLikeDetails(bot, chatId, id, db)
+          break
+        case 'add':
+          await this.addLikes(bot, chatId, id, db)
+          break
+        case 'remove':
+          await this.removeLikes(bot, chatId, id, db)
+          break
+      }
     }
   },
 
@@ -551,5 +565,119 @@ export const adminCommands = {
       parse_mode: 'Markdown',
       ...keyboard
     })
+  },
+
+  // Добавить лайки
+  async addLikes(bot, chatId, profileId, db) {
+    const text = `➕ *Добавление лайков*\n\nВыберите количество лайков для добавления:`
+    
+    const keyboard = {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '➕ 1 лайк', callback_data: `like_add_confirm_${profileId}_1` },
+            { text: '➕ 5 лайков', callback_data: `like_add_confirm_${profileId}_5` }
+          ],
+          [
+            { text: '➕ 10 лайков', callback_data: `like_add_confirm_${profileId}_10` },
+            { text: '➕ 50 лайков', callback_data: `like_add_confirm_${profileId}_50` }
+          ],
+          [
+            { text: '➕ 100 лайков', callback_data: `like_add_confirm_${profileId}_100` }
+          ],
+          [{ text: '⬅️ Назад', callback_data: `like_details_${profileId}` }]
+        ]
+      }
+    }
+    
+    bot.sendMessage(chatId, text, {
+      parse_mode: 'Markdown',
+      ...keyboard
+    })
+  },
+
+  // Удалить лайки
+  async removeLikes(bot, chatId, profileId, db) {
+    const text = `➖ *Удаление лайков*\n\nВыберите количество лайков для удаления:`
+    
+    const keyboard = {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '➖ 1 лайк', callback_data: `like_remove_confirm_${profileId}_1` },
+            { text: '➖ 5 лайков', callback_data: `like_remove_confirm_${profileId}_5` }
+          ],
+          [
+            { text: '➖ 10 лайков', callback_data: `like_remove_confirm_${profileId}_10` },
+            { text: '➖ 50 лайков', callback_data: `like_remove_confirm_${profileId}_50` }
+          ],
+          [
+            { text: '🗑️ Удалить все лайки', callback_data: `like_remove_confirm_${profileId}_all` }
+          ],
+          [{ text: '⬅️ Назад', callback_data: `like_details_${profileId}` }]
+        ]
+      }
+    }
+    
+    bot.sendMessage(chatId, text, {
+      parse_mode: 'Markdown',
+      ...keyboard
+    })
+  },
+
+  // Подтвердить добавление лайков
+  async confirmAddLikes(bot, chatId, profileId, count, db) {
+    try {
+      const profile = await adminDatabase.getProfileById(db, profileId)
+      if (!profile) {
+        bot.sendMessage(chatId, '❌ Анкета не найдена')
+        return
+      }
+
+      if (count === 'all') {
+        // Удалить все лайки
+        const likes = await adminDatabase.getProfileLikes(db, profileId)
+        await adminDatabase.removeLikesFromProfile(db, profileId, likes.length)
+        bot.sendMessage(chatId, `✅ Удалено ${likes.length} лайков с анкеты "${profile.name}"`)
+      } else {
+        const countNum = parseInt(count)
+        await adminDatabase.addLikesToProfile(db, profileId, countNum)
+        bot.sendMessage(chatId, `✅ Добавлено ${countNum} лайков к анкете "${profile.name}"`)
+      }
+      
+      // Показать обновленные детали
+      await this.showLikeDetails(bot, chatId, profileId, db)
+    } catch (error) {
+      console.error('Error adding likes:', error)
+      bot.sendMessage(chatId, '❌ Ошибка при добавлении лайков')
+    }
+  },
+
+  // Подтвердить удаление лайков
+  async confirmRemoveLikes(bot, chatId, profileId, count, db) {
+    try {
+      const profile = await adminDatabase.getProfileById(db, profileId)
+      if (!profile) {
+        bot.sendMessage(chatId, '❌ Анкета не найдена')
+        return
+      }
+
+      if (count === 'all') {
+        // Удалить все лайки
+        const likes = await adminDatabase.getProfileLikes(db, profileId)
+        await adminDatabase.removeLikesFromProfile(db, profileId, likes.length)
+        bot.sendMessage(chatId, `✅ Удалено ${likes.length} лайков с анкеты "${profile.name}"`)
+      } else {
+        const countNum = parseInt(count)
+        await adminDatabase.removeLikesFromProfile(db, profileId, countNum)
+        bot.sendMessage(chatId, `✅ Удалено ${countNum} лайков с анкеты "${profile.name}"`)
+      }
+      
+      // Показать обновленные детали
+      await this.showLikeDetails(bot, chatId, profileId, db)
+    } catch (error) {
+      console.error('Error removing likes:', error)
+      bot.sendMessage(chatId, '❌ Ошибка при удалении лайков')
+    }
   }
 }

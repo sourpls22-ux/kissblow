@@ -228,9 +228,10 @@ export const adminDatabase = {
   },
 
   // Добавить лайки к анкете
-  async addLikesToProfile(db, profileId, userId, count = 1) {
+  async addLikesToProfile(db, profileId, count = 1) {
     return new Promise((resolve, reject) => {
-      const likes = Array(count).fill().map(() => [profileId, userId, new Date().toISOString()])
+      // Используем системный user_id = 1 для админских лайков
+      const likes = Array(count).fill().map(() => [profileId, 1, new Date().toISOString()])
       const placeholders = likes.map(() => '(?, ?, ?)').join(', ')
       const values = likes.flat()
       
