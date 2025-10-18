@@ -145,6 +145,11 @@ const sendSingleVerification = async (chatId, verification) => {
     try {
       await bot.sendMediaGroup(chatId, photos)
       
+      // Отправляем информацию отдельным сообщением
+      bot.sendMessage(chatId, message, { 
+        parse_mode: 'Markdown'
+      })
+      
       // Отправляем кнопки отдельным сообщением
       bot.sendMessage(chatId, 'Выберите действие:', { 
         reply_markup: keyboard 
