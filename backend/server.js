@@ -1303,9 +1303,13 @@ app.get('/api/admin/verifications', authenticateAdmin, (req, res) => {
               [verification.profile_id],
               (err, mediaFiles) => {
                 if (err) {
+                  console.log(`DEBUG: Error getting media for profile ${verification.profile_id}:`, err);
                   reject(err)
                   return
                 }
+
+                console.log(`DEBUG: Found ${mediaFiles.length} media files for profile ${verification.profile_id}`);
+                console.log(`DEBUG: Media files:`, mediaFiles);
 
                 // Добавляем медиа файлы к верификации
                 verification.profile_media = mediaFiles
@@ -1332,6 +1336,12 @@ app.get('/api/admin/verifications', authenticateAdmin, (req, res) => {
                     : verification.image_url
                   verification.main_photo_filename = filename
                 }
+
+                console.log(`DEBUG: Final verification data for ${verification.name}:`, {
+                  profile_media: verification.profile_media,
+                  main_photo_filename: verification.main_photo_filename,
+                  verification_photo_filename: verification.verification_photo_filename
+                });
 
                 resolve(verification)
               }
