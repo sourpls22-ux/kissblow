@@ -62,7 +62,10 @@ const corsOptions = process.env.NODE_ENV === 'production'
     }
   : {
       origin: true,
-      credentials: true
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
+      maxAge: 86400
     }
 
 // Middleware
@@ -77,6 +80,20 @@ app.use(compression({
   }
 }))
 app.use(cors(corsOptions))
+
+// Additional CORS headers for mobile browsers
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*')
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization')
+  res.header('Access-Control-Max-Age', '86400')
+  
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200)
+  } else {
+    next()
+  }
+})
 
 // CSP Headers
 app.use((req, res, next) => {
@@ -134,7 +151,7 @@ const verificationStorage = multer.diskStorage({
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 50 * 1024 * 1024 // 50MB limit for videos
+    fileSize: 150 * 1024 * 1024 // 150MB limit for videos
   },
   fileFilter: (req, file, cb) => {
     // Check if file is an image or video
@@ -1616,7 +1633,7 @@ app.post('/api/profiles/:id/media', authenticateToken, upload.single('media'), (
       }
 
       // Check limits
-      db.all(
+      db.get(
         'SELECT COUNT(*) as count FROM media WHERE profile_id = ? AND type = ?',
         [id, type],
         (err, result) => {
@@ -1625,7 +1642,7 @@ app.post('/api/profiles/:id/media', authenticateToken, upload.single('media'), (
             return res.status(500).json({ error: 'Database error' })
           }
 
-          const count = result[0].count
+          const count = result.count
           const maxPhotos = 10
           const maxVideos = 1
 
