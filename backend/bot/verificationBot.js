@@ -86,17 +86,61 @@ bot.onText(/\/verifications/, async (msg) => {
 📅 ${new Date(verification.created_at).toLocaleString('ru-RU')}
 🔢 Код: *${verification.verification_code}*
 
-📸 *Profile Photos:*
-${verification.profile_media && verification.profile_media.length > 0 
-  ? verification.profile_media.map(media => `${API_BASE_URL}${media.url}`).join('\n')
-  : 'Нет фото профиля'}
-
-📸 *Verification Photo:*
-${verification.verification_photo_url ? `${API_BASE_URL}${verification.verification_photo_url}` : 'Не загружено'}
-
 👤 Пользователь: ${verification.user_email}
       `
       
+      // Отправляем основное сообщение
+      bot.sendMessage(chatId, message, { parse_mode: 'Markdown' })
+      
+      // Отправляем все фото профиля
+      if (verification.profile_media && verification.profile_media.length > 0) {
+        for (const media of verification.profile_media) {
+          try {
+            const photoPath = path.join(__dirname, '..', 'uploads', media.filename)
+            if (fs.existsSync(photoPath)) {
+              await bot.sendPhoto(chatId, fs.createReadStream(photoPath), {
+                caption: `📸 Profile Photo #${media.id}`
+              })
+            } else {
+              console.log(`Photo not found: ${photoPath}`)
+            }
+          } catch (error) {
+            console.error('Error sending profile photo:', error)
+          }
+        }
+      }
+      
+      // Отправляем основное фото профиля, если есть
+      if (verification.main_photo_filename) {
+        try {
+          const mainPhotoPath = path.join(__dirname, '..', 'uploads', verification.main_photo_filename)
+          if (fs.existsSync(mainPhotoPath)) {
+            await bot.sendPhoto(chatId, fs.createReadStream(mainPhotoPath), {
+              caption: '📸 Main Profile Photo'
+            })
+          }
+        } catch (error) {
+          console.error('Error sending main profile photo:', error)
+        }
+      }
+      
+      // Отправляем фото верификации
+      if (verification.verification_photo_filename) {
+        try {
+          const verificationPhotoPath = path.join(__dirname, '..', 'uploads', 'verifications', verification.verification_photo_filename)
+          if (fs.existsSync(verificationPhotoPath)) {
+            await bot.sendPhoto(chatId, fs.createReadStream(verificationPhotoPath), {
+              caption: '📸 Verification Photo'
+            })
+          } else {
+            console.log(`Verification photo not found: ${verificationPhotoPath}`)
+          }
+        } catch (error) {
+          console.error('Error sending verification photo:', error)
+        }
+      }
+      
+      // Отправляем кнопки
       const keyboard = {
         inline_keyboard: [
           [
@@ -106,10 +150,7 @@ ${verification.verification_photo_url ? `${API_BASE_URL}${verification.verificat
         ]
       }
       
-      bot.sendMessage(chatId, message, { 
-        parse_mode: 'Markdown',
-        reply_markup: keyboard
-      })
+      bot.sendMessage(chatId, 'Выберите действие:', { reply_markup: keyboard })
     }
     
   } catch (error) {

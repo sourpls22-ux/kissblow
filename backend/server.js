@@ -1308,21 +1308,29 @@ app.get('/api/admin/verifications', authenticateAdmin, (req, res) => {
                 }
 
                 // Добавляем медиа файлы к верификации
-                verification.profile_media = mediaFiles.map(media => ({
-                  id: media.id,
-                  filename: media.filename,
-                  url: `/uploads/${media.filename}`,
-                  type: media.type
-                }))
+                verification.profile_media = mediaFiles
+                  .filter(media => media.filename) // Фильтруем только файлы с именем
+                  .map(media => ({
+                    id: media.id,
+                    filename: media.filename,
+                    type: media.type
+                  }))
 
-                // Добавляем URL для фото верификации
+                // Очищаем URL для фото верификации (убираем дублирование)
                 if (verification.verification_photo_url) {
-                  verification.verification_photo_url = `/uploads/verifications/${verification.verification_photo_url}`
+                  // Если уже содержит путь, берем только имя файла
+                  const filename = verification.verification_photo_url.includes('/') 
+                    ? verification.verification_photo_url.split('/').pop()
+                    : verification.verification_photo_url
+                  verification.verification_photo_filename = filename
                 }
 
-                // Добавляем URL для основного фото профиля
+                // Очищаем URL для основного фото профиля
                 if (verification.image_url) {
-                  verification.image_url = `/uploads/${verification.image_url}`
+                  const filename = verification.image_url.includes('/') 
+                    ? verification.image_url.split('/').pop()
+                    : verification.image_url
+                  verification.main_photo_filename = filename
                 }
 
                 resolve(verification)
