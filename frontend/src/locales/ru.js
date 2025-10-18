@@ -302,7 +302,7 @@ export const ru = {
     expectedReviewTime: 'Ожидаемое время рассмотрения: до 24 часов',
     cancelVerification: 'Отменить верификацию',
     videosUploadError: 'Ошибка загрузки видео',
-    mediaGallery: 'Медиа галерея',
+    mediaGallery: 'Галерея',
     atLeastOnePhoto: '(минимум 1 фото)',
     uploadPhoto: 'Загрузить фото',
     uploadVideo: 'Загрузить видео',

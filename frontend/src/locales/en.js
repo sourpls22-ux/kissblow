@@ -288,7 +288,7 @@ export const en = {
     photoDragTip: '💡 Tip: Photos can be dragged to reorder. The first photo will be the main photo that users see first.',
     photoDragTipMobile: '💡 Tip: Use ↑↓ arrows to reorder photos. The first photo will be the main photo that users see first.',
     videosUploadError: 'Failed to upload videos',
-    mediaGallery: 'Media Gallery',
+    mediaGallery: 'Gallery',
     atLeastOnePhoto: '(at least 1 photo)',
     uploadPhoto: 'Upload Photo',
     uploadVideo: 'Upload Video',
