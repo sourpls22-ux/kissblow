@@ -1265,9 +1265,21 @@ app.get('/api/profiles/:id/verify/status', authenticateToken, (req, res) => {
   )
 })
 
+// Middleware для проверки админского API ключа
+const authenticateAdmin = (req, res, next) => {
+  const adminKey = req.headers['x-admin-key'];
+  const expectedKey = process.env.ADMIN_API_KEY || 'kissblow-admin-2024-verification-bot-key-12345';
+  
+  if (adminKey === expectedKey) {
+    next();
+  } else {
+    res.status(401).json({ error: 'Invalid admin key' });
+  }
+};
+
 // Admin routes for verification management
 // Get all pending verifications
-app.get('/api/admin/verifications', authenticateToken, (req, res) => {
+app.get('/api/admin/verifications', authenticateAdmin, (req, res) => {
   // Check if user is admin (you can add admin check here)
   db.all(
     `SELECT pv.*, p.name, p.city, p.age, p.image_url, u.email as user_email
@@ -1287,12 +1299,12 @@ app.get('/api/admin/verifications', authenticateToken, (req, res) => {
 })
 
 // Approve verification
-app.post('/api/admin/verifications/:id/approve', authenticateToken, (req, res) => {
+app.post('/api/admin/verifications/:id/approve', authenticateAdmin, (req, res) => {
   const { id } = req.params
 
   db.run(
     'UPDATE profile_verifications SET status = "approved", reviewed_at = CURRENT_TIMESTAMP, reviewed_by = ? WHERE id = ?',
-    [req.user.id, id],
+    [0, id], // 0 для админских действий через бота
     function(err) {
       if (err) {
         return res.status(500).json({ error: 'Database error' })
@@ -1330,12 +1342,12 @@ app.post('/api/admin/verifications/:id/approve', authenticateToken, (req, res) =
 })
 
 // Reject verification
-app.post('/api/admin/verifications/:id/reject', authenticateToken, (req, res) => {
+app.post('/api/admin/verifications/:id/reject', authenticateAdmin, (req, res) => {
   const { id } = req.params
 
   db.run(
     'UPDATE profile_verifications SET status = "rejected", reviewed_at = CURRENT_TIMESTAMP, reviewed_by = ? WHERE id = ?',
-    [req.user.id, id],
+    [0, id], // 0 для админских действий через бота
     function(err) {
       if (err) {
         return res.status(500).json({ error: 'Database error' })

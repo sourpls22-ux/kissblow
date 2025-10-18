@@ -66,7 +66,11 @@ bot.onText(/\/verifications/, async (msg) => {
   
   try {
     // Получаем список ожидающих верификаций
-    const response = await axios.get(`${API_BASE_URL}/api/admin/verifications`)
+    const response = await axios.get(`${API_BASE_URL}/api/admin/verifications`, {
+      headers: {
+        'X-Admin-Key': process.env.ADMIN_API_KEY || 'kissblow-admin-2024-verification-bot-key-12345'
+      }
+    })
     const verifications = response.data
     
     if (verifications.length === 0) {
@@ -126,7 +130,11 @@ bot.on('callback_query', async (callbackQuery) => {
     if (data.startsWith('verify_approve_')) {
       const verificationId = data.replace('verify_approve_', '')
       
-      await axios.post(`${API_BASE_URL}/api/admin/verifications/${verificationId}/approve`)
+      await axios.post(`${API_BASE_URL}/api/admin/verifications/${verificationId}/approve`, {}, {
+        headers: {
+          'X-Admin-Key': process.env.ADMIN_API_KEY || 'kissblow-admin-2024-verification-bot-key-12345'
+        }
+      })
       
       bot.answerCallbackQuery(callbackQuery.id, { text: '✅ Верификация одобрена!' })
       bot.editMessageText(
@@ -140,7 +148,11 @@ bot.on('callback_query', async (callbackQuery) => {
     } else if (data.startsWith('verify_reject_')) {
       const verificationId = data.replace('verify_reject_', '')
       
-      await axios.post(`${API_BASE_URL}/api/admin/verifications/${verificationId}/reject`)
+      await axios.post(`${API_BASE_URL}/api/admin/verifications/${verificationId}/reject`, {}, {
+        headers: {
+          'X-Admin-Key': process.env.ADMIN_API_KEY || 'kissblow-admin-2024-verification-bot-key-12345'
+        }
+      })
       
       bot.answerCallbackQuery(callbackQuery.id, { text: '❌ Верификация отклонена!' })
       bot.editMessageText(
