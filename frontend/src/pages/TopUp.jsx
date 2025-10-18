@@ -55,13 +55,13 @@ const TopUp = () => {
             clearInterval(checkAtlos)
             resolve(true)
           }
-        }, 100)
+        }, 25) // Еще быстрее - каждые 25ms
         
-        // Таймаут через 5 секунд
+        // Таймаут через 2 секунды (еще быстрее)
         setTimeout(() => {
           clearInterval(checkAtlos)
           resolve(false)
-        }, 5000)
+        }, 2000)
       }
     })
   }
@@ -74,71 +74,31 @@ const TopUp = () => {
         return
       }
       
-      // Проверяем различные состояния соединения
-      const checkConnection = () => {
-        try {
-          // Пытаемся получить состояние соединения
-          if (window.atlos._connection && window.atlos._connection.readyState === 1) {
-            console.log('ATLOS WebSocket connection is ready (1)')
-            resolve(true)
-          } else if (window.atlos._ws && window.atlos._ws.readyState === 1) {
-            console.log('ATLOS WebSocket connection is ready (2)')
-            resolve(true)
-          } else if (window.atlos._connection || window.atlos._ws) {
-            console.log('ATLOS WebSocket connection not ready, waiting...')
-            setTimeout(checkConnection, 500)
-          } else {
-            // Если не можем найти объекты соединения, считаем что готово
-            console.log('ATLOS WebSocket objects not found, assuming ready')
-            resolve(true)
-          }
-        } catch (error) {
-          console.warn('Error checking ATLOS connection:', error)
-          resolve(false)
-        }
-      }
-      
-      // Начинаем проверку через 1 секунду
-      setTimeout(checkConnection, 1000)
-      
-      // Таймаут через 10 секунд
-      setTimeout(() => {
-        console.log('ATLOS connection check timeout')
-        resolve(false)
-      }, 10000)
+      // Упрощенная проверка - считаем готовым сразу
+      console.log('ATLOS connection check - assuming ready for speed')
+      resolve(true)
     })
   }
   
   // Функция для вызова Atlos с проверкой соединения
-  const callAtlosWithRetry = (paymentData, retries = 3) => {
+  const callAtlosWithRetry = (paymentData, retries = 2) => {
     return new Promise(async (resolve, reject) => {
       const attemptCall = async (attempt) => {
         try {
           if (window.atlos && window.atlos.Pay) {
             console.log(`Attempting Atlos.Pay (attempt ${attempt + 1}/${retries + 1})`)
             
-            // Проверяем состояние соединения
-            const isConnected = await checkAtlosConnection()
-            
-            if (isConnected) {
-              try {
-                console.log('ATLOS connection verified, calling Pay method')
-                window.atlos.Pay(paymentData)
-                resolve(true)
-              } catch (innerError) {
-                console.warn(`Atlos.Pay failed (attempt ${attempt + 1}/${retries + 1}):`, innerError)
-                if (attempt < retries) {
-                  setTimeout(() => attemptCall(attempt + 1), 3000) // Увеличиваем задержку
-                } else {
-                  reject(innerError)
-                }
-              }
-            } else {
-              console.warn(`Atlos connection not ready (attempt ${attempt + 1}/${retries + 1})`)
+            // Вызываем сразу без проверки соединения для скорости
+            try {
+              console.log('ATLOS calling Pay method immediately')
+              window.atlos.Pay(paymentData)
+              resolve(true)
+            } catch (innerError) {
+              console.warn(`Atlos.Pay failed (attempt ${attempt + 1}/${retries + 1}):`, innerError)
               if (attempt < retries) {
-                setTimeout(() => attemptCall(attempt + 1), 3000)
+                setTimeout(() => attemptCall(attempt + 1), 1000) // Уменьшили задержку
               } else {
-                reject(new Error('Atlos connection not ready after retries'))
+                reject(innerError)
               }
             }
           } else {
@@ -147,7 +107,7 @@ const TopUp = () => {
         } catch (error) {
           console.warn(`Atlos call failed (attempt ${attempt + 1}/${retries + 1}):`, error)
           if (attempt < retries) {
-            setTimeout(() => attemptCall(attempt + 1), 3000)
+            setTimeout(() => attemptCall(attempt + 1), 1000) // Уменьшили задержку
           } else {
             reject(error)
           }
@@ -187,7 +147,8 @@ const TopUp = () => {
   const quickAmounts = [
     { amount: 10, discount: 0, bonus: 0, label: '$10', description: 'No bonus' },
     { amount: 50, discount: 5, bonus: 2.5, label: '$50', description: '5% bonus' },
-    { amount: 100, discount: 10, bonus: 10, label: '$100', description: '10% bonus' }
+    { amount: 100, discount: 10, bonus: 10, label: '$100', description: '10% bonus' },
+    { amount: 200, discount: 15, bonus: 30, label: '$200', description: '15% bonus' }
   ]
   
   // Только криптовалюта, убираем выбор метода
@@ -248,19 +209,18 @@ const TopUp = () => {
           try {
             console.log('Atlos is ready, calling Atlos.Pay with data:', response.data.payment_data)
             
-            // Принудительно переподключаемся для стабильности
-            await forceAtlosReconnect()
+            // Убираем принудительное переподключение для скорости
+            // await forceAtlosReconnect()
             
-            setTimeout(async () => {
-              try {
-                await callAtlosWithRetry(response.data.payment_data)
-              } catch (retryError) {
-                console.warn('Atlos widget failed after retries:', retryError)
-                // Fallback to direct URL if Atlos widget fails
-                console.log('Falling back to direct URL:', response.data.payment_url)
-                window.open(response.data.payment_url, '_blank')
-              }
-            }, 3000) // Увеличиваем задержку до 3 секунд
+            // Вызываем сразу без задержки
+            try {
+              await callAtlosWithRetry(response.data.payment_data)
+            } catch (retryError) {
+              console.warn('Atlos widget failed after retries:', retryError)
+              // Fallback to direct URL if Atlos widget fails
+              console.log('Falling back to direct URL:', response.data.payment_url)
+              window.open(response.data.payment_url, '_blank')
+            }
           } catch (atlosError) {
             console.warn('Atlos widget error:', atlosError)
             // Fallback to direct URL if Atlos widget fails
@@ -269,7 +229,7 @@ const TopUp = () => {
           }
         } else {
           // Fallback to direct URL if Atlos not ready
-          console.log('Atlos not ready after 5 seconds, using direct URL:', response.data.payment_url)
+          console.log('Atlos not ready after 3 seconds, using direct URL:', response.data.payment_url)
           window.open(response.data.payment_url, '_blank')
         }
       } else {
@@ -308,27 +268,11 @@ const TopUp = () => {
             </div>
 
         <div className="theme-surface rounded-lg p-6 border theme-border">
-              {/* Способ оплаты - только криптовалюта */}
-              <div className="mb-6">
-                <h3 className="theme-text font-semibold mb-4">{t('topUp.paymentMethod')}</h3>
-                <div className="p-4 rounded-lg border-2 border-onlyfans-accent bg-blue-500 bg-opacity-10">
-                  <div className="flex items-center space-x-3">
-                    <Bitcoin size={24} className="text-onlyfans-accent" />
-                    <div className="text-left">
-                      <div className="theme-text font-semibold">{t('topUp.usdtTron')}</div>
-                      <div className="theme-text-secondary text-sm">{t('topUp.fastAnonymous')}</div>
-                    </div>
-                  </div>
-                </div>
-                <p className="theme-text-secondary text-sm mt-2">
-                  {t('topUp.cryptoOnly')}
-                </p>
-              </div>
 
           {/* Быстрое пополнение */}
           <div className="mb-6">
             <h3 className="theme-text font-semibold mb-4">Quick Top-Up</h3>
-            <div className="grid grid-cols-1 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               {quickAmounts.map((quickAmount) => (
                 <button
                   key={quickAmount.amount}
@@ -338,21 +282,29 @@ const TopUp = () => {
                       ? 'border-onlyfans-accent bg-blue-500 bg-opacity-10'
                       : 'border-gray-300 dark:border-gray-600 hover:border-onlyfans-accent hover:bg-blue-500 hover:bg-opacity-5'
                   }`}
+                  style={{
+                    border: selectedQuickAmount?.amount === quickAmount.amount 
+                      ? '2px solid #3b82f6' 
+                      : '2px solid #e5e7eb',
+                    borderRadius: '8px'
+                  }}
                 >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <div className="theme-text font-semibold text-lg">{quickAmount.label}</div>
+                  <div className="flex justify-between items-start h-full">
+                    <div className="text-left">
+                      <div className="theme-text font-semibold text-lg">
+                        Pay: ${(quickAmount.amount - quickAmount.bonus).toFixed(2)}
+                      </div>
                       <div className="theme-text-secondary text-sm">{quickAmount.description}</div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex flex-col h-full">
+                      <div className="theme-text font-semibold text-lg">
+                        Get: ${quickAmount.amount}
+                      </div>
                       {quickAmount.bonus > 0 && (
-                        <div className="text-green-500 font-semibold text-sm">
+                        <div className="text-green-500 font-semibold text-sm mt-auto">
                           +${quickAmount.bonus} bonus
                         </div>
                       )}
-                      <div className="theme-text-secondary text-sm">
-                        Pay: ${(quickAmount.amount - quickAmount.bonus).toFixed(2)}
-                      </div>
                     </div>
                   </div>
                 </button>
