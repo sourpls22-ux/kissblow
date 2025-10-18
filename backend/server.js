@@ -1638,147 +1638,159 @@ app.post('/api/profiles/:id/media', authenticateToken, upload.single('media'), a
   console.log('POST /api/profiles/:id/media - User ID:', req.user?.id)
   console.log('POST /api/profiles/:id/media - Type:', type)
 
-  // Check if file was uploaded
-  if (!req.file) {
-    return res.status(400).json({ error: 'No file uploaded' })
-  }
+  try {
+    // Check if file was uploaded
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' })
+    }
 
-  // Validate type
-  if (!type || !['photo', 'video'].includes(type)) {
-    return res.status(400).json({ error: 'Invalid media type. Must be "photo" or "video"' })
-  }
+    // Validate type
+    if (!type || !['photo', 'video'].includes(type)) {
+      return res.status(400).json({ error: 'Invalid media type. Must be "photo" or "video"' })
+    }
 
-  // Check if profile belongs to user
-  db.get(
-    'SELECT * FROM profiles WHERE id = ? AND user_id = ?',
-    [id, req.user.id],
-    (err, profile) => {
-      if (err) {
-        console.error('Database error:', err)
-        return res.status(500).json({ error: 'Database error' })
-      }
+    // Check if profile belongs to user
+    const profile = await new Promise((resolve, reject) => {
+      db.get(
+        'SELECT * FROM profiles WHERE id = ? AND user_id = ?',
+        [id, req.user.id],
+        (err, profile) => {
+          if (err) reject(err)
+          else resolve(profile)
+        }
+      )
+    })
 
-      if (!profile) {
-        return res.status(404).json({ error: 'Profile not found or access denied' })
-      }
+    if (!profile) {
+      return res.status(404).json({ error: 'Profile not found or access denied' })
+    }
 
-      // Check limits
+    // Check limits
+    const result = await new Promise((resolve, reject) => {
       db.get(
         'SELECT COUNT(*) as count FROM media WHERE profile_id = ? AND type = ?',
         [id, type],
         (err, result) => {
-          if (err) {
-            console.error('Database error:', err)
-            return res.status(500).json({ error: 'Database error' })
-          }
-
-          const count = result.count
-          const maxPhotos = 10
-          const maxVideos = 1
-
-          if (type === 'photo' && count >= maxPhotos) {
-            return res.status(400).json({ error: `Maximum ${maxPhotos} photos allowed` })
-          }
-
-          if (type === 'video' && count >= maxVideos) {
-            return res.status(400).json({ error: `Maximum ${maxVideos} video allowed` })
-          }
-
-          // Reset verification status if uploading a photo to verified profile
-          if (type === 'photo') {
-            db.run(
-              'UPDATE profiles SET is_verified = 0 WHERE id = ? AND is_verified = 1',
-              [id],
-              (err) => {
-                if (err) {
-                  console.error('Error resetting verification status:', err)
-                } else {
-                  console.log('Verification status reset for profile:', id)
-                }
-              }
-            )
-            
-            // Delete all verification records for this profile
-            db.run(
-              'DELETE FROM profile_verifications WHERE profile_id = ?',
-              [id],
-              (err) => {
-                if (err) {
-                  console.error('Error deleting verification records:', err)
-                } else {
-                  console.log('Verification records deleted for profile:', id)
-                }
-              }
-            )
-          }
-
-          // Handle video conversion
-          let finalFilename = req.file.filename
-          let mediaUrl = `/uploads/profiles/${req.file.filename}`
-          
-          if (type === 'video') {
-            const inputPath = req.file.path
-            const outputFilename = `video-${Date.now()}.mp4`
-            const outputPath = path.join(__dirname, 'uploads', 'profiles', outputFilename)
-            
-            try {
-              console.log('Starting video conversion...')
-              await convertVideo(inputPath, outputPath)
-              
-              // Delete original file
-              fs.unlinkSync(inputPath)
-              
-              // Update filename and URL
-              finalFilename = outputFilename
-              mediaUrl = `/uploads/profiles/${outputFilename}`
-              
-              console.log('Video converted successfully:', outputFilename)
-            } catch (error) {
-              console.error('Video conversion failed:', error)
-              // Delete original file on conversion failure
-              fs.unlinkSync(inputPath)
-              return res.status(500).json({ error: 'Video conversion failed' })
-            }
-          }
-          
-          // Get next order index
-          db.get(
-            'SELECT MAX(order_index) as max_order FROM media WHERE profile_id = ? AND type = ?',
-            [id, type],
-            (err, orderResult) => {
-              if (err) {
-                console.error('Database error:', err)
-                return res.status(500).json({ error: 'Database error' })
-              }
-
-              const nextOrder = (orderResult.max_order || 0) + 1
-
-              // Insert media record
-              db.run(
-                'INSERT INTO media (profile_id, url, type, order_index) VALUES (?, ?, ?, ?)',
-                [id, mediaUrl, type, nextOrder],
-                function(err) {
-                  if (err) {
-                    console.error('Error inserting media:', err)
-                    return res.status(500).json({ error: 'Database error' })
-                  }
-
-                  console.log('Media uploaded successfully:', id)
-                  console.log('Media saved as:', req.file.filename)
-                  res.json({
-                    message: `${type} uploaded successfully`,
-                    mediaUrl: mediaUrl,
-                    mediaId: this.lastID,
-                    type: type
-                  })
-                }
-              )
-            }
-          )
+          if (err) reject(err)
+          else resolve(result)
         }
       )
+    })
+
+    const count = result.count
+    const maxPhotos = 10
+    const maxVideos = 1
+
+    if (type === 'photo' && count >= maxPhotos) {
+      return res.status(400).json({ error: `Maximum ${maxPhotos} photos allowed` })
     }
-  )
+
+    if (type === 'video' && count >= maxVideos) {
+      return res.status(400).json({ error: `Maximum ${maxVideos} video allowed` })
+    }
+
+    // Reset verification status if uploading a photo to verified profile
+    if (type === 'photo') {
+      await new Promise((resolve) => {
+        db.run(
+          'UPDATE profiles SET is_verified = 0 WHERE id = ? AND is_verified = 1',
+          [id],
+          (err) => {
+            if (err) {
+              console.error('Error resetting verification status:', err)
+            } else {
+              console.log('Verification status reset for profile:', id)
+            }
+            resolve()
+          }
+        )
+      })
+      
+      // Delete all verification records for this profile
+      await new Promise((resolve) => {
+        db.run(
+          'DELETE FROM profile_verifications WHERE profile_id = ?',
+          [id],
+          (err) => {
+            if (err) {
+              console.error('Error deleting verification records:', err)
+            } else {
+              console.log('Verification records deleted for profile:', id)
+            }
+            resolve()
+          }
+        )
+      })
+    }
+
+    // Handle video conversion
+    let finalFilename = req.file.filename
+    let mediaUrl = `/uploads/profiles/${req.file.filename}`
+    
+    if (type === 'video') {
+      const inputPath = req.file.path
+      const outputFilename = `video-${Date.now()}.mp4`
+      const outputPath = path.join(__dirname, 'uploads', 'profiles', outputFilename)
+      
+      try {
+        console.log('Starting video conversion...')
+        await convertVideo(inputPath, outputPath)
+        
+        // Delete original file
+        fs.unlinkSync(inputPath)
+        
+        // Update filename and URL
+        finalFilename = outputFilename
+        mediaUrl = `/uploads/profiles/${outputFilename}`
+        
+        console.log('Video converted successfully:', outputFilename)
+      } catch (error) {
+        console.error('Video conversion failed:', error)
+        // Delete original file on conversion failure
+        fs.unlinkSync(inputPath)
+        return res.status(500).json({ error: 'Video conversion failed' })
+      }
+    }
+    
+    // Get next order index
+    const orderResult = await new Promise((resolve, reject) => {
+      db.get(
+        'SELECT MAX(order_index) as max_order FROM media WHERE profile_id = ? AND type = ?',
+        [id, type],
+        (err, orderResult) => {
+          if (err) reject(err)
+          else resolve(orderResult)
+        }
+      )
+    })
+
+    const nextOrder = (orderResult.max_order || 0) + 1
+
+    // Insert media record
+    const insertResult = await new Promise((resolve, reject) => {
+      db.run(
+        'INSERT INTO media (profile_id, url, type, order_index) VALUES (?, ?, ?, ?)',
+        [id, mediaUrl, type, nextOrder],
+        function(err) {
+          if (err) reject(err)
+          else resolve({ lastID: this.lastID })
+        }
+      )
+    })
+
+    console.log('Media uploaded successfully:', id)
+    console.log('Media saved as:', finalFilename)
+    res.json({
+      message: `${type} uploaded successfully`,
+      mediaUrl: mediaUrl,
+      mediaId: insertResult.lastID,
+      type: type
+    })
+
+  } catch (error) {
+    console.error('Upload error:', error)
+    res.status(500).json({ error: 'Database error' })
+  }
 })
 
 // Get profile media route
