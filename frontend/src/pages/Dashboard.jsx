@@ -1357,11 +1357,11 @@ const Dashboard = () => {
                           onClick={() => handleStartVerification(profile)}
                           className="bg-onlyfans-accent text-white px-2 py-1 rounded text-xs hover:opacity-80 transition-colors flex-shrink-0"
                         >
-                          <span className="hidden sm:inline">Verify</span>
+                          <span>Verify</span>
                         </button>
                       ) : (
                         <div className="px-2 py-1 rounded text-xs bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 flex-shrink-0">
-                          <span className="hidden sm:inline">Verified</span>
+                          <span>Verified</span>
                         </div>
                       )}
                     </div>
@@ -1411,17 +1411,17 @@ const Dashboard = () => {
                       <div className="grid grid-cols-2 gap-2">
                         <button 
                           onClick={() => handleEditProfile(profile)}
-                          className="border theme-border px-2 py-1 rounded text-xs theme-text hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center space-x-1"
+                          className="border theme-border px-3 py-2 rounded text-sm theme-text hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center space-x-1"
                         >
-                          <Edit size={12} />
-                          <span className="hidden sm:inline">{t('dashboard.buttons.edit')}</span>
+                          <Edit size={14} />
+                          <span>{t('dashboard.buttons.edit')}</span>
                         </button>
                         <button 
                           onClick={() => handleDeleteProfile(profile.id)}
-                          className="border border-red-500 text-red-500 px-2 py-1 rounded text-xs hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center space-x-1"
+                          className="border border-red-500 text-red-500 px-3 py-2 rounded text-sm hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center space-x-1"
                         >
-                          <Trash2 size={12} />
-                          <span className="hidden sm:inline">{t('dashboard.buttons.delete')}</span>
+                          <Trash2 size={14} />
+                          <span>{t('dashboard.buttons.delete')}</span>
                         </button>
                       </div>
                     </div>
