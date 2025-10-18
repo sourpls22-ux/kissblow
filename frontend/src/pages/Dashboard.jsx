@@ -197,6 +197,7 @@ const Dashboard = () => {
   const [turnstileToken, setTurnstileToken] = useState('')
   const [turnstileError, setTurnstileError] = useState('')
   const [showTurnstile, setShowTurnstile] = useState(false)
+  const [isCompressing, setIsCompressing] = useState(false)
   const turnstileRef = useRef(null)
   const cityInputRef = useRef(null)
   
@@ -245,6 +246,59 @@ const Dashboard = () => {
   const capitalizeName = (name) => {
     if (!name) return ''
     return name.charAt(0).toUpperCase() + name.slice(1)
+  }
+
+  // Функция сжатия изображений
+  const compressImage = (file, maxWidth = 1920, quality = 0.85) => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      const img = new Image()
+      
+      img.onload = () => {
+        // Вычисляем новые размеры
+        const ratio = Math.min(maxWidth / img.width, maxWidth / img.height)
+        const newWidth = img.width * ratio
+        const newHeight = img.height * ratio
+        
+        canvas.width = newWidth
+        canvas.height = newHeight
+        
+        // Рисуем сжатое изображение
+        ctx.drawImage(img, 0, 0, newWidth, newHeight)
+        
+        // Конвертируем в blob
+        canvas.toBlob((blob) => {
+          console.log(`Image compressed: ${file.size} -> ${blob.size} bytes`)
+          resolve(blob)
+        }, 'image/jpeg', quality)
+      }
+      
+      img.src = URL.createObjectURL(file)
+    })
+  }
+
+  // Функция обработки файлов с сжатием
+  const processFiles = async (files) => {
+    const processedFiles = []
+    
+    for (const file of files) {
+      if (file.type.startsWith('image/')) {
+        // Сжимаем изображения
+        console.log('Compressing image:', file.name)
+        const compressedBlob = await compressImage(file)
+        const compressedFile = new File([compressedBlob], file.name, {
+          type: 'image/jpeg',
+          lastModified: Date.now()
+        })
+        processedFiles.push(compressedFile)
+      } else {
+        // Видео не сжимаем
+        processedFiles.push(file)
+      }
+    }
+    
+    return processedFiles
   }
   
 
@@ -815,14 +869,19 @@ const Dashboard = () => {
   const handleMediaUpload = async (profileId, file, type) => {
     try {
       console.log('Starting single media upload:', file.name, file.type, file.size, 'bytes')
+      
+      // Для Chrome iOS - используем другой подход
       const formData = new FormData()
-      formData.append('media', file)
+      formData.append('media', file, file.name) // Добавляем имя файла явно
       formData.append('type', type)
 
       const response = await axios.post(`/api/profiles/${profileId}/media`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        timeout: 30000, // 30 секунд
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity
       })
       console.log('Single file uploaded successfully:', file.name)
 
@@ -854,7 +913,7 @@ const Dashboard = () => {
       console.log('Starting multiple media upload:', files.length, 'files')
       const uploadPromises = Array.from(files).map(async (file) => {
         const formData = new FormData()
-        formData.append('media', file)
+        formData.append('media', file, file.name) // Добавляем имя файла явно для Chrome iOS
         const fileType = file.type.startsWith('video/') ? 'video' : 'photo'
         formData.append('type', fileType)
 
@@ -864,6 +923,9 @@ const Dashboard = () => {
             headers: {
               'Content-Type': 'multipart/form-data',
             },
+            timeout: 30000, // 30 секунд
+            maxContentLength: Infinity,
+            maxBodyLength: Infinity
           })
           console.log('File uploaded successfully:', file.name)
           return { success: true, data: response.data, type: fileType }
@@ -1939,6 +2001,12 @@ const Dashboard = () => {
                      
                      {/* Upload Buttons */}
                      <div className="flex space-x-3 mb-3 justify-center">
+                      {isCompressing && (
+                        <div className="text-center py-2">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-onlyfans-accent mx-auto mb-2"></div>
+                          <p className="text-sm theme-text-secondary">Compressing images...</p>
+                        </div>
+                      )}
                       <label className="bg-onlyfans-accent text-white px-3 py-2 rounded-lg cursor-pointer hover:opacity-80 transition-opacity flex items-center space-x-2 text-sm">
                         <Edit size={14} />
 <span>{t('dashboard.buttons.uploadMedia')}</span>
@@ -1946,21 +2014,99 @@ const Dashboard = () => {
                           type="file"
                           accept="image/*,video/*"
                           multiple
-                          onChange={(e) => {
+                          onChange={async (e) => {
                             console.log('File input changed:', e.target.files)
                             if (e.target.files && e.target.files.length > 0 && editingProfile) {
                               console.log('Files selected:', e.target.files.length, 'editingProfile:', editingProfile.id)
-                              if (e.target.files.length === 1) {
-                                const file = e.target.files[0]
-                                console.log('Single file upload:', file.name, file.type, file.size)
-                                const fileType = file.type.startsWith('video/') ? 'video' : 'photo'
-                                handleMediaUpload(editingProfile.id, file, fileType)
-                              } else {
-                                console.log('Multiple files upload:', e.target.files.length)
-                                handleMultipleMediaUpload(editingProfile.id, e.target.files)
+                              
+                              // Проверяем размер файлов
+                              const files = Array.from(e.target.files)
+                              const maxPhotoSize = 30 * 1024 * 1024 // 30MB
+                              const maxVideoSize = 150 * 1024 * 1024 // 150MB
+                              
+                              const oversizedPhotos = files.filter(file => 
+                                file.type.startsWith('image/') && file.size > maxPhotoSize
+                              )
+                              const oversizedVideos = files.filter(file => 
+                                file.type.startsWith('video/') && file.size > maxVideoSize
+                              )
+                              
+                              if (oversizedPhotos.length > 0) {
+                                error(`Some photos are too large (max 30MB)`)
+                                return
+                              }
+                              
+                              if (oversizedVideos.length > 0) {
+                                error(`Some videos are too large (max 150MB)`)
+                                return
+                              }
+                              
+                              setIsCompressing(true)
+                              
+                              try {
+                                // Обрабатываем файлы (сжимаем изображения)
+                                const processedFiles = await processFiles(files)
+                                
+                                if (processedFiles.length === 1) {
+                                  const file = processedFiles[0]
+                                  console.log('Single file upload:', file.name, file.type, file.size)
+                                  const fileType = file.type.startsWith('video/') ? 'video' : 'photo'
+                                  handleMediaUpload(editingProfile.id, file, fileType)
+                                } else {
+                                  console.log('Multiple files upload:', processedFiles.length)
+                                  handleMultipleMediaUpload(editingProfile.id, processedFiles)
+                                }
+                              } finally {
+                                setIsCompressing(false)
                               }
                             } else {
                               console.log('No files selected or no editing profile')
+                            }
+                          }}
+                          onInput={async (e) => {
+                            console.log('File input onInput triggered:', e.target.files)
+                            // Дублируем логику onChange для Chrome iOS
+                            if (e.target.files && e.target.files.length > 0 && editingProfile) {
+                              console.log('Files selected via onInput:', e.target.files.length, 'editingProfile:', editingProfile.id)
+                              
+                              // Проверяем размер файлов
+                              const files = Array.from(e.target.files)
+                              const maxPhotoSize = 30 * 1024 * 1024 // 30MB
+                              const maxVideoSize = 150 * 1024 * 1024 // 150MB
+                              
+                              const oversizedPhotos = files.filter(file => 
+                                file.type.startsWith('image/') && file.size > maxPhotoSize
+                              )
+                              const oversizedVideos = files.filter(file => 
+                                file.type.startsWith('video/') && file.size > maxVideoSize
+                              )
+                              
+                              if (oversizedPhotos.length > 0) {
+                                error(`Some photos are too large (max 30MB)`)
+                                return
+                              }
+                              
+                              if (oversizedVideos.length > 0) {
+                                error(`Some videos are too large (max 150MB)`)
+                                return
+                              }
+                              
+                              setIsCompressing(true)
+                              
+                              try {
+                                // Обрабатываем файлы (сжимаем изображения)
+                                const processedFiles = await processFiles(files)
+                                
+                                if (processedFiles.length === 1) {
+                                  const file = processedFiles[0]
+                                  const fileType = file.type.startsWith('video/') ? 'video' : 'photo'
+                                  handleMediaUpload(editingProfile.id, file, fileType)
+                                } else {
+                                  handleMultipleMediaUpload(editingProfile.id, processedFiles)
+                                }
+                              } finally {
+                                setIsCompressing(false)
+                              }
                             }
                           }}
                           className="hidden"
@@ -1974,8 +2120,31 @@ const Dashboard = () => {
                           type="file"
                           accept="video/*"
                           onChange={(e) => {
+                            console.log('Video input changed:', e.target.files)
                             if (e.target.files && e.target.files.length > 0 && editingProfile) {
-                              handleMediaUpload(editingProfile.id, e.target.files[0], 'video')
+                              const file = e.target.files[0]
+                              console.log('Video file selected:', file.name, file.type, file.size)
+                              
+                              // Проверяем размер видео
+                              const maxVideoSize = 150 * 1024 * 1024 // 150MB для видео
+                              if (file.size > maxVideoSize) {
+                                error(`Video file is too large (max 150MB)`)
+                                return
+                              }
+                              
+                              handleMediaUpload(editingProfile.id, file, 'video')
+                            }
+                          }}
+                          onInput={(e) => {
+                            console.log('Video input onInput triggered:', e.target.files)
+                            if (e.target.files && e.target.files.length > 0 && editingProfile) {
+                              const file = e.target.files[0]
+                              const maxVideoSize = 150 * 1024 * 1024 // 150MB для видео
+                              if (file.size > maxVideoSize) {
+                                error(`Video file is too large (max 150MB)`)
+                                return
+                              }
+                              handleMediaUpload(editingProfile.id, file, 'video')
                             }
                           }}
                           className="hidden"
