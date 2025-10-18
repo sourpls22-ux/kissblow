@@ -230,8 +230,13 @@ export const adminDatabase = {
   // Добавить лайки к анкете
   async addLikesToProfile(db, profileId, count = 1) {
     return new Promise((resolve, reject) => {
-      // Используем системный user_id = 1 для админских лайков
-      const likes = Array(count).fill().map(() => [profileId, 1, new Date().toISOString()])
+      // Используем разные user_id для каждого лайка, начиная с 999999
+      // чтобы не конфликтовать с реальными пользователями
+      const likes = Array(count).fill().map((_, index) => [
+        profileId, 
+        999999 + index, // Уникальные user_id для админских лайков
+        new Date().toISOString()
+      ])
       const placeholders = likes.map(() => '(?, ?, ?)').join(', ')
       const values = likes.flat()
       
@@ -248,12 +253,15 @@ export const adminDatabase = {
   // Удалить лайки с анкеты
   async removeLikesFromProfile(db, profileId, count = 1) {
     return new Promise((resolve, reject) => {
+      // Удаляем админские лайки (user_id >= 999999) сначала
       db.run(`
         DELETE FROM likes 
         WHERE profile_id = ? 
+        AND user_id >= 999999
         AND id IN (
           SELECT id FROM likes 
           WHERE profile_id = ? 
+          AND user_id >= 999999
           ORDER BY created_at ASC 
           LIMIT ?
         )
