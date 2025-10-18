@@ -32,6 +32,7 @@ import { CSS } from '@dnd-kit/utilities'
 // Sortable Media Item Component
 const SortableMediaItem = ({ media, editingProfile, onDeleteMedia, isMainPhoto, onMoveUp, onMoveDown }) => {
   const { t } = useTranslation()
+  const [videoLoaded, setVideoLoaded] = useState(false)
   const {
     attributes,
     listeners,
@@ -61,12 +62,6 @@ const SortableMediaItem = ({ media, editingProfile, onDeleteMedia, isMainPhoto, 
           e.currentTarget.classList.add('touch-active');
         }
       }}
-      onTouchEnd={(e) => {
-        if (media.type === 'photo') {
-          // Убираем визуальную обратную связь
-          e.currentTarget.classList.remove('touch-active');
-        }
-      }}
     >
       <div className="aspect-[4/5] rounded-lg overflow-hidden bg-gradient-to-br from-onlyfans-accent/20 to-onlyfans-dark/20">
         {media.type === 'photo' ? (
@@ -81,18 +76,36 @@ const SortableMediaItem = ({ media, editingProfile, onDeleteMedia, isMainPhoto, 
             draggable={false}
           />
         ) : (
-          <video
-            src={media.url}
-            className="w-full h-full object-cover rounded-lg"
-            playsInline
-            controls
-            preload="metadata"
-            onError={(e) => {
-              console.error('Failed to load video:', media.url)
-              e.target.style.display = 'none'
-            }}
-            draggable={false}
-          />
+          <div className="relative w-full h-full">
+            <video
+              src={media.url}
+              className="w-full h-full object-cover rounded-lg"
+              playsInline
+              controls
+              preload="metadata"
+              muted
+              loop
+              onLoadStart={() => console.log('Video load started:', media.url)}
+              onLoadedData={() => {
+                console.log('Video data loaded:', media.url)
+                setVideoLoaded(true)
+              }}
+              onError={(e) => {
+                console.error('Failed to load video:', media.url, e)
+                e.target.style.display = 'none'
+              }}
+              draggable={false}
+            />
+            {/* Fallback для мобильных если видео не загрузилось */}
+            {!videoLoaded && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-200 dark:bg-gray-700 rounded-lg pointer-events-none">
+                <div className="text-center">
+                  <Video size={32} className="mx-auto mb-2 text-gray-500" />
+                  <p className="text-xs text-gray-500">Video Preview</p>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
       
@@ -109,11 +122,6 @@ const SortableMediaItem = ({ media, editingProfile, onDeleteMedia, isMainPhoto, 
       <button
         type="button"
         onClick={(e) => {
-          e.stopPropagation()
-          onDeleteMedia(media.id)
-        }}
-        onTouchEnd={(e) => {
-          e.preventDefault()
           e.stopPropagation()
           onDeleteMedia(media.id)
         }}
@@ -135,11 +143,6 @@ const SortableMediaItem = ({ media, editingProfile, onDeleteMedia, isMainPhoto, 
               e.stopPropagation()
               onMoveUp(media.id)
             }}
-            onTouchEnd={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              onMoveUp(media.id)
-            }}
             className="bg-blue-500 text-white rounded-full p-1 hover:bg-blue-600 transition-colors z-30 min-h-[28px] min-w-[28px] flex items-center justify-center touch-target"
             title="Move Up"
           >
@@ -148,11 +151,6 @@ const SortableMediaItem = ({ media, editingProfile, onDeleteMedia, isMainPhoto, 
           <button
             type="button"
             onClick={(e) => {
-              e.stopPropagation()
-              onMoveDown(media.id)
-            }}
-            onTouchEnd={(e) => {
-              e.preventDefault()
               e.stopPropagation()
               onMoveDown(media.id)
             }}
@@ -1403,10 +1401,6 @@ const Dashboard = () => {
             </div>
             <button 
               onClick={handleCreateProfile}
-              onTouchEnd={(e) => {
-                e.preventDefault()
-                handleCreateProfile()
-              }}
               className="bg-onlyfans-accent text-white px-4 py-2 rounded-lg hover:opacity-80 transition-colors flex items-center space-x-2 text-sm font-medium w-full sm:w-auto justify-center"
             >
               <Plus size={16} />
@@ -1475,10 +1469,6 @@ const Dashboard = () => {
                       {!profile.is_verified ? (
                         <button 
                           onClick={() => handleStartVerification(profile)}
-                          onTouchEnd={(e) => {
-                            e.preventDefault()
-                            handleStartVerification(profile)
-                          }}
                           className="bg-onlyfans-accent text-white px-2 py-1 rounded text-xs hover:opacity-80 transition-colors flex-shrink-0"
                         >
                           <span>Verify</span>
@@ -1511,10 +1501,6 @@ const Dashboard = () => {
                       {!profile.is_active ? (
                         <button 
                           onClick={() => handleActivateProfile(profile.id)}
-                          onTouchEnd={(e) => {
-                            e.preventDefault()
-                            handleActivateProfile(profile.id)
-                          }}
                           className="w-full bg-onlyfans-accent text-white px-3 py-2 rounded text-sm hover:opacity-80 transition-colors font-medium"
                         >
                           {t('dashboard.activateProfile')}
@@ -1523,20 +1509,12 @@ const Dashboard = () => {
                         <div className="space-y-2">
                           <button 
                             onClick={() => handleBoostProfile(profile.id)}
-                            onTouchEnd={(e) => {
-                              e.preventDefault()
-                              handleBoostProfile(profile.id)
-                            }}
                             className="w-full bg-green-500 text-white px-3 py-2 rounded text-sm hover:opacity-80 transition-colors font-medium"
                           >
                             {t('dashboard.buttons.boost')}
                           </button>
                           <button 
                             onClick={() => handleDeactivateProfile(profile.id)}
-                            onTouchEnd={(e) => {
-                              e.preventDefault()
-                              handleDeactivateProfile(profile.id)
-                            }}
                             className="w-full bg-red-500 text-white px-3 py-2 rounded text-sm hover:opacity-80 transition-colors font-medium"
                           >
                             {t('dashboard.deactivateProfile')}
@@ -1547,10 +1525,6 @@ const Dashboard = () => {
                       <div className="grid grid-cols-2 gap-2">
                         <button 
                           onClick={() => handleEditProfile(profile)}
-                          onTouchEnd={(e) => {
-                            e.preventDefault()
-                            handleEditProfile(profile)
-                          }}
                           className="border theme-border px-3 py-2 rounded text-sm theme-text hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center space-x-1"
                         >
                           <Edit size={14} />
@@ -1558,10 +1532,6 @@ const Dashboard = () => {
                         </button>
                         <button 
                           onClick={() => handleDeleteProfile(profile.id)}
-                          onTouchEnd={(e) => {
-                            e.preventDefault()
-                            handleDeleteProfile(profile.id)
-                          }}
                           className="border border-red-500 text-red-500 px-3 py-2 rounded text-sm hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center space-x-1"
                         >
                           <Trash2 size={14} />
@@ -1622,10 +1592,6 @@ const Dashboard = () => {
                    <h3 className="text-xl font-semibold theme-text">{t('dashboard.editProfile')}</h3>
                   <button
                     onClick={closeEditModal}
-                    onTouchEnd={(e) => {
-                      e.preventDefault()
-                      closeEditModal()
-                    }}
                     className="theme-text-secondary hover:theme-text transition-colors"
                   >
                     <X size={24} />
@@ -2234,10 +2200,6 @@ const Dashboard = () => {
                      <button
                        type="button"
                        onClick={closeEditModal}
-                       onTouchEnd={(e) => {
-                         e.preventDefault()
-                         closeEditModal()
-                       }}
                        className="flex-1 px-3 py-2 theme-border border rounded-lg theme-text hover:opacity-80 transition-colors text-sm"
                      >
                        {t('common.cancel')}
@@ -2270,11 +2232,6 @@ const Dashboard = () => {
                       setShowTopUpModal(false)
                       setPendingProfileId(null)
                     }}
-                    onTouchEnd={(e) => {
-                      e.preventDefault()
-                      setShowTopUpModal(false)
-                      setPendingProfileId(null)
-                    }}
                     className="theme-text-secondary hover:theme-text transition-colors"
                   >
                     <X size={24} />
@@ -2292,23 +2249,12 @@ const Dashboard = () => {
                         setShowTopUpModal(false)
                         setPendingProfileId(null)
                       }}
-                      onTouchEnd={(e) => {
-                        e.preventDefault()
-                        setShowTopUpModal(false)
-                        setPendingProfileId(null)
-                      }}
                       className="flex-1 px-4 py-2 border theme-border rounded-lg theme-text hover:opacity-80 transition-colors"
                     >
 {t('dashboard.buttons.cancel')}
                     </button>
                     <button
                       onClick={() => {
-                        setShowTopUpModal(false)
-                        setPendingProfileId(null)
-                        navigate('/topup')
-                      }}
-                      onTouchEnd={(e) => {
-                        e.preventDefault()
                         setShowTopUpModal(false)
                         setPendingProfileId(null)
                         navigate('/topup')
@@ -2339,11 +2285,6 @@ const Dashboard = () => {
                   <h3 className="text-xl font-semibold theme-text">{t('createProfileModal.title')}</h3>
                   <button
                     onClick={() => {
-                      setShowCreateProfileModal(false)
-                      setTurnstileToken('')
-                    }}
-                    onTouchEnd={(e) => {
-                      e.preventDefault()
                       setShowCreateProfileModal(false)
                       setTurnstileToken('')
                     }}
@@ -2381,21 +2322,12 @@ const Dashboard = () => {
                         setShowCreateProfileModal(false)
                         setTurnstileToken('')
                       }}
-                      onTouchEnd={(e) => {
-                        e.preventDefault()
-                        setShowCreateProfileModal(false)
-                        setTurnstileToken('')
-                      }}
                       className="flex-1 px-4 py-2 border theme-border rounded-lg theme-text hover:opacity-80 transition-colors"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleConfirmCreateProfile}
-                      onTouchEnd={(e) => {
-                        e.preventDefault()
-                        handleConfirmCreateProfile()
-                      }}
                       disabled={isCreatingProfile}
                       className="flex-1 px-4 py-2 bg-onlyfans-accent text-white rounded-lg hover:opacity-80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -2422,10 +2354,6 @@ const Dashboard = () => {
                   <h3 className="text-xl font-semibold theme-text">{t('dashboard.verificationTitle')}</h3>
                   <button
                     onClick={closeVerificationModal}
-                    onTouchEnd={(e) => {
-                      e.preventDefault()
-                      closeVerificationModal()
-                    }}
                     className="theme-text-secondary hover:theme-text transition-colors"
                   >
                     <X size={24} />
@@ -2483,10 +2411,6 @@ const Dashboard = () => {
                       <div className="flex space-x-3">
                         <button
                           onClick={closeVerificationModal}
-                          onTouchEnd={(e) => {
-                            e.preventDefault()
-                            closeVerificationModal()
-                          }}
                           className="flex-1 px-4 py-2 border theme-border rounded-lg theme-text hover:opacity-80 transition-colors"
                         >
                           {t('common.cancel')}
@@ -2515,20 +2439,12 @@ const Dashboard = () => {
                       <div className="flex space-x-3">
                         <button
                           onClick={handleCancelVerification}
-                          onTouchEnd={(e) => {
-                            e.preventDefault()
-                            handleCancelVerification()
-                          }}
                           className="flex-1 px-4 py-2 border border-red-500 text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                         >
                           {t('dashboard.cancelVerification')}
                         </button>
                         <button
                           onClick={closeVerificationModal}
-                          onTouchEnd={(e) => {
-                            e.preventDefault()
-                            closeVerificationModal()
-                          }}
                           className="flex-1 px-4 py-2 bg-onlyfans-accent text-white rounded-lg hover:opacity-80 transition-colors"
                         >
                           {t('common.close')}
