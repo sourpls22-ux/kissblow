@@ -1185,6 +1185,33 @@ app.post('/api/profiles/:id/verify', authenticateToken, (req, res) => {
               }
 
               console.log('Verification created with code:', verificationCode)
+              
+              // Уведомление в Telegram о новой верификации
+              if (process.env.TELEGRAM_BOT_TOKEN && process.env.ADMIN_TELEGRAM_ID) {
+                const TelegramBot = require('node-telegram-bot-api')
+                const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN)
+                
+                // Получаем количество ожидающих верификаций
+                db.get(
+                  `SELECT COUNT(*) as count FROM profile_verifications WHERE status = 'pending'`,
+                  (err, result) => {
+                    if (!err && result) {
+                      const count = result.count
+                      const message = `🔔 *Новая верификация!*\n\nОжидают верификации: *${count}* анкет\n\nНажмите /verifications для просмотра`
+                      
+                      bot.sendMessage(process.env.ADMIN_TELEGRAM_ID, message, { 
+                        parse_mode: 'Markdown',
+                        reply_markup: {
+                          inline_keyboard: [[
+                            { text: '👀 Посмотреть', callback_data: 'view_verifications' }
+                          ]]
+                        }
+                      }).catch(err => console.error('Error sending notification:', err))
+                    }
+                  }
+                )
+              }
+              
               res.json({
                 message: 'Verification started',
                 verificationCode: verificationCode,
@@ -1282,7 +1309,7 @@ const authenticateAdmin = (req, res, next) => {
 app.get('/api/admin/verifications', authenticateAdmin, (req, res) => {
   // Check if user is admin (you can add admin check here)
   db.all(
-    `SELECT pv.*, p.name, p.city, p.age, p.image_url, u.email as user_email
+    `SELECT pv.*, p.name, p.city, p.age, p.image_url, u.email as user_email, u.balance
      FROM profile_verifications pv 
      JOIN profiles p ON pv.profile_id = p.id 
      JOIN users u ON p.user_id = u.id 

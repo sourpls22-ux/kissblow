@@ -87,6 +87,9 @@ bot.onText(/\/verifications/, async (msg) => {
 🔢 Код: *${verification.verification_code}*
 
 👤 Пользователь: ${verification.user_email}
+💰 Баланс: $${verification.balance || 0}
+📸 Фото профиля: ${verification.profile_media ? verification.profile_media.length : 0}
+📸 Фото верификации: ${verification.verification_photo_filename ? 'Да' : 'Нет'}
       `
       
       // Собираем все фото для отправки одним сообщением
@@ -153,10 +156,13 @@ bot.onText(/\/verifications/, async (msg) => {
       }
       
       if (photos.length > 0) {
-        // Отправляем все фото одним сообщением с кнопками
+        // Отправляем все фото одним сообщением
         try {
-          await bot.sendMediaGroup(chatId, photos, {
-            reply_markup: keyboard
+          await bot.sendMediaGroup(chatId, photos)
+          
+          // Отправляем кнопки отдельным сообщением
+          bot.sendMessage(chatId, 'Выберите действие:', { 
+            reply_markup: keyboard 
           })
         } catch (error) {
           console.error('Error sending media group:', error)
@@ -192,6 +198,13 @@ bot.on('callback_query', async (callbackQuery) => {
   }
   
   try {
+    if (data === 'view_verifications') {
+      // Обработка кнопки "Посмотреть"
+      handleVerificationsCommand(callbackQuery.message)
+      bot.answerCallbackQuery(callbackQuery.id, { text: '📋 Загружаю верификации...' })
+      return
+    }
+    
     if (data.startsWith('verify_approve_')) {
       const verificationId = data.replace('verify_approve_', '')
       
@@ -202,6 +215,22 @@ bot.on('callback_query', async (callbackQuery) => {
       })
       
       bot.answerCallbackQuery(callbackQuery.id, { text: '✅ Верификация одобрена!' })
+      
+      // Проверяем, есть ли еще верификации
+      try {
+        const response = await axios.get(`${API_BASE_URL}/api/admin/verifications`, {
+          headers: { 'X-Admin-Key': process.env.ADMIN_API_KEY || 'kissblow-admin-2024-verification-bot-key-12345' }
+        })
+        
+        if (response.data.length === 0) {
+          bot.sendMessage(chatId, '✅ Нет ожидающих верификаций')
+        } else {
+          bot.sendMessage(chatId, `📋 Осталось верификаций: ${response.data.length}`)
+        }
+      } catch (error) {
+        console.error('Error checking remaining verifications:', error)
+      }
+      
       bot.editMessageText(
         `✅ Верификация #${verificationId} одобрена!`,
         { 
@@ -220,6 +249,22 @@ bot.on('callback_query', async (callbackQuery) => {
       })
       
       bot.answerCallbackQuery(callbackQuery.id, { text: '❌ Верификация отклонена!' })
+      
+      // Проверяем, есть ли еще верификации
+      try {
+        const response = await axios.get(`${API_BASE_URL}/api/admin/verifications`, {
+          headers: { 'X-Admin-Key': process.env.ADMIN_API_KEY || 'kissblow-admin-2024-verification-bot-key-12345' }
+        })
+        
+        if (response.data.length === 0) {
+          bot.sendMessage(chatId, '✅ Нет ожидающих верификаций')
+        } else {
+          bot.sendMessage(chatId, `📋 Осталось верификаций: ${response.data.length}`)
+        }
+      } catch (error) {
+        console.error('Error checking remaining verifications:', error)
+      }
+      
       bot.editMessageText(
         `❌ Верификация #${verificationId} отклонена!`,
         { 
