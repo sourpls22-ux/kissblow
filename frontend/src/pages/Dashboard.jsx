@@ -5,6 +5,7 @@ import { useTranslation } from '../hooks/useTranslation'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useModalBackdrop } from '../hooks/useModalBackdrop'
+import { CURRENCIES } from '../utils/currency'
 import { cities, searchCities, popularCities } from '../data/cities'
 import SEOHead from '../components/SEOHead'
 import axios from 'axios'
@@ -860,10 +861,10 @@ const Dashboard = () => {
               'Content-Type': 'multipart/form-data',
             },
           })
-          return { success: true, data: response.data }
+          return { success: true, data: response.data, type: fileType }
         } catch (error) {
           console.error('Error uploading media:', error)
-          return { success: false, error }
+          return { success: false, error, type: fileType }
         }
       })
 
@@ -871,6 +872,10 @@ const Dashboard = () => {
       const successfulUploads = results.filter(result => result.success)
       const failedUploads = results.filter(result => !result.success)
 
+      // Определяем тип медиа на основе успешно загруженных файлов
+      const hasPhotos = successfulUploads.some(result => result.type === 'photo')
+      const hasVideos = successfulUploads.some(result => result.type === 'video')
+      
       if (successfulUploads.length > 0) {
         // Refresh profile media
         if (editingProfile && editingProfile.id === profileId) {
@@ -884,11 +889,27 @@ const Dashboard = () => {
           ))
         }
 
-        success(`${successfulUploads.length} ${mediaType === 'photo' ? t('dashboard.photosUploaded') : t('dashboard.videosUploaded')}`)
+        // Показываем соответствующее сообщение в зависимости от типов файлов
+        if (hasPhotos && hasVideos) {
+          success(`${successfulUploads.length} files uploaded successfully`)
+        } else if (hasPhotos) {
+          success(`${successfulUploads.length} ${t('dashboard.photosUploaded')}`)
+        } else if (hasVideos) {
+          success(`${successfulUploads.length} ${t('dashboard.videosUploaded')}`)
+        }
       }
 
       if (failedUploads.length > 0) {
-        error(`${failedUploads.length} ${mediaType === 'photo' ? t('dashboard.photosUploadError') : t('dashboard.videosUploadError')}`)
+        const failedPhotos = failedUploads.filter(result => result.type === 'photo')
+        const failedVideos = failedUploads.filter(result => result.type === 'video')
+        
+        if (failedPhotos.length > 0 && failedVideos.length > 0) {
+          error(`${failedUploads.length} files failed to upload`)
+        } else if (failedPhotos.length > 0) {
+          error(`${failedPhotos.length} ${t('dashboard.photosUploadError')}`)
+        } else if (failedVideos.length > 0) {
+          error(`${failedVideos.length} ${t('dashboard.videosUploadError')}`)
+        }
       }
     } catch (err) {
       console.error('Error uploading multiple media:', err)
@@ -1421,7 +1442,7 @@ const Dashboard = () => {
           {profiles.length > 0 && (
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mt-4">
               <p className="text-xs text-blue-700 dark:text-blue-300">
-                💡 <strong>Tip:</strong> Boost your profile for $1 to appear at the top of search results. Your boost automatically renews every 24 hours if you have sufficient balance. Inactive profiles won't appear in search results and won't be charged - keep them active to stay visible.
+                {t('dashboard.dashboardTip')}
               </p>
             </div>
           )}
@@ -1760,10 +1781,11 @@ const Dashboard = () => {
                           onChange={handleEditFormChange}
                           className="select-field"
                         >
-                          <option value="USD">USD</option>
-                          <option value="EUR">EUR</option>
-                          <option value="GBP">GBP</option>
-                          <option value="RUB">RUB</option>
+                          {Object.entries(CURRENCIES).map(([code, info]) => (
+                            <option key={code} value={code}>
+                              {info.code} - {info.name}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     </div>
@@ -1989,7 +2011,7 @@ const Dashboard = () => {
                     {profileMedia.length > 0 && (
                       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mt-3">
                         <p className="text-xs text-blue-700 dark:text-blue-300">
-                          💡 <strong>Tip:</strong> The first photo in the gallery is your main photo. Click and drag any photo to reorder them - the first photo will automatically become your main photo.
+                          {t('dashboard.verificationTip')}
                         </p>
                       </div>
                     )}
@@ -2081,7 +2103,7 @@ const Dashboard = () => {
             >
               <div className="theme-surface rounded-lg p-6 w-full max-w-md border theme-border">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold theme-text">Create New Profile</h3>
+                  <h3 className="text-xl font-semibold theme-text">{t('createProfileModal.title')}</h3>
                   <button
                     onClick={() => {
                       setShowCreateProfileModal(false)
@@ -2095,7 +2117,7 @@ const Dashboard = () => {
 
                 <div className="space-y-4">
                   <p className="theme-text-secondary">
-                    Please complete the security verification to create a new profile.
+                    {t('createProfileModal.subtitle')}
                   </p>
                   
                   {showTurnstile && (
@@ -2130,7 +2152,7 @@ const Dashboard = () => {
                       disabled={isCreatingProfile}
                       className="flex-1 px-4 py-2 bg-onlyfans-accent text-white rounded-lg hover:opacity-80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isCreatingProfile ? 'Verifying...' : 'Create Profile'}
+                      {isCreatingProfile ? t('createProfileModal.verifying') : t('createProfileModal.createButton')}
                     </button>
                   </div>
                 </div>
@@ -2150,7 +2172,7 @@ const Dashboard = () => {
             >
               <div className="theme-surface rounded-lg p-6 w-full max-w-md border theme-border">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold theme-text">Profile Verification</h3>
+                  <h3 className="text-xl font-semibold theme-text">{t('dashboard.verificationTitle')}</h3>
                   <button
                     onClick={closeVerificationModal}
                     className="theme-text-secondary hover:theme-text transition-colors"
@@ -2165,7 +2187,7 @@ const Dashboard = () => {
                       <div className="text-center">
                         <div className="bg-blue-100 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-700 rounded-lg p-4 mb-4">
                           <p className="text-sm theme-text-secondary mb-2">
-                            Write this code on a piece of paper:
+                            {t('dashboard.writeCodeOnPaper')}
                           </p>
                           <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 tracking-wider">
                             {verificationCode}
@@ -2173,7 +2195,7 @@ const Dashboard = () => {
                         </div>
                         
                         <p className="text-sm theme-text-secondary mb-4">
-                          Take a selfie holding the paper with the code clearly visible, then upload the photo below.
+                          {t('dashboard.takeSelfieInstructions')}
                         </p>
                       </div>
 
@@ -2196,7 +2218,7 @@ const Dashboard = () => {
                         >
                           <Camera size={32} className="text-gray-400" />
                           <span className="text-sm theme-text-secondary">
-                            Click to upload verification photo
+                            {t('dashboard.clickToUploadVerificationPhoto')}
                           </span>
                         </label>
                       </div>
@@ -2212,7 +2234,7 @@ const Dashboard = () => {
                           onClick={closeVerificationModal}
                           className="flex-1 px-4 py-2 border theme-border rounded-lg theme-text hover:opacity-80 transition-colors"
                         >
-                          Cancel
+                          {t('common.cancel')}
                         </button>
                       </div>
                     </>
@@ -2223,14 +2245,14 @@ const Dashboard = () => {
                           <div className="flex items-center justify-center space-x-2 mb-2">
                             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-600"></div>
                             <span className="text-yellow-600 dark:text-yellow-400 font-semibold">
-                              Verification in Progress
+                              {t('dashboard.verificationInProgress')}
                             </span>
                           </div>
                           <p className="text-sm theme-text-secondary">
-                            Your verification photo has been uploaded and is being reviewed by our team.
+                            {t('dashboard.verificationPhotoUploaded')}
                           </p>
                           <p className="text-xs theme-text-secondary mt-2">
-                            Expected review time: up to 24 hours
+                            {t('dashboard.expectedReviewTime')}
                           </p>
                         </div>
                       </div>
@@ -2240,13 +2262,13 @@ const Dashboard = () => {
                           onClick={handleCancelVerification}
                           className="flex-1 px-4 py-2 border border-red-500 text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                         >
-                          Cancel Verification
+                          {t('dashboard.cancelVerification')}
                         </button>
                         <button
                           onClick={closeVerificationModal}
                           className="flex-1 px-4 py-2 bg-onlyfans-accent text-white rounded-lg hover:opacity-80 transition-colors"
                         >
-                          Close
+                          {t('common.close')}
                         </button>
                       </div>
                     </>

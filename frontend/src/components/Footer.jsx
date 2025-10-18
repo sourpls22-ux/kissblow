@@ -35,7 +35,7 @@ const Footer = () => {
                 {t('footer.howItWorks')}
               </Link>
               <Link to="/blog" onClick={scrollToTop} className="theme-text-secondary hover:theme-text text-sm transition-colors duration-200 hover:scale-105 transform will-change-transform">
-                Blog & Guides
+                {t('footer.blogGuides')}
               </Link>
             </div>
             <div className="flex flex-col space-y-2">

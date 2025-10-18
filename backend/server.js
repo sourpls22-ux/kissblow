@@ -792,7 +792,12 @@ app.get('/api/profiles', (req, res) => {
            CASE 
              WHEN p.boost_expires_at IS NOT NULL AND datetime(p.boost_expires_at) > datetime('now') THEN 1
              ELSE 0
-           END as is_boosted
+           END as is_boosted,
+           CASE 
+             WHEN EXISTS(SELECT 1 FROM media WHERE profile_id = p.id AND type = 'video') THEN 1
+             ELSE 0
+           END as has_video,
+           (SELECT COUNT(*) FROM reviews WHERE profile_id = p.id) as reviews_count
     FROM profiles p 
     LEFT JOIN media m ON p.main_photo_id = m.id 
     WHERE p.is_active = 1
@@ -1603,6 +1608,34 @@ app.post('/api/profiles/:id/media', authenticateToken, upload.single('media'), (
 
           if (type === 'video' && count >= maxVideos) {
             return res.status(400).json({ error: `Maximum ${maxVideos} video allowed` })
+          }
+
+          // Reset verification status if uploading a photo to verified profile
+          if (type === 'photo') {
+            db.run(
+              'UPDATE profiles SET is_verified = 0 WHERE id = ? AND is_verified = 1',
+              [id],
+              (err) => {
+                if (err) {
+                  console.error('Error resetting verification status:', err)
+                } else {
+                  console.log('Verification status reset for profile:', id)
+                }
+              }
+            )
+            
+            // Delete all verification records for this profile
+            db.run(
+              'DELETE FROM profile_verifications WHERE profile_id = ?',
+              [id],
+              (err) => {
+                if (err) {
+                  console.error('Error deleting verification records:', err)
+                } else {
+                  console.log('Verification records deleted for profile:', id)
+                }
+              }
+            )
           }
 
           // Create the media URL

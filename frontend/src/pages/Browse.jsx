@@ -3,6 +3,7 @@ import { useSearchParams, Link, useNavigate, useLocation, useParams } from 'reac
 import { MapPin, Star, RefreshCw, User, Filter, X, Search, Globe, Heart } from 'lucide-react'
 import { useTranslation } from '../hooks/useTranslation'
 import { useModalBackdrop } from '../hooks/useModalBackdrop'
+import { formatPrice } from '../utils/currency'
 import { cities, searchCities, popularCities } from '../data/cities'
 import SEOHead from '../components/SEOHead'
 import { generateLocalBusinessSchema, generateItemListSchema, generateBreadcrumbSchema } from '../utils/schemaMarkup'
@@ -36,7 +37,10 @@ const Browse = () => {
     bust: '',
     minPrice: '',
     maxPrice: '',
-    services: []
+    services: [],
+    verified: false,
+    hasReviews: false,
+    hasVideo: false
   })
   const city = searchParams.get('city') || ''
   const service = searchParams.get('service') || ''
@@ -60,7 +64,10 @@ const Browse = () => {
     
     if (prices.length === 0) return null
     
-    return Math.min(...prices)
+    return {
+      amount: Math.min(...prices),
+      currency: profile.currency || 'USD'
+    }
   }
   
   // Обработка очистки фильтров при переходе с Browse All
@@ -80,6 +87,14 @@ const Browse = () => {
         image: profile.main_photo_url || profile.image_url || profile.first_photo_url,
         rating: 4.8 // Добавляем рейтинг для отображения
       }))
+      
+      // Отладочная информация для проверки полей has_video и reviews_count
+      console.log('Profiles data:', profilesData.map(p => ({
+        name: p.name,
+        has_video: p.has_video,
+        reviews_count: p.reviews_count,
+        is_verified: p.is_verified
+      })))
       
       // Устанавливаем профили и лайки одновременно
       setProfiles(profilesData)
@@ -249,6 +264,27 @@ const Browse = () => {
     }))
   }
 
+  const handleVerifiedToggle = () => {
+    setFilters(prev => ({
+      ...prev,
+      verified: !prev.verified
+    }))
+  }
+
+  const handleHasReviewsToggle = () => {
+    setFilters(prev => ({
+      ...prev,
+      hasReviews: !prev.hasReviews
+    }))
+  }
+
+  const handleHasVideoToggle = () => {
+    setFilters(prev => ({
+      ...prev,
+      hasVideo: !prev.hasVideo
+    }))
+  }
+
   const clearFilters = () => {
     setFilters({
       minAge: '',
@@ -260,7 +296,10 @@ const Browse = () => {
       bust: '',
       minPrice: '',
       maxPrice: '',
-      services: []
+      services: [],
+      verified: false,
+      hasReviews: false,
+      hasVideo: false
     })
   }
 
@@ -311,12 +350,28 @@ const Browse = () => {
     // Фильтр по сервисам
     if (filters.services.length > 0) {
       const profileServices = profile.services ? JSON.parse(profile.services) : []
-      const hasMatchingService = filters.services.some(service => 
+      const hasMatchingService = filters.services.some(service =>
         profileServices.includes(service)
       )
       if (!hasMatchingService) {
         return false
       }
+    }
+
+    // Фильтр по верификации
+    if (filters.verified && !profile.is_verified) {
+      return false
+    }
+
+    // Фильтр по отзывам (предполагаем, что есть поле reviews_count)
+    if (filters.hasReviews && (!profile.reviews_count || profile.reviews_count === 0)) {
+      return false
+    }
+
+    // Фильтр по видео (предполагаем, что есть поле has_video)
+    if (filters.hasVideo && !profile.has_video) {
+      console.log(`Profile ${profile.name} filtered out: has_video = ${profile.has_video}`)
+      return false
     }
 
     return true
@@ -515,7 +570,9 @@ const Browse = () => {
                     )}
                   </div>
                   {getMinPrice(profile) && (
-                    <span className="text-onlyfans-accent font-semibold">${getMinPrice(profile)}</span>
+                    <span className="text-onlyfans-accent font-semibold">
+                      {formatPrice(getMinPrice(profile).amount, getMinPrice(profile).currency)}
+                    </span>
                   )}
                 </div>
                 
@@ -846,6 +903,9 @@ const Browse = () => {
                   </div>
                 </div>
 
+                {/* Разделитель перед Services */}
+                <div className="border-t border-gray-200 my-4"></div>
+
                 {/* Services */}
                 <div>
                   <h3 className="text-sm font-semibold theme-text mb-2">Services</h3>
@@ -863,6 +923,46 @@ const Browse = () => {
                     ))}
                   </div>
                 </div>
+
+                {/* Разделитель перед Additional Filters */}
+                <div className="border-t border-gray-200 my-4"></div>
+
+                {/* Additional Filters */}
+                <div>
+                  <h3 className="text-sm font-semibold theme-text mb-2">Additional Filters</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={filters.verified}
+                        onChange={handleVerifiedToggle}
+                        className="rounded border-gray-300 text-onlyfans-accent focus:ring-onlyfans-accent w-3 h-3"
+                      />
+                      <span className="theme-text text-xs">Verified Only</span>
+                    </label>
+                    
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={filters.hasReviews}
+                        onChange={handleHasReviewsToggle}
+                        className="rounded border-gray-300 text-onlyfans-accent focus:ring-onlyfans-accent w-3 h-3"
+                      />
+                      <span className="theme-text text-xs">With Reviews</span>
+                    </label>
+                    
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={filters.hasVideo}
+                        onChange={handleHasVideoToggle}
+                        className="rounded border-gray-300 text-onlyfans-accent focus:ring-onlyfans-accent w-3 h-3"
+                      />
+                      <span className="theme-text text-xs">With Video</span>
+                    </label>
+                  </div>
+                </div>
+
               </div>
 
               <div className="flex items-center justify-between mt-6 pt-4 border-t theme-border">

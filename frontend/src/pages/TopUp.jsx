@@ -6,6 +6,14 @@ import { useTranslation } from '../hooks/useTranslation'
 import { useToast } from '../contexts/ToastContext'
 import SEOHead from '../components/SEOHead'
 
+// Функция для получения вариантов быстрого пополнения
+const getQuickAmounts = (t) => [
+  { amount: 10, discount: 0, bonus: 0, label: '$10', description: t('topUp.noBonus') },
+  { amount: 50, discount: 5, bonus: 2.5, label: '$50', description: `5${t('topUp.bonusPercent')}` },
+  { amount: 100, discount: 10, bonus: 10, label: '$100', description: `10${t('topUp.bonusPercent')}` },
+  { amount: 200, discount: 15, bonus: 30, label: '$200', description: `15${t('topUp.bonusPercent')}` }
+]
+
 const TopUp = () => {
   const [amount, setAmount] = useState('')
   const [selectedQuickAmount, setSelectedQuickAmount] = useState(null)
@@ -163,12 +171,7 @@ const TopUp = () => {
   }
   
   // Варианты быстрого пополнения с скидками
-  const quickAmounts = [
-    { amount: 10, discount: 0, bonus: 0, label: '$10', description: 'No bonus' },
-    { amount: 50, discount: 5, bonus: 2.5, label: '$50', description: '5% bonus' },
-    { amount: 100, discount: 10, bonus: 10, label: '$100', description: '10% bonus' },
-    { amount: 200, discount: 15, bonus: 30, label: '$200', description: '15% bonus' }
-  ]
+  const quickAmounts = getQuickAmounts(t)
   
   // Только криптовалюта, убираем выбор метода
   
@@ -203,7 +206,7 @@ const TopUp = () => {
 
   const handleTopUp = async () => {
     if (!amount || amount < 1) {
-      error('Minimum top-up amount: $1')
+      error(t('topUp.minimumTopUpError'))
       return
     }
     
@@ -253,11 +256,11 @@ const TopUp = () => {
         }
       } else {
         console.error('No payment data received:', response.data)
-        error('Payment data not received. Please try again.')
+        error(t('topUp.paymentDataError'))
       }
     } catch (err) {
       console.error('Top up error:', err)
-      error('Payment creation failed. Please try again.')
+      error(t('topUp.paymentCreationError'))
     } finally {
       setIsProcessing(false)
     }
@@ -290,7 +293,7 @@ const TopUp = () => {
 
           {/* Быстрое пополнение */}
           <div className="mb-6">
-            <h3 className="theme-text font-semibold mb-4">Quick Top-Up</h3>
+            <h3 className="theme-text font-semibold mb-4">{t('topUp.quickTopUp')}</h3>
             <div className="grid grid-cols-2 gap-3">
               {quickAmounts.map((quickAmount) => (
                 <button
@@ -310,18 +313,24 @@ const TopUp = () => {
                 >
                   <div className="flex justify-between items-start h-full">
                     <div className="text-left">
+                      <div className="theme-text font-semibold text-base">
+                        {t('topUp.youPay')}:
+                      </div>
                       <div className="theme-text font-semibold text-lg">
-                        Pay: ${(quickAmount.amount - quickAmount.bonus).toFixed(2)}
+                        ${(quickAmount.amount - quickAmount.bonus).toFixed(2)}
                       </div>
                       <div className="theme-text-secondary text-sm">{quickAmount.description}</div>
                     </div>
                     <div className="text-right flex flex-col h-full">
+                      <div className="theme-text font-semibold text-base">
+                        {t('topUp.creditAmount')}:
+                      </div>
                       <div className="theme-text font-semibold text-lg">
-                        Get: ${quickAmount.amount}
+                        ${quickAmount.amount}
                       </div>
                       {quickAmount.bonus > 0 && (
                         <div className="text-green-500 font-semibold text-sm mt-auto">
-                          +${quickAmount.bonus} bonus
+                          +${quickAmount.bonus} {t('topUp.bonus')}
                         </div>
                       )}
                     </div>
@@ -356,12 +365,12 @@ const TopUp = () => {
             <h4 className="theme-text font-semibold mb-2">{t('topUp.paymentInfo')}</h4>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="theme-text-secondary">Credit Amount</span>
+                <span className="theme-text-secondary">{t('topUp.creditAmount')}</span>
                 <span className="theme-text">${amount || '0.00'}</span>
               </div>
               {getBonusAmount() > 0 && (
                 <div className="flex justify-between">
-                  <span className="theme-text-secondary">Bonus</span>
+                  <span className="theme-text-secondary">{t('topUp.bonus')}</span>
                   <span className="text-green-500 font-semibold">+${getBonusAmount().toFixed(2)}</span>
                 </div>
               )}
@@ -370,7 +379,7 @@ const TopUp = () => {
                 <span className="theme-text">$0.00</span>
               </div>
               <div className="flex justify-between border-t theme-border pt-2">
-                <span className="theme-text font-semibold">You Pay</span>
+                <span className="theme-text font-semibold">{t('topUp.youPay')}</span>
                 <span className="text-onlyfans-accent font-semibold">${getFinalAmount().toFixed(2)}</span>
               </div>
             </div>
@@ -385,7 +394,7 @@ const TopUp = () => {
                 {isProcessing ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Processing...
+                    {t('topUp.processing')}
                   </>
                 ) : (
                   t('topUp.topUpButton')

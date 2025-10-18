@@ -376,7 +376,16 @@ export const en = {
       title: 'Sell Your Personal Content',
       sellContent: 'Want to sell your personal digital content online?',
       contactUs: 'Contact us'
-    }
+    },
+    dashboardTip: '💡 Tip: Boost your profile for $1 to appear at the top of search results. Your boost automatically renews every 24 hours with sufficient balance. Inactive profiles won\'t appear in search results and won\'t be charged - keep them active to stay visible.',
+    verificationTitle: 'Profile Verification',
+    writeCodeOnPaper: 'Write this code on a piece of paper:',
+    takeSelfieInstructions: 'Take a selfie holding the paper with the code clearly visible, then upload the photo below.',
+    clickToUploadVerificationPhoto: 'Click to upload verification photo',
+    verificationInProgress: 'Verification in Progress',
+    verificationPhotoUploaded: 'Your verification photo has been uploaded and is being reviewed by our team.',
+    expectedReviewTime: 'Expected review time: up to 24 hours',
+    cancelVerification: 'Cancel Verification'
   },
 
   // Settings page
@@ -432,6 +441,16 @@ export const en = {
     fee: 'Fee:',
     total: 'Total:',
     topUpButton: 'Top Up Balance',
+    quickTopUp: 'Quick Top-Up',
+    creditAmount: 'Get',
+    bonus: 'Bonus',
+    youPay: 'Pay',
+    processing: 'Processing...',
+    noBonus: 'No bonus',
+    bonusPercent: '% bonus',
+    minimumTopUpError: 'Minimum top-up amount: $1',
+    paymentDataError: 'Payment data not received. Please try again.',
+    paymentCreationError: 'Payment creation failed. Please try again.',
     cryptoOnly: 'We only accept cryptocurrency payments for anonymity and security',
     securePayment: 'Payments are processed through secure connection',
     support: 'Support: info@kissblow.me'
@@ -945,6 +964,63 @@ export const en = {
       underage: 'Underage Content',
       other: 'Other'
     }
+  },
+
+  // Blog page
+  blog: {
+    title: 'Blog & Guides',
+    subtitle: 'Expert articles and guides for safe dating',
+    searchPlaceholder: 'Search articles...',
+    categories: {
+      all: 'All',
+      safetyGuide: 'Safety Guide',
+      travelGuide: 'Travel Guide',
+      guide: 'Guide',
+      safetyTips: 'Safety Tips'
+    },
+    readMore: 'Read More',
+    noArticles: 'No articles found',
+    expertArticles: 'Expert Articles',
+    publishedOn: 'Published On',
+    readTime: 'Read Time',
+    shareArticle: 'Share Article',
+    relatedArticles: 'Related Articles',
+    backToBlog: 'Back to Blog',
+    articleNotFound: 'Article Not Found',
+    articleNotFoundMessage: 'The article you are looking for does not exist or has been removed.'
+  },
+
+  // Breadcrumbs
+  breadcrumbs: {
+    home: 'Home',
+    browse: 'Browse',
+    profile: 'Profile',
+    blog: 'Blog',
+    article: 'Article'
+  },
+
+  // Create Profile Modal
+  createProfileModal: {
+    title: 'Create Profile',
+    subtitle: 'Create your profile to start earning',
+    createButton: 'Create Profile'
+  },
+
+  // Footer
+  footer: {
+    rules: 'Rules',
+    termsOfUse: 'Terms of Use',
+    privacy: 'Privacy',
+    privacyPolicy: 'Privacy Policy',
+    about: 'About',
+    aboutSite: 'About Site',
+    howItWorks: 'How It Works',
+    blogGuides: 'Blog & Guides',
+    contact: 'Contact',
+    contactUs: 'Contact Us',
+    aboutUs: 'About Us',
+    aboutUsText: 'About Us',
+    learnMore: 'Learn More >'
   },
 
   // Common

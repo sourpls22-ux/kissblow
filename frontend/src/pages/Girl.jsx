@@ -5,6 +5,7 @@ import { useTranslation } from '../hooks/useTranslation'
 import { useToast } from '../contexts/ToastContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useModalBackdrop } from '../hooks/useModalBackdrop'
+import { formatPrice } from '../utils/currency'
 import SearchBar from '../components/SearchBar'
 import SEOHead from '../components/SEOHead'
 import Breadcrumbs from '../components/Breadcrumbs'
@@ -46,8 +47,24 @@ const Girl = () => {
     
     if (prices.length === 0) return null
     
-    return Math.min(...prices)
+    return {
+      amount: Math.min(...prices),
+      currency: profile.currency || 'USD'
+    }
   }
+
+  // Отладочная информация для проверки валюты
+  useEffect(() => {
+    if (profile) {
+      console.log('Profile currency:', profile.currency)
+      console.log('Profile prices:', {
+        price_30min: profile.price_30min,
+        price_1hour: profile.price_1hour,
+        price_2hours: profile.price_2hours,
+        price_night: profile.price_night
+      })
+    }
+  }, [profile])
 
   const fetchProfileMedia = async (profileId, resetIndex = true) => {
     try {
@@ -243,13 +260,15 @@ const Girl = () => {
 
   const openTelegram = () => {
     const telegram = profile?.telegram || 'username'
-    const telegramUrl = `https://t.me/${telegram.replace('@', '')}`
+    const message = `Hello ${profile?.name}. I found your profile at kissblow.me`
+    const telegramUrl = `https://t.me/${telegram.replace('@', '')}?text=${encodeURIComponent(message)}`
     window.open(telegramUrl, '_blank')
   }
 
   const openWhatsApp = () => {
     const whatsapp = profile?.whatsapp || profile?.phone || '+1234567890'
-    const whatsappUrl = `https://wa.me/${whatsapp.replace('+', '')}`
+    const message = `Hello ${profile?.name}. I found your profile at kissblow.me`
+    const whatsappUrl = `https://wa.me/${whatsapp.replace('+', '')}?text=${encodeURIComponent(message)}`
     window.open(whatsappUrl, '_blank')
   }
 
@@ -378,7 +397,8 @@ const Girl = () => {
   }
 
   // Generate SEO data
-  const minPrice = getMinPrice()
+  const minPriceData = getMinPrice()
+  const minPrice = minPriceData ? minPriceData.amount : null
   const services = profile?.services ? (typeof profile.services === 'string' ? JSON.parse(profile.services) : profile.services) : []
   const servicesText = services.length > 0 ? services.join(', ') : 'escort services'
 
@@ -410,7 +430,7 @@ const Girl = () => {
           >
             <ArrowLeft size={20} />
             <span>
-              {previousPage === 'dashboard' ? 'Back to Dashboard' : 'Back to Browse'}
+              {previousPage === 'dashboard' ? t('girl.backToDashboard') : t('girl.backToBrowse')}
             </span>
           </button>
         </div>
@@ -490,7 +510,7 @@ const Girl = () => {
                 {/* Миниатюры медиа */}
                 {getAllMedia().length > 1 && (
                   <div className="mb-4">
-                    <h4 className="theme-text font-medium mb-3 text-sm">Media Gallery</h4>
+                    <h4 className="theme-text font-medium mb-3 text-sm">{t('girl.mediaGallery')}</h4>
                     <div className="grid grid-cols-4 gap-2">
                       {getAllMedia().slice(0, 8).map((media, index) => (
                         <div 
@@ -621,7 +641,7 @@ const Girl = () => {
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-3">
-                    <h1 className="text-2xl font-bold theme-text">{profile.name}</h1>
+                    <h1 className="text-2xl font-bold theme-text">{profile?.name ? profile.name : ''}</h1>
                     {profile.is_verified && (
                       <div className="bg-green-500 text-white px-2 py-1 rounded text-sm font-medium">
                         Verified
@@ -630,7 +650,7 @@ const Girl = () => {
                   </div>
                   {getMinPrice() && (
                     <span className="text-onlyfans-accent font-semibold text-lg">
-                      ${getMinPrice()}
+                      {formatPrice(getMinPrice().amount, getMinPrice().currency) || `$${getMinPrice().amount}`}
                     </span>
                   )}
                 </div>
@@ -654,7 +674,7 @@ const Girl = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="theme-text-secondary">{t('girl.age')}:</span>
-                    <span className="theme-text">{profile.age}</span>
+                    <span className="theme-text">{profile?.age}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="theme-text-secondary">{t('girl.height')}:</span>
@@ -753,7 +773,9 @@ const Girl = () => {
                   <div className="bg-onlyfans-accent/10 p-3 rounded-lg">
                     <div className="flex justify-between items-center">
                       <span className="text-sm theme-text-secondary">{t('girl.minutes30')}</span>
-                      <span className="text-lg font-bold text-onlyfans-accent">${profile.price_30min}</span>
+                      <span className="text-lg font-bold text-onlyfans-accent">
+                        {formatPrice(profile.price_30min, profile.currency) || `$${profile.price_30min}`}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -761,7 +783,9 @@ const Girl = () => {
                   <div className="bg-onlyfans-accent/10 p-3 rounded-lg">
                     <div className="flex justify-between items-center">
                       <span className="text-sm theme-text-secondary">{t('girl.hour1')}</span>
-                      <span className="text-lg font-bold text-onlyfans-accent">${profile.price_1hour}</span>
+                      <span className="text-lg font-bold text-onlyfans-accent">
+                        {formatPrice(profile.price_1hour, profile.currency) || `$${profile.price_1hour}`}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -769,7 +793,9 @@ const Girl = () => {
                   <div className="bg-onlyfans-accent/10 p-3 rounded-lg">
                     <div className="flex justify-between items-center">
                       <span className="text-sm theme-text-secondary">{t('girl.hours2')}</span>
-                      <span className="text-lg font-bold text-onlyfans-accent">${profile.price_2hours}</span>
+                      <span className="text-lg font-bold text-onlyfans-accent">
+                        {formatPrice(profile.price_2hours, profile.currency) || `$${profile.price_2hours}`}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -777,7 +803,9 @@ const Girl = () => {
                   <div className="bg-onlyfans-accent/10 p-3 rounded-lg">
                     <div className="flex justify-between items-center">
                       <span className="text-sm theme-text-secondary">{t('girl.night')}</span>
-                      <span className="text-lg font-bold text-onlyfans-accent">${profile.price_night}</span>
+                      <span className="text-lg font-bold text-onlyfans-accent">
+                        {formatPrice(profile.price_night, profile.currency) || `$${profile.price_night}`}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -925,7 +953,7 @@ const Girl = () => {
 
             {/* Заголовок */}
             <h3 className="text-xl font-semibold theme-text mb-6">
-              {t('girl.contactModal.title')} {profile?.name}
+              {t('girl.contactModal.title')} {profile?.name ? profile.name : ''}
             </h3>
 
             {/* Номер телефона */}

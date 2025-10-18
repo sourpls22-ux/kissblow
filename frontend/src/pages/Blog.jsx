@@ -4,13 +4,19 @@ import { Filter, Calendar, User, ArrowRight } from 'lucide-react'
 import SEOHead from '../components/SEOHead'
 import Breadcrumbs from '../components/Breadcrumbs'
 import { blogPosts } from '../data/blogPosts'
+import { useTranslation } from '../hooks/useTranslation'
 
 const Blog = () => {
+  const { t } = useTranslation()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
 
   const categories = [
-    'all', 'Safety Guide', 'Travel Guide', 'Guide', 'Safety Tips'
+    { value: 'all', label: t('blog.categories.all') },
+    { value: 'Safety Guide', label: t('blog.categories.safetyGuide') },
+    { value: 'Travel Guide', label: t('blog.categories.travelGuide') },
+    { value: 'Guide', label: t('blog.categories.guide') },
+    { value: 'Safety Tips', label: t('blog.categories.safetyTips') }
   ]
 
   // Filter posts based on search and category
@@ -28,8 +34,8 @@ const Blog = () => {
   return (
     <>
       <SEOHead 
-        title="Escort Services Blog"
-        description="Expert insights, safety guides, and tips to help you navigate the world of professional escort services with confidence."
+        title={t('blog.title')}
+        description={t('blog.subtitle')}
         keywords="escort blog, escort guides, safety tips, escort advice, professional escorts"
       />
       
@@ -43,11 +49,10 @@ const Blog = () => {
           {/* Header */}
           <div className="text-center mb-8 sm:mb-12">
             <h1 className="text-2xl sm:text-4xl font-bold theme-text mb-4">
-              Escort Services Blog
+              {t('blog.title')}
             </h1>
             <p className="text-base sm:text-xl theme-text-secondary max-w-3xl mx-auto">
-              Expert insights, safety guides, and tips to help you navigate 
-              the world of professional escort services with confidence.
+              {t('blog.subtitle')}
             </p>
           </div>
 
@@ -56,7 +61,7 @@ const Blog = () => {
             <div className="flex-1 relative">
               <input
                 type="text"
-                placeholder="Search articles..."
+                placeholder={t('blog.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-4 pr-4 py-3 input-field rounded-lg"
@@ -71,8 +76,8 @@ const Blog = () => {
                 className="input-field py-3 px-4 rounded-lg"
               >
                 {categories.map(category => (
-                  <option key={category} value={category}>
-                    {category === 'all' ? 'All Categories' : category}
+                  <option key={category.value} value={category.value}>
+                    {category.label}
                   </option>
                 ))}
               </select>
@@ -111,7 +116,7 @@ const Blog = () => {
                       to={`/blog/${post.id}`}
                       className="flex items-center justify-center sm:justify-end space-x-1 text-onlyfans-accent hover:opacity-80 transition-colors"
                     >
-                      <span className="text-sm font-medium">Read More</span>
+                      <span className="text-sm font-medium">{t('blog.readMore')}</span>
                       <ArrowRight size={14} />
                     </Link>
                   </div>
@@ -124,7 +129,7 @@ const Blog = () => {
           {filteredPosts.length === 0 && (
             <div className="text-center py-12">
               <p className="text-lg theme-text-secondary">
-                No articles found matching your criteria.
+                {t('blog.noPosts')}
               </p>
             </div>
           )}
@@ -136,7 +141,7 @@ const Blog = () => {
                 <div className="text-3xl font-bold text-onlyfans-accent mb-2">
                   {blogPosts.length}
                 </div>
-                <div className="text-theme-text-secondary">Expert Articles</div>
+                <div className="text-theme-text-secondary">{t('blog.expertArticles')}</div>
               </div>
               <div>
                 <div className="text-3xl font-bold text-onlyfans-accent mb-2">

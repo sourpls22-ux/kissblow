@@ -4,8 +4,10 @@ import SEOHead from '../components/SEOHead'
 import Breadcrumbs from '../components/Breadcrumbs'
 import { getBlogPostById, getRelatedPosts } from '../data/blogPosts'
 import { generateArticleSchema } from '../utils/schemaMarkup'
+import { useTranslation } from '../hooks/useTranslation'
 
 const BlogPost = () => {
+  const { t } = useTranslation()
   const { id } = useParams()
   const post = getBlogPostById(id)
   const relatedPosts = getRelatedPosts(id, 3)
@@ -15,16 +17,16 @@ const BlogPost = () => {
       <div className="min-h-screen theme-bg py-8">
         <div className="max-w-4xl mx-auto px-4">
           <div className="text-center py-12">
-            <h1 className="text-3xl font-bold theme-text mb-4">Article Not Found</h1>
+            <h1 className="text-3xl font-bold theme-text mb-4">{t('blog.articleNotFound')}</h1>
             <p className="text-lg theme-text-secondary mb-8">
-              The article you're looking for doesn't exist or has been removed.
+              {t('blog.articleNotFoundMessage')}
             </p>
             <Link 
               to="/blog"
               className="inline-flex items-center space-x-2 bg-onlyfans-accent text-white px-6 py-3 rounded-lg hover:opacity-80 transition-colors"
             >
               <ArrowLeft size={16} />
-              <span>Back to Blog</span>
+              <span>{t('blog.backToBlog')}</span>
             </Link>
           </div>
         </div>
@@ -59,7 +61,7 @@ const BlogPost = () => {
               className="inline-flex items-center space-x-2 text-onlyfans-accent hover:opacity-80 transition-colors"
             >
               <ArrowLeft size={20} />
-              <span>Back to Blog</span>
+              <span>{t('blog.backToBlog')}</span>
             </Link>
           </div>
 
@@ -75,11 +77,11 @@ const BlogPost = () => {
                 </div>
                 <div className="flex items-center space-x-2">
                   <Calendar size={16} />
-                  <span>{new Date(post.date).toLocaleDateString()}</span>
+                  <span>{t('blog.publishedOn')}: {new Date(post.date).toLocaleDateString()}</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Clock size={16} />
-                  <span>{post.readTime}</span>
+                  <span>{t('blog.readTime')}: {post.readTime}</span>
                 </div>
                 <span className="px-2 py-1 bg-onlyfans-accent/10 text-onlyfans-accent text-xs font-medium rounded">
                   {post.category}
@@ -114,7 +116,7 @@ const BlogPost = () => {
                   className="inline-flex items-center space-x-2 bg-onlyfans-accent/10 text-onlyfans-accent px-4 py-2 rounded-lg hover:bg-onlyfans-accent/20 transition-colors"
                 >
                   <Share2 size={16} />
-                  <span>Share Article</span>
+                  <span>{t('blog.share')}</span>
                 </button>
               </div>
 
@@ -129,7 +131,7 @@ const BlogPost = () => {
           {/* Related Articles */}
           {relatedPosts.length > 0 && (
             <div className="mt-12">
-              <h2 className="text-2xl font-bold theme-text mb-6">Related Articles</h2>
+              <h2 className="text-2xl font-bold theme-text mb-6">{t('blog.relatedArticles')}</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {relatedPosts.map((relatedPost) => (
                   <Link

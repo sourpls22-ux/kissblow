@@ -1,12 +1,14 @@
 import { Link } from 'react-router-dom'
 import { ChevronRight, Home } from 'lucide-react'
 import { generateBreadcrumbSchema } from '../utils/schemaMarkup'
+import { useTranslation } from '../hooks/useTranslation'
 
 const Breadcrumbs = ({ path, profileName = null, className = '' }) => {
+  const { t } = useTranslation()
   const pathSegments = path.split('/').filter(Boolean)
   
   const breadcrumbItems = [
-    { name: 'Home', path: '/' }
+    { name: t('breadcrumbs.home'), path: '/' }
   ]
 
   let currentPath = ''
@@ -17,13 +19,13 @@ const Breadcrumbs = ({ path, profileName = null, className = '' }) => {
     let displayName = segment
     let isClickable = true
     
-    if (segment === 'browse') displayName = 'Browse'
+    if (segment === 'browse') displayName = t('breadcrumbs.browse')
     else if (segment === 'girl') {
       // Don't make 'girl' clickable - it leads to 404
-      displayName = 'Profile'
+      displayName = t('breadcrumbs.profile')
       isClickable = false
     }
-    else if (segment === 'blog') displayName = 'Blog'
+    else if (segment === 'blog') displayName = t('breadcrumbs.blog')
     else if (segment === 'about') displayName = 'About'
     else if (segment === 'login') displayName = 'Login'
     else if (segment === 'register') displayName = 'Register'
@@ -41,13 +43,13 @@ const Breadcrumbs = ({ path, profileName = null, className = '' }) => {
       // For dynamic segments like profile IDs or blog post IDs
       if (index === 1 && segment.match(/^\d+$/) && pathSegments[0] === 'girl') {
         // This is a profile ID after 'girl' - use profile name
-        displayName = profileName || 'Profile'
+        displayName = profileName || t('breadcrumbs.profile')
         isClickable = false // Don't make profile ID clickable
       } else if (index === 0 && segment.match(/^\d+$/)) {
-        displayName = 'Profile'
+        displayName = t('breadcrumbs.profile')
         isClickable = false // Don't make profile ID clickable
       } else if (index === 1 && segment.match(/^\d+$/)) {
-        displayName = 'Article'
+        displayName = t('breadcrumbs.article')
         isClickable = false // Don't make article ID clickable
       } else {
         displayName = segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ')
