@@ -12,9 +12,15 @@ const translations = {
 }
 
 export const useTranslation = () => {
-  const { language } = useLanguage()
+  const languageContext = useLanguage()
+  const language = languageContext?.language || 'en'
   
   const t = (key, params = {}) => {
+    if (!key || typeof key !== 'string') {
+      console.warn('Translation key must be a non-empty string')
+      return key || ''
+    }
+    
     const keys = key.split('.')
     let value = translations[language]
     
@@ -40,8 +46,14 @@ export const useTranslation = () => {
       return result
     }
     
-    console.warn(`Translation value is not a string: ${key} -> ${value} (language: ${language})`)
-    return value || key
+    // Handle non-string values more gracefully
+    if (value !== undefined && value !== null) {
+      console.warn(`Translation value is not a string: ${key} -> ${typeof value} (${value}) (language: ${language})`)
+      return String(value)
+    }
+    
+    console.warn(`Translation value is undefined: ${key} (language: ${language})`)
+    return key
   }
   
   return { t, language }

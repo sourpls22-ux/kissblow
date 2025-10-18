@@ -77,6 +77,23 @@ app.use(compression({
   }
 }))
 app.use(cors(corsOptions))
+
+// CSP Headers
+app.use((req, res, next) => {
+  res.setHeader('Content-Security-Policy', 
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' " +
+    "https://challenges.cloudflare.com " +
+    "https://atlos.io " +
+    "https://static.cloudflareinsights.com; " +
+    "style-src 'self' 'unsafe-inline'; " +
+    "img-src 'self' data: https:; " +
+    "font-src 'self' data:; " +
+    "connect-src 'self' https://challenges.cloudflare.com https://atlos.io;"
+  );
+  next();
+});
+
 // Middleware для сохранения raw body для webhook'ов
 app.use('/api/webhooks/atlos', express.raw({ type: 'application/json' }))
 app.use(express.json())

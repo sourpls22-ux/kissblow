@@ -1007,22 +1007,6 @@ export const en = {
     createButton: 'Create Profile'
   },
 
-  // Footer
-  footer: {
-    rules: 'Rules',
-    termsOfUse: 'Terms of Use',
-    privacy: 'Privacy',
-    privacyPolicy: 'Privacy Policy',
-    about: 'About',
-    aboutSite: 'About Site',
-    howItWorks: 'How It Works',
-    blogGuides: 'Blog & Guides',
-    contact: 'Contact',
-    contactUs: 'Contact Us',
-    aboutUs: 'About Us',
-    aboutUsText: 'KissBlow.me is a modern, secure platform connecting adults worldwide for meaningful companionship. We prioritize safety, privacy, and professional service in everything we do.',
-    learnMore: 'Learn More >'
-  },
 
   // Common
   common: {
