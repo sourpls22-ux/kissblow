@@ -41,6 +41,16 @@ const shouldHideMessage = (message) => {
     message.includes('Avoid using document.write') ||
     message.includes('readystatechange handler took') ||
     message.includes('message handler took') ||
+    message.includes('load handler took') ||
+    
+    // Cloudflare Turnstile messages
+    message.includes('Request for the Private Access Token challenge') ||
+    message.includes('script-src was not explicitly set') ||
+    
+    // Email handler messages
+    message.includes('Launched external handler for') ||
+    message.includes('mailto:') ||
+    
     // Turnstile debug messages
     message.includes('Turnstile success, token received')
   )
