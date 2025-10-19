@@ -49,6 +49,10 @@ const shouldHideMessage = (message) => {
     // Более общие паттерны для Violation предупреждений
     message.includes('handler took') ||
     message.includes('took ') && message.includes('ms') ||
+    // Специфичные паттерны для Violation предупреждений
+    /\[Violation\].*took \d+ms/.test(message) ||
+    /\[Violation\].*handler took \d+ms/.test(message) ||
+    /\[Violation\].*Avoid using document\.write/.test(message) ||
     
     // Cloudflare Turnstile messages
     message.includes('Request for the Private Access Token challenge') ||

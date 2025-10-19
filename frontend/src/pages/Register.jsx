@@ -93,15 +93,15 @@ const Register = () => {
     
     // Автоматически продолжаем отправку формы
     try {
-      console.log('Starting registration with data:', { name: formData.name, email: formData.email, accountType: formData.accountType })
+      // console.log('Starting registration with data:', { name: formData.name, email: formData.email, accountType: formData.accountType })
       const result = await register(formData.name, formData.email, formData.password, formData.accountType, token)
-      console.log('Registration result:', result)
+      // console.log('Registration result:', result)
       
       if (result.success) {
-        console.log('Registration successful, redirecting...')
+        // console.log('Registration successful, redirecting...')
         // Redirect based on account type
         if (formData.accountType === 'model') {
-          console.log('Redirecting to dashboard')
+          // console.log('Redirecting to dashboard')
           navigate('/dashboard')
         } else {
           console.log('Redirecting to home')
