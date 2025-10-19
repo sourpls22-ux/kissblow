@@ -58,7 +58,7 @@ const Terms = () => {
               <h2 className="text-2xl font-semibold theme-text mb-4">{t('rules.userCodeOfConduct.title')}</h2>
               <p className="mb-4">{t('rules.userCodeOfConduct.intro')}</p>
               <ul className="list-disc pl-6 mb-4">
-                {t('rules.userCodeOfConduct.items').map((item, index) => (
+                {t('rules.userCodeOfConduct.items', { returnObjects: true }).map((item, index) => (
                   <li key={index}>{item}</li>
                 ))}
               </ul>
@@ -93,7 +93,7 @@ const Terms = () => {
                 {t('rules.platformServicesLimitations.content2')}
               </p>
               <ul className="list-disc pl-6 mb-4">
-                {t('rules.platformServicesLimitations.items').map((item, index) => (
+                {t('rules.platformServicesLimitations.items', { returnObjects: true }).map((item, index) => (
                   <li key={index}>{item}</li>
                 ))}
               </ul>

@@ -46,7 +46,7 @@ const About = () => {
               <div className="bg-onlyfans-accent/10 rounded-lg p-4">
                 <h3 className="text-lg font-semibold theme-text mb-3">{t('about.company.valuesTitle')}</h3>
                 <ul className="list-disc list-inside space-y-2">
-                  {t('about.company.values').map((value, index) => (
+                  {t('about.company.values', { returnObjects: true }).map((value, index) => (
                     <li key={index} className="text-onlyfans-accent font-medium">{value}</li>
                   ))}
                 </ul>
@@ -57,7 +57,7 @@ const About = () => {
             <section>
               <h2 className="text-2xl font-semibold theme-text mb-4">{t('about.services.title')}</h2>
               <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {t('about.services.items').map((item, index) => (
+                {t('about.services.items', { returnObjects: true }).map((item, index) => (
                   <li key={index} className="flex items-start space-x-2">
                     <span className="text-onlyfans-accent font-bold mt-1">•</span>
                     <span>{item}</span>
@@ -75,7 +75,7 @@ const About = () => {
               <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
                 <h3 className="text-lg font-semibold text-green-800 dark:text-green-200 mb-3">{t('about.legal.complianceTitle')}</h3>
                 <ul className="list-disc list-inside space-y-2">
-                  {t('about.legal.compliance').map((item, index) => (
+                  {t('about.legal.compliance', { returnObjects: true }).map((item, index) => (
                     <li key={index} className="text-green-700 dark:text-green-300">{item}</li>
                   ))}
                 </ul>
@@ -91,7 +91,7 @@ const About = () => {
               <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 mb-4">
                 <h3 className="text-lg font-semibold text-red-800 dark:text-red-200 mb-3">{t('about.zeroTolerance.policiesTitle')}</h3>
                 <ul className="list-disc list-inside space-y-2">
-                  {t('about.zeroTolerance.policies').map((policy, index) => (
+                  {t('about.zeroTolerance.policies', { returnObjects: true }).map((policy, index) => (
                     <li key={index} className="text-red-700 dark:text-red-300">{policy}</li>
                   ))}
                 </ul>
@@ -110,7 +110,7 @@ const About = () => {
                 {t('about.team.content')}
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {t('about.team.departments').map((department, index) => (
+                {t('about.team.departments', { returnObjects: true }).map((department, index) => (
                   <div key={index} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
                     <p className="text-gray-800 dark:text-gray-200 font-medium">{department}</p>
                   </div>

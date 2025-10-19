@@ -51,21 +51,21 @@ const Privacy = () => {
               
               <h3 className="text-xl font-semibold theme-text mb-3">{t('privacy.informationWeCollect.accountInfo.title')}</h3>
               <ul className="list-disc pl-6 mb-4">
-                {t('privacy.informationWeCollect.accountInfo.items').map((item, index) => (
+                {t('privacy.informationWeCollect.accountInfo.items', { returnObjects: true }).map((item, index) => (
                   <li key={index}>{item}</li>
                 ))}
               </ul>
 
               <h3 className="text-xl font-semibold theme-text mb-3">{t('privacy.informationWeCollect.advertisementData.title')}</h3>
               <ul className="list-disc pl-6 mb-4">
-                {t('privacy.informationWeCollect.advertisementData.items').map((item, index) => (
+                {t('privacy.informationWeCollect.advertisementData.items', { returnObjects: true }).map((item, index) => (
                   <li key={index}>{item}</li>
                 ))}
               </ul>
 
               <h3 className="text-xl font-semibold theme-text mb-3">{t('privacy.informationWeCollect.technicalInfo.title')}</h3>
               <ul className="list-disc pl-6 mb-4">
-                {t('privacy.informationWeCollect.technicalInfo.items').map((item, index) => (
+                {t('privacy.informationWeCollect.technicalInfo.items', { returnObjects: true }).map((item, index) => (
                   <li key={index}>{item}</li>
                 ))}
               </ul>
@@ -75,7 +75,7 @@ const Privacy = () => {
               <h2 className="text-2xl font-semibold theme-text mb-4">{t('privacy.howWeUseInfo.title')}</h2>
               <p className="mb-4">{t('privacy.howWeUseInfo.intro')}</p>
               <ul className="list-disc pl-6 mb-4">
-                {t('privacy.howWeUseInfo.items').map((item, index) => (
+                {t('privacy.howWeUseInfo.items', { returnObjects: true }).map((item, index) => (
                   <li key={index}>{item}</li>
                 ))}
               </ul>
@@ -86,7 +86,7 @@ const Privacy = () => {
                 <h2 className="text-2xl font-semibold theme-text mb-4">{t('privacy.legalBasis.title')}</h2>
                 <p className="mb-4">{t('privacy.legalBasis.intro')}</p>
                 <ul className="list-disc pl-6 mb-4">
-                  {t('privacy.legalBasis.items').map((item, index) => (
+                  {t('privacy.legalBasis.items', { returnObjects: true }).map((item, index) => (
                     <li key={index}><strong>{item.split(':')[0]}:</strong> {item.split(':')[1]}</li>
                   ))}
                 </ul>
@@ -99,7 +99,7 @@ const Privacy = () => {
                 {t('privacy.cookiesTracking.intro')}
               </p>
               <ul className="list-disc pl-6 mb-4">
-                {t('privacy.cookiesTracking.items').map((item, index) => (
+                {t('privacy.cookiesTracking.items', { returnObjects: true }).map((item, index) => (
                   <li key={index}>{item}</li>
                 ))}
               </ul>
@@ -132,7 +132,7 @@ const Privacy = () => {
               <h2 className="text-2xl font-semibold theme-text mb-4">{t('privacy.yourRights.title')}</h2>
               <p className="mb-4">{t('privacy.yourRights.intro')}</p>
               <ul className="list-disc pl-6 mb-4">
-                {t('privacy.yourRights.items').map((item, index) => (
+                {t('privacy.yourRights.items', { returnObjects: true }).map((item, index) => (
                   <li key={index}><strong>{item.split(':')[0]}:</strong> {item.split(':')[1]}</li>
                 ))}
               </ul>

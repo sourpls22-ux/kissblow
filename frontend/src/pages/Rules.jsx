@@ -46,7 +46,7 @@ const Rules = () => {
             <section>
               <h2 className="text-xl font-semibold theme-text mb-4">{t('rules.behavior.title')}</h2>
               <ul className="list-disc list-inside space-y-2">
-                {t('rules.behavior.items').map((item, index) => (
+                {t('rules.behavior.items', { returnObjects: true }).map((item, index) => (
                   <li key={index}>{item}</li>
                 ))}
               </ul>
