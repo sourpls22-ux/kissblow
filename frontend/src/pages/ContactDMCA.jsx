@@ -22,10 +22,10 @@ const ContactDMCA = () => {
   const [showTurnstile, setShowTurnstile] = useState(false)
   const turnstileRef = useRef(null)
 
-  // Отслеживаем изменения состояния loading для отладки
-  useEffect(() => {
-    console.log('loading state changed to:', loading)
-  }, [loading])
+  // Убираем отладочный useEffect для продакшена
+  // useEffect(() => {
+  //   console.log('loading state changed to:', loading)
+  // }, [loading])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -43,7 +43,7 @@ const ContactDMCA = () => {
     
     // Автоматически продолжаем отправку формы
     try {
-      console.log('Starting contact form submission with data:', formData)
+      // console.log('Starting contact form submission with data:', formData)
       const response = await fetch('/api/contact-dmca', {
         method: 'POST',
         headers: {
@@ -57,7 +57,7 @@ const ContactDMCA = () => {
       })
 
       if (response.ok) {
-        console.log('Contact form submitted successfully')
+        // console.log('Contact form submitted successfully')
         success('Your message has been sent successfully!')
         setFormData({
           name: '',
@@ -68,13 +68,13 @@ const ContactDMCA = () => {
         })
         setTurnstileToken('')
       } else {
-        console.log('Contact form submission failed')
+          // console.log('Contact form submission failed')
         error('Failed to send message. Please try again.')
         // Сбрасываем токен при неудачной отправке
         setTurnstileToken('')
       }
     } catch (err) {
-      console.error('Contact form submission error:', err)
+        // console.error('Contact form submission error:', err)
       error('Failed to send message. Please try again.')
       // Сбрасываем токен при ошибке
       setTurnstileToken('')
@@ -122,7 +122,7 @@ const ContactDMCA = () => {
         ? '1x00000000000000000000AA' // Always passes (visible)
         : '0x4AAAAAAB55qr99duHk2JQk' // Production key
       
-      console.log('Initializing Turnstile with sitekey:', sitekey)
+      // console.log('Initializing Turnstile with sitekey:', sitekey)
       
       try {
         window.turnstile.render(turnstileRef.current, {
@@ -132,7 +132,7 @@ const ContactDMCA = () => {
           'error-callback': handleTurnstileError,
           'expired-callback': handleTurnstileExpired,
         })
-        console.log('Turnstile widget rendered successfully')
+        // console.log('Turnstile widget rendered successfully')
       } catch (error) {
         console.error('Error rendering Turnstile widget:', error)
       }

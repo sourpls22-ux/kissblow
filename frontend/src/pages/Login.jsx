@@ -140,7 +140,7 @@ const Login = () => {
         ? '1x00000000000000000000AA' // Always passes (visible)
         : '0x4AAAAAAB55qr99duHk2JQk' // Production key
       
-      console.log('Initializing Turnstile with sitekey:', sitekey)
+      // console.log('Initializing Turnstile with sitekey:', sitekey)
       
       try {
         window.turnstile.render(turnstileRef.current, {
@@ -150,7 +150,7 @@ const Login = () => {
           'error-callback': handleTurnstileError,
           'expired-callback': handleTurnstileExpired,
         })
-        console.log('Turnstile widget rendered successfully')
+        // console.log('Turnstile widget rendered successfully')
       } catch (error) {
         console.error('Error rendering Turnstile widget:', error)
       }
