@@ -18,6 +18,7 @@ const originalConsoleTrace = console.trace
 
 const shouldHideMessage = (message) => {
   return (
+    // Cloudflare RUM beacon errors
     message.includes('cloudflareinsights.com') ||
     message.includes('beacon.min.js') ||
     message.includes('ERR_NAME_NOT_RESOLVED') ||
@@ -34,7 +35,14 @@ const shouldHideMessage = (message) => {
     // Более общая проверка на сетевые ошибки Cloudflare
     (message.includes('GET') && message.includes('cloudflareinsights.com') && message.includes('ERR_NAME_NOT_RESOLVED')) ||
     // Проверяем на формат без GET (vcd15cbe7772f49c399c6a5babf22c1241717689176015:1 Failed to load resource:)
-    /^vcd[a-f0-9]{32}:\d+\s+Failed to load resource: net::ERR_NAME_NOT_RESOLVED$/.test(message)
+    /^vcd[a-f0-9]{32}:\d+\s+Failed to load resource: net::ERR_NAME_NOT_RESOLVED$/.test(message) ||
+    // Violation warnings (performance and deprecated methods)
+    message.includes('[Violation]') ||
+    message.includes('Avoid using document.write') ||
+    message.includes('readystatechange handler took') ||
+    message.includes('message handler took') ||
+    // Turnstile debug messages
+    message.includes('Turnstile success, token received')
   )
 }
 

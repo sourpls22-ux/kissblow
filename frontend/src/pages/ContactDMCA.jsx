@@ -37,7 +37,7 @@ const ContactDMCA = () => {
 
   // Turnstile handlers
   const handleTurnstileSuccess = async (token) => {
-    console.log('Turnstile success, token received:', token)
+    // console.log('Turnstile success, token received:', token)
     setTurnstileToken(token)
     setShowTurnstile(false) // Скрываем виджет после успешной проверки
     
