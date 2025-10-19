@@ -168,8 +168,17 @@ const Settings = () => {
               <h2 className="text-xl font-semibold theme-text">{t('settings.changePassword')}</h2>
             </div>
             
-            <form onSubmit={handleChangePassword} className="space-y-4">
-              <div>
+              <form onSubmit={handleChangePassword} className="space-y-4">
+                {/* Скрытое поле username для доступности */}
+                <input
+                  type="text"
+                  name="username"
+                  autoComplete="username"
+                  style={{ display: 'none' }}
+                  tabIndex={-1}
+                />
+                
+                <div>
                 <label className="block text-sm font-medium theme-text mb-1">
                   {t('settings.currentPassword')}
                 </label>
