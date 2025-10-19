@@ -301,6 +301,7 @@ export const ru = {
     verificationPhotoUploaded: 'Ваше фото для верификации загружено и рассматривается нашей командой.',
     expectedReviewTime: 'Ожидаемое время рассмотрения: до 24 часов',
     cancelVerification: 'Отменить верификацию',
+    mediaGallery: 'Медиа галерея',
     videosUploadError: 'Ошибка загрузки видео',
     atLeastOnePhoto: '(минимум 1 фото)',
     uploadPhoto: 'Загрузить фото',
