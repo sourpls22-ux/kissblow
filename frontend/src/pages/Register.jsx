@@ -350,6 +350,7 @@ const Register = () => {
                   name="password"
                   type="password"
                   required
+                  autoComplete="new-password"
                   value={formData.password}
                   onChange={handleChange}
                   className="input-field-with-icon"
@@ -370,6 +371,7 @@ const Register = () => {
                   name="confirmPassword"
                   type="password"
                   required
+                  autoComplete="new-password"
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   className="input-field-with-icon"
