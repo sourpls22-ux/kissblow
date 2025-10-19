@@ -178,6 +178,7 @@ export const en = {
       buy: 'Buy'
     },
     additionalPhotos: 'Additional photos:',
+    mediaGallery: 'Media Gallery',
     status: 'Status',
     available: 'Available now',
     writeMessage: 'Contact',
