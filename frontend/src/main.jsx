@@ -46,6 +46,9 @@ const shouldHideMessage = (message) => {
     message.includes('readystatechange handler took') ||
     message.includes('message handler took') ||
     message.includes('load handler took') ||
+    // Более общие паттерны для Violation предупреждений
+    message.includes('handler took') ||
+    message.includes('took ') && message.includes('ms') ||
     
     // Cloudflare Turnstile messages
     message.includes('Request for the Private Access Token challenge') ||

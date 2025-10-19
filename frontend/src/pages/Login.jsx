@@ -79,12 +79,12 @@ const Login = () => {
     
     // Автоматически продолжаем отправку формы
     try {
-      console.log('Starting login with email:', formData.email)
+      // console.log('Starting login with email:', formData.email)
       const result = await login(formData.email, formData.password, token)
-      console.log('Login result:', result)
+      // console.log('Login result:', result)
       
       if (result.success) {
-        console.log('Login successful, redirecting to dashboard')
+        // console.log('Login successful, redirecting to dashboard')
         navigate('/dashboard')
       } else {
         console.log('Login failed:', result.error)
@@ -225,6 +225,7 @@ const Login = () => {
                   name="email"
                   type="email"
                   required
+                  autoComplete="username"
                   value={formData.email}
                   onChange={handleChange}
                   className="input-field-with-icon"
