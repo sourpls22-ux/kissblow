@@ -27,8 +27,7 @@
       @media (min-width: 1024px) { .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
       @media (min-width: 1280px) { .grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
     </style>
-    <!-- Preload hint for LCP image -->
-    <link rel="preload" as="image" fetchpriority="high">
+    <!-- Preload hint for LCP image - убираем невалидный тег -->
   </head>
   <body>
     <div id="root"></div>

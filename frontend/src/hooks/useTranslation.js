@@ -2,10 +2,6 @@ import { useLanguage } from '../contexts/LanguageContext'
 import { en } from '../locales/en'
 import { ru } from '../locales/ru'
 
-// Force reload to avoid caching issues
-const VERSION = Date.now()
-console.log('Translation hook loaded, version:', VERSION)
-
 const translations = {
   en,
   ru
