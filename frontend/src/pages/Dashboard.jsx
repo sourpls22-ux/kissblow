@@ -960,7 +960,7 @@ const Dashboard = () => {
     setProfileUploading(profileId, true) // Начало загрузки
     
     try {
-      console.log('Starting multiple media upload:', files.length, 'files')
+      // console.log('Starting multiple media upload:', files.length, 'files')
       const uploadPromises = Array.from(files).map(async (file) => {
         const formData = new FormData()
         formData.append('media', file, file.name) // Добавляем имя файла явно для Chrome iOS
@@ -968,7 +968,7 @@ const Dashboard = () => {
         formData.append('type', fileType)
 
         try {
-          console.log('Uploading file:', file.name, file.type, file.size, 'bytes')
+          // console.log('Uploading file:', file.name, file.type, file.size, 'bytes')
           const response = await axios.post(`/api/profiles/${profileId}/media`, formData, {
             headers: {
               'Content-Type': 'multipart/form-data',
@@ -977,7 +977,7 @@ const Dashboard = () => {
             maxContentLength: Infinity,
             maxBodyLength: Infinity
           })
-          console.log('File uploaded successfully:', file.name)
+          // console.log('File uploaded successfully:', file.name)
           return { success: true, data: response.data, type: fileType }
         } catch (error) {
           console.error('Error uploading media:', file.name, error)
@@ -994,7 +994,7 @@ const Dashboard = () => {
       const hasVideos = successfulUploads.some(result => result.type === 'video')
       
       if (successfulUploads.length > 0) {
-        console.log('Successful uploads:', successfulUploads.length)
+        // console.log('Successful uploads:', successfulUploads.length)
         // Refresh profile media
         if (editingProfile && editingProfile.id === profileId) {
           await fetchProfileMedia(profileId)
@@ -1018,7 +1018,7 @@ const Dashboard = () => {
       }
 
       if (failedUploads.length > 0) {
-        console.log('Failed uploads:', failedUploads.length)
+        // console.log('Failed uploads:', failedUploads.length)
         const failedPhotos = failedUploads.filter(result => result.type === 'photo')
         const failedVideos = failedUploads.filter(result => result.type === 'video')
         
@@ -2123,11 +2123,11 @@ const Dashboard = () => {
                                 const fileType = file.type.startsWith('video/') ? 'video' : 'photo'
                                 handleMediaUpload(editingProfile.id, file, fileType)
                               } else {
-                                console.log('Multiple files upload:', processedFiles.length)
+                                // console.log('Multiple files upload:', processedFiles.length)
                                 handleMultipleMediaUpload(editingProfile.id, processedFiles)
                               }
                             } else {
-                              console.log('No files selected or no editing profile')
+                              // console.log('No files selected or no editing profile')
                             }
                           }}
                           className="hidden"
@@ -2151,10 +2151,10 @@ const Dashboard = () => {
                           accept="video/*"
                           disabled={uploadingVideo}
                           onChange={(e) => {
-                            console.log('Video input changed:', e.target.files)
+                            // console.log('Video input changed:', e.target.files)
                             if (e.target.files && e.target.files.length > 0 && editingProfile) {
                               const file = e.target.files[0]
-                              console.log('Video file selected:', file.name, file.type, file.size)
+                              // console.log('Video file selected:', file.name, file.type, file.size)
                               
                               // Проверяем размер видео
                               const maxVideoSize = 150 * 1024 * 1024 // 150MB для видео
