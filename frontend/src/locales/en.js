@@ -208,7 +208,6 @@ export const en = {
     noContactInfo: 'No contact information available',
     noPricing: 'No pricing information available',
     morePhotos: 'more photos',
-    mediaGallery: 'Gallery',
     writeReview: 'Write Review',
     rating: 'Rating',
     comment: 'Comment',
