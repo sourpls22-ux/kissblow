@@ -19,7 +19,11 @@ const shouldHideMessage = (message) => {
     message.includes('beacon.min.js') ||
     message.includes('ERR_NAME_NOT_RESOLVED') ||
     message.includes('Failed to load resource') ||
-    message.includes('net::ERR_NAME_NOT_RESOLVED')
+    message.includes('net::ERR_NAME_NOT_RESOLVED') ||
+    // Проверяем на Cloudflare beacon с длинным ID (32 символа + :1)
+    /^[a-f0-9]{32}:\d+\s+Failed to load resource: net::ERR_NAME_NOT_RESOLVED$/.test(message) ||
+    // Или просто проверяем на наличие длинного ID и ошибки
+    (message.includes('Failed to load resource: net::ERR_NAME_NOT_RESOLVED') && message.length > 50)
   )
 }
 
