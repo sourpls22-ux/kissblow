@@ -87,9 +87,8 @@ const SortableMediaItem = ({ media, editingProfile, onDeleteMedia, isMainPhoto, 
               preload="metadata"
               muted
               loop
-              onLoadStart={() => {/* console.log('Video load started:', media.url) */}
+              onLoadStart={() => {}}
               onLoadedData={() => {
-                // console.log('Video data loaded:', media.url)
                 setVideoLoaded(true)
               }}
               onError={(e) => {
