@@ -681,6 +681,8 @@ const Browse = () => {
                     src={profile.image}
                     alt={profile.name}
                     className="w-full h-full object-cover object-center"
+                    width={400}
+                    height={500}
                     fetchpriority={index === 0 ? "high" : "auto"}
                     loading={index === 0 ? "eager" : "lazy"}
                     onError={(e) => {
@@ -794,7 +796,7 @@ const Browse = () => {
                   <h4 className="text-lg font-semibold theme-text mb-3">{t('browse.aboutUs.whatSetsUsApart.title')}</h4>
                   <ul className="theme-text-secondary space-y-2">
                     {(() => {
-                      const items = t('browse.aboutUs.whatSetsUsApart.items')
+                      const items = t('browse.aboutUs.whatSetsUsApart.items', { returnObjects: true })
                       return Array.isArray(items) ? items : []
                     })().map((item, index) => (
                       <li key={index} className="flex items-center space-x-2">
