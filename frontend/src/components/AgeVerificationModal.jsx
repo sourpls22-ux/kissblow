@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from '../hooks/useTranslation'
 import { useModalBackdrop } from '../hooks/useModalBackdrop'
+import { useScrollLock, useModalScroll } from '../hooks/useScrollLock'
 
 const AgeVerificationModal = () => {
   const [isVisible, setIsVisible] = useState(false)
@@ -11,6 +12,10 @@ const AgeVerificationModal = () => {
   
   // Хук для правильного поведения модального окна (но не закрываем его по клику на backdrop)
   const modalBackdrop = useModalBackdrop(() => {}) // Пустая функция - не закрываем
+  
+  // Хуки для блокировки скролла
+  useScrollLock(isVisible)
+  const { handleModalScroll, handleTouchScroll } = useModalScroll()
 
   useEffect(() => {
     // Check if user has already verified age
@@ -48,7 +53,10 @@ const AgeVerificationModal = () => {
       onMouseUp={modalBackdrop.handleMouseUp}
       onClick={modalBackdrop.handleClick}
     >
-      <div className="theme-surface rounded-lg p-8 max-w-md w-full border theme-border shadow-2xl">
+      <div 
+        className="theme-surface rounded-lg p-8 max-w-md w-full border theme-border shadow-2xl modal-content"
+        data-modal-content
+      >
         <div className="text-center">
           {/* Warning Icon */}
           <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 dark:bg-red-900/20 mb-6">

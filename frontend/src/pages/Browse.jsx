@@ -3,6 +3,7 @@ import { useSearchParams, Link, useNavigate, useLocation, useParams } from 'reac
 import { MapPin, Star, RefreshCw, User, Filter, X, Search, Globe, Heart } from 'lucide-react'
 import { useTranslation } from '../hooks/useTranslation'
 import { useModalBackdrop } from '../hooks/useModalBackdrop'
+import { useScrollLock, useModalScroll } from '../hooks/useScrollLock'
 import { formatPrice } from '../utils/currency'
 import { cities, searchCities, popularCities } from '../data/cities'
 import SEOHead from '../components/SEOHead'
@@ -52,6 +53,10 @@ const Browse = () => {
   
   // Хук для правильного поведения модального окна фильтров
   const filtersModalBackdrop = useModalBackdrop(() => setShowFilters(false))
+  
+  // Хуки для блокировки скролла
+  useScrollLock(showFilters)
+  const { handleModalScroll, handleTouchScroll } = useModalScroll()
   
   // Функция для получения минимальной цены профиля
   const getMinPrice = (profile) => {
@@ -162,24 +167,34 @@ const Browse = () => {
       setFilteredCities(filtered)
       setSelectedIndex(-1)
     } else {
-      // При пустом поиске показываем популярные города
+      // При пустом поиске показываем популярные города только если список уже открыт
+      if (showSuggestions) {
+        setFilteredCities(popularCities.slice(0, 20))
+        setSelectedIndex(-1)
+      }
+    }
+  }, [searchQuery, showSuggestions])
+
+  // Показываем популярные города при открытии списка
+  useEffect(() => {
+    if (showSuggestions && searchQuery.length === 0) {
       setFilteredCities(popularCities.slice(0, 20))
       setSelectedIndex(-1)
     }
-  }, [searchQuery])
+  }, [showSuggestions])
 
   // Закрытие автокомплита при клике вне поля
   useEffect(() => {
-    const handleClickOutside = (event) => {
+    const handleMouseDownOutside = (event) => {
       if (inputRef.current && !inputRef.current.contains(event.target) &&
           suggestionsRef.current && !suggestionsRef.current.contains(event.target)) {
         setShowSuggestions(false)
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('mousedown', handleMouseDownOutside)
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('mousedown', handleMouseDownOutside)
     }
   }, [])
 
@@ -201,8 +216,8 @@ const Browse = () => {
     setSearchQuery(cleanCity)
     setShowSuggestions(false)
     setSelectedIndex(-1)
-    // Переходим на страницу города
-    navigate(`/browse?city=${encodeURIComponent(cleanCity)}`)
+    // Переходим на страницу города с оригинальным названием (с суффиксами)
+    navigate(`/browse?city=${encodeURIComponent(city)}`)
   }
 
   const handleKeyDown = (e) => {
@@ -449,8 +464,18 @@ const Browse = () => {
                   value={searchQuery}
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
-                  onFocus={() => setShowSuggestions(true)}
-                  onClick={() => setShowSuggestions(true)}
+                  onFocus={() => {
+                    setShowSuggestions(true)
+                    if (searchQuery.length === 0) {
+                      setFilteredCities(popularCities.slice(0, 20))
+                    }
+                  }}
+                  onClick={() => {
+                    setShowSuggestions(true)
+                    if (searchQuery.length === 0) {
+                      setFilteredCities(popularCities.slice(0, 20))
+                    }
+                  }}
                   placeholder={t('browse.searchPlaceholder')}
                   className="input-field pl-4 pr-4 py-2 w-full h-10 smooth-transition"
                   autoComplete="off"
@@ -470,7 +495,10 @@ const Browse = () => {
                         return (
                           <div
                             key={city}
-                            onClick={() => handleCitySelect(city)}
+                            onMouseDown={(e) => {
+                              e.preventDefault()
+                              handleCitySelect(city)
+                            }}
                             className={`px-4 py-3 cursor-pointer flex items-center space-x-2 transition-colors ${
                               index === selectedIndex 
                                 ? 'bg-onlyfans-accent text-white' 
@@ -503,7 +531,7 @@ const Browse = () => {
               {/* Filters Button */}
               <button
                 onClick={() => setShowFilters(true)}
-                className="flex items-center space-x-2 border-2 border-white dark:border-white border-gray-300 bg-white/10 dark:bg-white/10 bg-gray-100 text-white dark:text-white text-gray-700 px-4 py-2 h-10 rounded-lg hover:bg-white dark:hover:bg-white hover:text-gray-900 dark:hover:text-gray-900 transition-colors"
+                className="flex items-center space-x-2 border-2 border-gray-300 dark:border-white bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white px-4 py-2 h-10 rounded-lg hover:bg-gray-200 dark:hover:bg-white hover:text-gray-900 dark:hover:text-gray-900 transition-colors"
               >
                 <Filter size={16} />
                 <span>Filters</span>
@@ -543,8 +571,18 @@ const Browse = () => {
                   value={searchQuery}
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
-                  onFocus={() => setShowSuggestions(true)}
-                  onClick={() => setShowSuggestions(true)}
+                  onFocus={() => {
+                    setShowSuggestions(true)
+                    if (searchQuery.length === 0) {
+                      setFilteredCities(popularCities.slice(0, 20))
+                    }
+                  }}
+                  onClick={() => {
+                    setShowSuggestions(true)
+                    if (searchQuery.length === 0) {
+                      setFilteredCities(popularCities.slice(0, 20))
+                    }
+                  }}
                   placeholder={t('browse.searchPlaceholder')}
                   className="input-field pl-4 pr-4 py-2 w-full h-10 smooth-transition"
                   autoComplete="off"
@@ -564,7 +602,10 @@ const Browse = () => {
                         return (
                           <div
                             key={city}
-                            onClick={() => handleCitySelect(city)}
+                            onMouseDown={(e) => {
+                              e.preventDefault()
+                              handleCitySelect(city)
+                            }}
                             className={`px-4 py-3 cursor-pointer flex items-center space-x-2 transition-colors ${
                               index === selectedIndex 
                                 ? 'bg-onlyfans-accent text-white' 
@@ -617,7 +658,7 @@ const Browse = () => {
               
               <button
                 onClick={() => setShowFilters(true)}
-                className="flex items-center space-x-2 border-2 border-white dark:border-white border-gray-300 bg-white/10 dark:bg-white/10 bg-gray-100 text-white dark:text-white text-gray-700 px-4 py-2 h-10 rounded-lg hover:bg-white dark:hover:bg-white hover:text-gray-900 dark:hover:text-gray-900 transition-colors"
+                className="flex items-center space-x-2 border-2 border-gray-300 dark:border-white bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white px-4 py-2 h-10 rounded-lg hover:bg-gray-200 dark:hover:bg-white hover:text-gray-900 dark:hover:text-gray-900 transition-colors"
               >
                 <Filter size={16} />
                 <span>Filters</span>
@@ -658,11 +699,11 @@ const Browse = () => {
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
                     <h3 className="theme-text font-semibold text-lg">{profile.name}</h3>
-                    {profile.is_verified && (
+                    {profile.is_verified ? (
                       <div className="bg-green-500 text-white px-2 py-1 rounded text-xs font-medium">
                         Verified
                       </div>
-                    )}
+                    ) : null}
                   </div>
                   {getMinPrice(profile) && (
                     <span className="text-onlyfans-accent font-semibold">
@@ -836,7 +877,10 @@ const Browse = () => {
             onMouseUp={filtersModalBackdrop.handleMouseUp}
             onClick={filtersModalBackdrop.handleClick}
           >
-            <div className="theme-surface rounded-lg p-4 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div 
+              className="theme-surface rounded-lg p-4 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto modal-content"
+              data-modal-content
+            >
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold theme-text">{t('browse.filters.title')}</h2>
                 <button

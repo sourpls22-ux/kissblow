@@ -129,7 +129,10 @@ const PaymentHistory = () => {
                       <div className="flex items-center space-x-2">
                         {getStatusIcon(payment.status)}
                         <span className="font-medium theme-text">
-                          {t('paymentHistory.topUp')} ${payment.credit_amount || payment.amount_to_pay}
+                          {payment.method === 'profile_activation' ? t('paymentHistory.profileActivation') :
+                           payment.method === 'profile_boost' ? t('paymentHistory.profileBoost') :
+                           payment.method === 'auto_renewal' ? t('paymentHistory.autoRenewal') :
+                           t('paymentHistory.topUp')} ${Math.abs(payment.credit_amount || payment.amount_to_pay)}
                         </span>
                       </div>
                       <span className="text-sm theme-text-secondary">

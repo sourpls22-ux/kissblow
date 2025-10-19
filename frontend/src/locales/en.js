@@ -208,6 +208,7 @@ export const en = {
     noContactInfo: 'No contact information available',
     noPricing: 'No pricing information available',
     morePhotos: 'more photos',
+    mediaGallery: 'Gallery',
     writeReview: 'Write Review',
     rating: 'Rating',
     comment: 'Comment',
@@ -288,7 +289,6 @@ export const en = {
     photoDragTip: '💡 Tip: Photos can be dragged to reorder. The first photo will be the main photo that users see first.',
     photoDragTipMobile: '💡 Tip: Use ↑↓ arrows to reorder photos. The first photo will be the main photo that users see first.',
     videosUploadError: 'Failed to upload videos',
-    mediaGallery: 'Gallery',
     atLeastOnePhoto: '(at least 1 photo)',
     uploadPhoto: 'Upload Photo',
     uploadVideo: 'Upload Video',
@@ -422,6 +422,9 @@ export const en = {
     noPaymentsDesc: 'You haven\'t made any payments yet. Top up your balance to get started.',
     topUpNow: 'Top Up Now',
     topUp: 'Top Up',
+    profileActivation: 'Profile Activation',
+    profileBoost: 'Profile Boost',
+    autoRenewal: 'Auto Renewal',
     completed: 'Completed',
     failed: 'Failed',
     pending: 'Pending',
@@ -1007,6 +1010,7 @@ export const en = {
   createProfileModal: {
     title: 'Create Profile',
     subtitle: 'Create your profile to start earning',
+    verifying: 'Verifying...',
     createButton: 'Create Profile'
   },
 

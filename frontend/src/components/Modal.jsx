@@ -1,8 +1,13 @@
 import { useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
+import { useScrollLock, useModalScroll } from '../hooks/useScrollLock'
 
 const Modal = ({ isOpen, onClose, children, title, buttonRef }) => {
   const modalRef = useRef(null)
+
+  // Хуки для блокировки скролла
+  useScrollLock(isOpen)
+  const { handleModalScroll, handleTouchScroll } = useModalScroll()
 
   // Модальное окно всегда по центру экрана
   // Убираем сложную логику позиционирования
@@ -24,13 +29,11 @@ const Modal = ({ isOpen, onClose, children, title, buttonRef }) => {
     if (isOpen) {
       document.addEventListener('keydown', handleEscape)
       document.addEventListener('mousedown', handleClickOutside)
-      document.body.style.overflow = 'hidden' // Предотвращаем скролл
     }
 
     return () => {
       document.removeEventListener('keydown', handleEscape)
       document.removeEventListener('mousedown', handleClickOutside)
-      document.body.style.overflow = 'unset'
     }
   }, [isOpen, onClose, buttonRef])
 
@@ -40,7 +43,8 @@ const Modal = ({ isOpen, onClose, children, title, buttonRef }) => {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div
         ref={modalRef}
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 animate-in slide-in-from-top-2 duration-200"
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 animate-in slide-in-from-top-2 duration-200 modal-content"
+        data-modal-content
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">

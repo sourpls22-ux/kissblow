@@ -1056,6 +1056,17 @@ app.post('/api/profiles/:id/activate', authenticateToken, (req, res) => {
                 return res.status(500).json({ error: 'Database error' })
               }
 
+              // Add payment history record for activation
+              db.run(
+                'INSERT INTO payments (user_id, amount_to_pay, credit_amount, method, status) VALUES (?, ?, ?, ?, ?)',
+                [req.user.id, ACTIVATION_COST, -ACTIVATION_COST, 'profile_activation', 'completed'],
+                (err) => {
+                  if (err) {
+                    console.error('Error recording activation payment:', err)
+                  }
+                }
+              )
+
               // Update profile with boost
               db.run(
                 'UPDATE profiles SET is_active = 1, boost_expires_at = ?, last_payment_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?',
@@ -1186,6 +1197,17 @@ app.post('/api/profiles/:id/boost', authenticateToken, (req, res) => {
               if (err) {
                 return res.status(500).json({ error: 'Database error' })
               }
+
+              // Add payment history record for boost
+              db.run(
+                'INSERT INTO payments (user_id, amount_to_pay, credit_amount, method, status) VALUES (?, ?, ?, ?, ?)',
+                [req.user.id, BOOST_COST, -BOOST_COST, 'profile_boost', 'completed'],
+                (err) => {
+                  if (err) {
+                    console.error('Error recording boost payment:', err)
+                  }
+                }
+              )
 
               // Update profile with boost
               db.run(
@@ -2440,7 +2462,7 @@ const scheduleBoostRenewal = (profileId, userId, boostExpiryTime) => {
     return
   }
 
-  console.log(`⏰ Scheduled boost renewal for profile ${profileId} in ${Math.round(timeUntilExpiry / 1000 / 60)} minutes`)
+  // console.log(`⏰ Scheduled boost renewal for profile ${profileId} in ${Math.round(timeUntilExpiry / 1000 / 60)} minutes`)
 
   const timer = setTimeout(() => {
     processBoostRenewal(profileId, userId)
@@ -2452,7 +2474,7 @@ const scheduleBoostRenewal = (profileId, userId, boostExpiryTime) => {
 
 // Function to process boost renewal for a specific profile
 const processBoostRenewal = (profileId, userId) => {
-  console.log(`🔄 Processing boost renewal for profile ${profileId}`)
+  // console.log(`🔄 Processing boost renewal for profile ${profileId}`)
   
   // Check if profile is still active and get user balance
   db.get(
@@ -2468,12 +2490,12 @@ const processBoostRenewal = (profileId, userId) => {
       }
 
       if (!profile) {
-        console.log(`Profile ${profileId} not found or access denied`)
+        // console.log(`Profile ${profileId} not found or access denied`)
         return
       }
 
       if (!profile.is_active) {
-        console.log(`Profile ${profileId} is inactive, skipping renewal`)
+        // console.log(`Profile ${profileId} is inactive, skipping renewal`)
         return
       }
 
@@ -2481,7 +2503,7 @@ const processBoostRenewal = (profileId, userId) => {
       if (profile.balance >= 1.0) {
         // Deduct $1 and extend boost for another 24 hours
         const newBalance = profile.balance - 1.0
-        const newBoostExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000)
+        const newBoostExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours from now
         
         db.run(
           'UPDATE users SET balance = ? WHERE id = ?',
@@ -2491,6 +2513,17 @@ const processBoostRenewal = (profileId, userId) => {
               console.error('Error updating user balance:', err)
               return
             }
+
+            // Add payment history record for auto-renewal
+            db.run(
+              'INSERT INTO payments (user_id, amount_to_pay, credit_amount, method, status) VALUES (?, ?, ?, ?, ?)',
+              [userId, 1.0, -1.0, 'auto_renewal', 'completed'],
+              (err) => {
+                if (err) {
+                  console.error('Error recording auto-renewal payment:', err)
+                }
+              }
+            )
             
             db.run(
               'UPDATE profiles SET boost_expires_at = ?, last_payment_at = CURRENT_TIMESTAMP WHERE id = ?',
@@ -2500,7 +2533,7 @@ const processBoostRenewal = (profileId, userId) => {
                   console.error('Error updating profile boost:', err)
                   return
                 }
-                console.log(`✅ Auto-renewed boost for profile ${profileId}, charged $1, new balance: ${newBalance}`)
+                // console.log(`✅ Auto-renewed boost for profile ${profileId}, charged $1, new balance: ${newBalance}`)
                 
                 // Schedule next renewal
                 scheduleBoostRenewal(profileId, userId, newBoostExpiry.toISOString())
@@ -2509,7 +2542,7 @@ const processBoostRenewal = (profileId, userId) => {
           }
         )
       } else {
-        console.log(`❌ Profile ${profileId} boost expired, insufficient balance: ${profile.balance}`)
+        // console.log(`❌ Profile ${profileId} boost expired, insufficient balance: ${profile.balance}`)
         // Remove boost status but keep profile active
         db.run(
           'UPDATE profiles SET boost_expires_at = NULL WHERE id = ?',
@@ -2519,7 +2552,7 @@ const processBoostRenewal = (profileId, userId) => {
               console.error('Error removing expired boost:', err)
               return
             }
-            console.log(`Removed expired boost for profile ${profileId} (insufficient balance < $1)`)
+            // console.log(`Removed expired boost for profile ${profileId} (insufficient balance < $1)`)
           }
         )
       }
@@ -2546,7 +2579,7 @@ const checkExpiredBoosts = () => {
       }
 
       if (profiles.length > 0) {
-        console.log(`⚠️ Found ${profiles.length} profiles with expired boosts (fallback check)`)
+        // console.log(`⚠️ Found ${profiles.length} profiles with expired boosts (fallback check)`)
       }
 
       profiles.forEach(profile => {
@@ -2558,7 +2591,7 @@ const checkExpiredBoosts = () => {
 
 // Function to load existing active boosts and schedule their renewals
 const loadAndScheduleActiveBoosts = () => {
-  console.log('🔄 Loading active boosts and scheduling renewals...')
+  // console.log('🔄 Loading active boosts and scheduling renewals...')
   
   db.all(
     `SELECT p.id, p.user_id, p.boost_expires_at 
@@ -2572,7 +2605,7 @@ const loadAndScheduleActiveBoosts = () => {
         return
       }
 
-      console.log(`📋 Found ${profiles.length} active boosts`)
+      // console.log(`📋 Found ${profiles.length} active boosts`)
       
       profiles.forEach(profile => {
         scheduleBoostRenewal(profile.id, profile.user_id, profile.boost_expires_at)
@@ -2908,5 +2941,5 @@ app.listen(PORT, () => {
   
   // Fallback check every 6 hours (in case timers are missed)
   setInterval(checkExpiredBoosts, 6 * 60 * 60 * 1000) // 6 hours
-  console.log('⏰ Auto-renewal system started - precise timing with 6h fallback')
+  // console.log('⏰ Auto-renewal system started - precise timing with 6h fallback')
 })

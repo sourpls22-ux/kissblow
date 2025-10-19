@@ -510,7 +510,7 @@ const Girl = () => {
                 {/* Миниатюры медиа */}
                 {getAllMedia().length > 1 && (
                   <div className="mb-4">
-                    <h4 className="theme-text font-medium mb-3 text-sm">{t('mediaGallery')}</h4>
+                    <h4 className="theme-text font-medium mb-3 text-sm">{t('girl.mediaGallery')}</h4>
                     <div className="grid grid-cols-4 gap-2">
                       {getAllMedia().slice(0, 8).map((media, index) => (
                         <div 
@@ -642,11 +642,11 @@ const Girl = () => {
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-3">
                     <h1 className="text-2xl font-bold theme-text">{profile?.name ? profile.name : ''}</h1>
-                    {profile.is_verified && (
+                    {profile.is_verified ? (
                       <div className="bg-green-500 text-white px-2 py-1 rounded text-sm font-medium">
                         Verified
                       </div>
-                    )}
+                    ) : null}
                   </div>
                   {getMinPrice() && (
                     <span className="text-onlyfans-accent font-semibold text-lg">

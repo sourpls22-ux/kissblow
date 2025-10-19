@@ -5,6 +5,7 @@ import { useTranslation } from '../hooks/useTranslation'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useModalBackdrop } from '../hooks/useModalBackdrop'
+import { useScrollLock, useModalScroll } from '../hooks/useScrollLock'
 import { CURRENCIES } from '../utils/currency'
 import { cities, searchCities, popularCities } from '../data/cities'
 import SEOHead from '../components/SEOHead'
@@ -197,6 +198,7 @@ const Dashboard = () => {
   const [citySuggestions, setCitySuggestions] = useState([])
   const [showCitySuggestions, setShowCitySuggestions] = useState(false)
   const [selectedCityIndex, setSelectedCityIndex] = useState(-1)
+  const [citySelectedFromList, setCitySelectedFromList] = useState(false)
   const [cityError, setCityError] = useState(false)
   const [uploadingProfiles, setUploadingProfiles] = useState(new Set())
   const [uploadingVideo, setUploadingVideo] = useState(false)
@@ -754,6 +756,7 @@ const Dashboard = () => {
     }))
     setShowCitySuggestions(false)
     setSelectedCityIndex(-1)
+    setCitySelectedFromList(true) // Отмечаем, что город выбран из списка
   }
 
   const validateCity = (cityName) => {
@@ -1254,6 +1257,10 @@ const Dashboard = () => {
     setShowTopUpModal(false)
     setPendingProfileId(null)
   })
+  
+  // Хуки для блокировки скролла
+  useScrollLock(showEditModal || showCreateProfileModal || showVerificationModal || showTopUpModal)
+  const { handleModalScroll, handleTouchScroll } = useModalScroll()
 
   const handleEditModalKeyDown = (e) => {
     if (e.key === 'Escape' && showEditModal) {
@@ -1534,7 +1541,7 @@ const Dashboard = () => {
                       <div className="grid grid-cols-2 gap-2">
                         <button 
                           onClick={() => handleEditProfile(profile)}
-                          className="border-2 border-white dark:border-white border-gray-300 bg-white/10 dark:bg-white/10 bg-gray-100 text-white dark:text-white text-gray-700 px-3 py-2 rounded text-sm hover:bg-white dark:hover:bg-white hover:text-gray-900 dark:hover:text-gray-900 transition-colors flex items-center justify-center space-x-1"
+                          className="border-2 border-gray-300 dark:border-white bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white px-3 py-2 rounded text-sm hover:bg-gray-200 dark:hover:bg-white hover:text-gray-900 dark:hover:text-gray-900 transition-colors flex items-center justify-center space-x-1"
                         >
                           <Edit size={14} />
                           <span>{t('dashboard.buttons.edit')}</span>
@@ -1596,12 +1603,15 @@ const Dashboard = () => {
                onMouseUp={editModalBackdrop.handleMouseUp}
                onClick={editModalBackdrop.handleClick}
              >
-               <div className="theme-surface rounded-lg p-4 w-full max-w-2xl max-h-[90vh] overflow-y-auto border theme-border">
+               <div 
+                 className="theme-surface rounded-lg p-4 w-full max-w-2xl max-h-[90vh] overflow-y-auto border theme-border modal-content"
+                 data-modal-content
+               >
                  <div className="flex items-center justify-between mb-4">
                    <h3 className="text-xl font-semibold theme-text">{t('dashboard.editProfile')}</h3>
                   <button
                     onClick={closeEditModal}
-                    className="theme-text-secondary hover:theme-text transition-colors"
+                    className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
                   >
                     <X size={24} />
                   </button>
@@ -1668,6 +1678,8 @@ const Dashboard = () => {
                            handleEditFormChange({ target: { name: 'city', value } })
                            // Сбрасываем ошибку при изменении
                            setCityError(false)
+                           // Сбрасываем флаг выбора из списка при ручном вводе
+                           setCitySelectedFromList(false)
                            // Обновляем предложения с помощью улучшенного поиска
                            const filtered = searchCities(value, 10)
                            setCitySuggestions(filtered)
@@ -1681,10 +1693,12 @@ const Dashboard = () => {
                            setTimeout(() => {
                              setShowCitySuggestions(false)
                              setSelectedCityIndex(-1)
-                             // Валидируем город при потере фокуса
-                             if (editFormData.city.trim()) {
+                             // Валидируем город при потере фокуса только если он НЕ был выбран из списка
+                             if (editFormData.city.trim() && !citySelectedFromList) {
                                validateCity(editFormData.city)
                              }
+                             // Сбрасываем флаг выбора из списка
+                             setCitySelectedFromList(false)
                            }, 200)
                          }}
                          required
@@ -2209,7 +2223,7 @@ const Dashboard = () => {
                      <button
                        type="button"
                        onClick={closeEditModal}
-                       className="flex-1 px-3 py-2 border-2 border-white dark:border-white border-gray-300 bg-white/10 dark:bg-white/10 bg-gray-100 text-white dark:text-white text-gray-700 rounded-lg hover:bg-white dark:hover:bg-white hover:text-gray-900 dark:hover:text-gray-900 transition-colors text-sm"
+                       className="flex-1 px-3 py-2 border-2 border-gray-300 dark:border-white bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white rounded-lg hover:bg-gray-200 dark:hover:bg-white hover:text-gray-900 dark:hover:text-gray-900 transition-colors text-sm"
                      >
                        {t('common.cancel')}
                      </button>
@@ -2233,7 +2247,10 @@ const Dashboard = () => {
               onMouseUp={topUpModalBackdrop.handleMouseUp}
               onClick={topUpModalBackdrop.handleClick}
             >
-              <div className="theme-surface rounded-lg p-6 w-full max-w-md border theme-border">
+              <div 
+                className="theme-surface rounded-lg p-6 w-full max-w-md border theme-border modal-content"
+                data-modal-content
+              >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-semibold theme-text">Insufficient Balance</h3>
                   <button
@@ -2241,7 +2258,7 @@ const Dashboard = () => {
                       setShowTopUpModal(false)
                       setPendingProfileId(null)
                     }}
-                    className="theme-text-secondary hover:theme-text transition-colors"
+                    className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
                   >
                     <X size={24} />
                   </button>
@@ -2289,7 +2306,10 @@ const Dashboard = () => {
                 }
               }}
             >
-              <div className="theme-surface rounded-lg p-6 w-full max-w-md border theme-border">
+              <div 
+                className="theme-surface rounded-lg p-6 w-full max-w-md border theme-border modal-content"
+                data-modal-content
+              >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-semibold theme-text">{t('createProfileModal.title')}</h3>
                   <button
@@ -2297,7 +2317,7 @@ const Dashboard = () => {
                       setShowCreateProfileModal(false)
                       setTurnstileToken('')
                     }}
-                    className="theme-text-secondary hover:theme-text transition-colors"
+                    className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
                   >
                     <X size={24} />
                   </button>
@@ -2331,7 +2351,7 @@ const Dashboard = () => {
                         setShowCreateProfileModal(false)
                         setTurnstileToken('')
                       }}
-                      className="flex-1 px-4 py-2 border-2 border-white dark:border-white border-gray-300 bg-white/10 dark:bg-white/10 bg-gray-100 text-white dark:text-white text-gray-700 rounded-lg hover:bg-white dark:hover:bg-white hover:text-gray-900 dark:hover:text-gray-900 transition-colors"
+                      className="flex-1 px-4 py-2 border-2 border-gray-300 dark:border-white bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white rounded-lg hover:bg-gray-200 dark:hover:bg-white hover:text-gray-900 dark:hover:text-gray-900 transition-colors"
                     >
                       Cancel
                     </button>
@@ -2358,12 +2378,15 @@ const Dashboard = () => {
                 }
               }}
             >
-              <div className="theme-surface rounded-lg p-6 w-full max-w-md border theme-border">
+              <div 
+                className="theme-surface rounded-lg p-6 w-full max-w-md border theme-border modal-content"
+                data-modal-content
+              >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-semibold theme-text">{t('dashboard.verificationTitle')}</h3>
                   <button
                     onClick={closeVerificationModal}
-                    className="theme-text-secondary hover:theme-text transition-colors"
+                    className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
                   >
                     <X size={24} />
                   </button>
@@ -2420,7 +2443,7 @@ const Dashboard = () => {
                       <div className="flex space-x-3">
                         <button
                           onClick={closeVerificationModal}
-                          className="flex-1 px-4 py-2 border-2 border-white dark:border-white border-gray-300 bg-white/10 dark:bg-white/10 bg-gray-100 text-white dark:text-white text-gray-700 rounded-lg hover:bg-white dark:hover:bg-white hover:text-gray-900 dark:hover:text-gray-900 transition-colors"
+                          className="flex-1 px-4 py-2 border-2 border-gray-300 dark:border-white bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white rounded-lg hover:bg-gray-200 dark:hover:bg-white hover:text-gray-900 dark:hover:text-gray-900 transition-colors"
                         >
                           {t('common.cancel')}
                         </button>

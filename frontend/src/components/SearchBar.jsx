@@ -116,6 +116,8 @@ const SearchBar = ({ className = "", showTitle = false }) => {
     setSearchQuery(displayCity)
     setShowSuggestions(false)
     setSelectedIndex(-1)
+    // Добавляем навигацию на страницу browse
+    navigate(`/browse?city=${encodeURIComponent(displayCity)}`)
   }
 
   return (
@@ -147,7 +149,13 @@ const SearchBar = ({ className = "", showTitle = false }) => {
               setShowSuggestions(true)
             }
           }}
-          onBlur={() => {
+          onBlur={(e) => {
+            // Проверяем, что фокус не перешел на элемент выпадающего списка
+            const relatedTarget = e.relatedTarget
+            if (relatedTarget && suggestionsRef.current && suggestionsRef.current.contains(relatedTarget)) {
+              return // Не скрываем список, если фокус перешел на элемент списка
+            }
+            
             // Скрываем выпадающий список при потере фокуса с небольшой задержкой
             setTimeout(() => {
               setShowSuggestions(false)
@@ -177,6 +185,7 @@ const SearchBar = ({ className = "", showTitle = false }) => {
               <div
                 key={index}
                 onClick={() => handleCitySelect(city)}
+                onMouseDown={(e) => e.preventDefault()} // Предотвращаем onBlur при клике
                 className={`px-3 py-2 cursor-pointer transition-colors ${
                   index === selectedIndex 
                     ? 'bg-[#00bfff]/20 text-[#00bfff]' 
