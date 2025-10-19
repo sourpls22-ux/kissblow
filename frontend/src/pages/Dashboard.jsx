@@ -87,9 +87,9 @@ const SortableMediaItem = ({ media, editingProfile, onDeleteMedia, isMainPhoto, 
               preload="metadata"
               muted
               loop
-              onLoadStart={() => console.log('Video load started:', media.url)}
+              onLoadStart={() => {/* console.log('Video load started:', media.url) */}
               onLoadedData={() => {
-                console.log('Video data loaded:', media.url)
+                // console.log('Video data loaded:', media.url)
                 setVideoLoaded(true)
               }}
               onError={(e) => {
@@ -480,7 +480,7 @@ const Dashboard = () => {
     
     // Автоматически продолжаем создание профиля
     try {
-      console.log('Creating profile with token:', token)
+      // console.log('Creating profile with token:', token)
       const response = await axios.post('/api/profiles/create', { turnstileToken: token })
       setProfiles([response.data.profile, ...profiles])
       success(t('dashboard.profileCreated'))

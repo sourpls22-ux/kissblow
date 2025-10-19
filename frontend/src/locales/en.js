@@ -388,7 +388,8 @@ export const en = {
     verificationInProgress: 'Verification in Progress',
     verificationPhotoUploaded: 'Your verification photo has been uploaded and is being reviewed by our team.',
     expectedReviewTime: 'Expected review time: up to 24 hours',
-    cancelVerification: 'Cancel Verification'
+    cancelVerification: 'Cancel Verification',
+    mediaGallery: 'Media Gallery'
   },
 
   // Settings page
