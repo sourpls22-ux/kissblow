@@ -4,33 +4,19 @@ import { useTranslation } from '../hooks/useTranslation'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
+import { useBalance } from '../contexts/BalanceContext'
 import { useState, useEffect, useRef } from 'react'
-import axios from 'axios'
 
 const Navbar = () => {
   const { t } = useTranslation()
   const { language, toggleLanguage } = useLanguage()
   const { user, isAuthenticated, logout, token } = useAuth()
   const { theme, toggleTheme, isDark } = useTheme()
-  const [balance, setBalance] = useState(0)
+  const { balance } = useBalance()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const dropdownRef = useRef(null)
   const mobileMenuRef = useRef(null)
-
-  useEffect(() => {
-    if (isAuthenticated && token && user?.accountType === 'model') {
-      const fetchBalance = async () => {
-        try {
-          const response = await axios.get('/api/user/balance')
-          setBalance(response.data.balance)
-        } catch (error) {
-          console.error('Failed to fetch balance:', error)
-        }
-      }
-      fetchBalance()
-    }
-  }, [isAuthenticated, token, user?.accountType])
 
   // Close dropdown and mobile menu when clicking outside
   useEffect(() => {

@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import axios from 'axios'
 import { useTranslation } from '../hooks/useTranslation'
 import { useToast } from '../contexts/ToastContext'
+import { useBalance } from '../contexts/BalanceContext'
 import SEOHead from '../components/SEOHead'
 
 // Функция для получения вариантов быстрого пополнения
@@ -19,7 +20,8 @@ const TopUp = () => {
   const [selectedQuickAmount, setSelectedQuickAmount] = useState(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const { t } = useTranslation()
-  const { error } = useToast()
+  const { error, success } = useToast()
+  const { updateBalance } = useBalance()
   
   // Глобальная обработка ошибок Atlos WebSocket
   useEffect(() => {
@@ -102,12 +104,13 @@ const TopUp = () => {
               orderId: paymentData.orderId,
               orderAmount: paymentData.orderAmount,
               orderCurrency: paymentData.orderCurrency,
-              onSuccess: () => {
+              onSuccess: async () => {
                 console.log('ATLOS payment completed successfully!')
-                // Обновляем страницу через 2 секунды
-                setTimeout(() => {
-                  window.location.reload()
-                }, 2000)
+                // Обновляем баланс без перезагрузки страницы
+                setTimeout(async () => {
+                  await updateBalance()
+                  success('Payment completed successfully!')
+                }, 1000)
               },
               onCanceled: () => {
                 console.log('ATLOS payment canceled')

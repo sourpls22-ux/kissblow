@@ -4,6 +4,7 @@ import { User, Settings, Plus, X, Trash2, Edit, User as UserIcon, Calendar, MapP
 import { useTranslation } from '../hooks/useTranslation'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
+import { useBalance } from '../contexts/BalanceContext'
 import { useModalBackdrop } from '../hooks/useModalBackdrop'
 import { useScrollLock, useModalScroll } from '../hooks/useScrollLock'
 import { CURRENCIES } from '../utils/currency'
@@ -270,6 +271,7 @@ const Dashboard = () => {
   const { t } = useTranslation()
   const { user, isAuthenticated, token } = useAuth()
   const { success, error } = useToast()
+  const { updateBalance } = useBalance()
   const navigate = useNavigate()
   
   // Функция для капитализации первой буквы имени
@@ -618,11 +620,8 @@ const Dashboard = () => {
       ))
       success(response.data.message)
       
-      // Refresh user balance
-      if (response.data.newBalance !== undefined) {
-        // You might want to update user context here
-        console.log('New balance:', response.data.newBalance)
-      }
+      // Обновляем баланс в хедере
+      await updateBalance()
     } catch (err) {
       console.error('Failed to activate profile:', err)
       if (err.response?.data?.insufficient) {
@@ -667,10 +666,8 @@ const Dashboard = () => {
       ))
       success(response.data.message)
       
-      // Refresh user balance
-      if (response.data.newBalance !== undefined) {
-        console.log('New balance:', response.data.newBalance)
-      }
+      // Обновляем баланс в хедере
+      await updateBalance()
     } catch (err) {
       console.error('Failed to boost profile:', err)
       if (err.response?.data?.insufficient) {

@@ -3,6 +3,7 @@ import { ThemeProvider } from './contexts/ThemeContext'
 import { LanguageProvider } from './contexts/LanguageContext'
 import { AuthProvider } from './contexts/AuthContext'
 import { ToastProvider } from './contexts/ToastContext'
+import { BalanceProvider } from './contexts/BalanceContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import ScrollToTop from './components/ScrollToTop'
 import Home from './pages/Home'
@@ -33,9 +34,10 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <LanguageProvider>
-          <ToastProvider>
-            <Router>
+        <BalanceProvider>
+          <LanguageProvider>
+            <ToastProvider>
+              <Router>
             <ScrollToTop />
             <div className="min-h-screen theme-bg w-full overflow-x-hidden">
               <AgeVerificationModal />
@@ -84,9 +86,10 @@ function App() {
               </main>
               <Footer />
             </div>
-            </Router>
-          </ToastProvider>
-        </LanguageProvider>
+              </Router>
+            </ToastProvider>
+          </LanguageProvider>
+        </BalanceProvider>
       </AuthProvider>
     </ThemeProvider>
   )
