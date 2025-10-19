@@ -990,6 +990,7 @@ export const en = {
     expertArticles: 'Expert Articles',
     publishedOn: 'Published On',
     readTime: 'Read Time',
+    share: 'Share',
     shareArticle: 'Share Article',
     relatedArticles: 'Related Articles',
     backToBlog: 'Back to Blog',
