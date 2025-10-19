@@ -1305,7 +1305,10 @@ const Dashboard = () => {
           setShowVerificationModal(true)
           return
         } catch (statusErr) {
-          console.error('Failed to get existing verification:', statusErr)
+          // If 404, it means no verification exists, continue with error handling
+          if (statusErr.response?.status !== 404) {
+            console.error('Failed to get existing verification:', statusErr)
+          }
         }
       }
       
@@ -1339,7 +1342,12 @@ const Dashboard = () => {
       const response = await axios.get(`/api/profiles/${profileId}/verify/status`)
       setVerificationStatus(response.data)
     } catch (err) {
-      console.error('Failed to check verification status:', err)
+      // If 404, it means no verification exists (profile is not verified)
+      if (err.response?.status === 404) {
+        setVerificationStatus({ status: 'not_verified' })
+      } else {
+        console.error('Failed to check verification status:', err)
+      }
     }
   }
 
