@@ -12,6 +12,9 @@ import axios from 'axios'
 const originalConsoleError = console.error
 const originalConsoleWarn = console.warn
 const originalConsoleLog = console.log
+const originalConsoleInfo = console.info
+const originalConsoleDebug = console.debug
+const originalConsoleTrace = console.trace
 
 const shouldHideMessage = (message) => {
   return (
@@ -25,7 +28,11 @@ const shouldHideMessage = (message) => {
     // Или просто проверяем на наличие длинного ID и ошибки
     (message.includes('Failed to load resource: net::ERR_NAME_NOT_RESOLVED') && message.length > 50) ||
     // Дополнительная проверка для Cloudflare beacon
-    message.includes('vcd15cbe7772f49c399c6a5babf22c1241717689176015')
+    message.includes('vcd15cbe7772f49c399c6a5babf22c1241717689176015') ||
+    // Проверяем на сетевые ошибки браузера (формат: "1:38 GET https://...")
+    /^\d+:\d+\s+GET\s+https:\/\/static\.cloudflareinsights\.com\/beacon\.min\.js\/vcd[a-f0-9]{32}\s+net::ERR_NAME_NOT_RESOLVED$/.test(message) ||
+    // Более общая проверка на сетевые ошибки Cloudflare
+    (message.includes('GET') && message.includes('cloudflareinsights.com') && message.includes('ERR_NAME_NOT_RESOLVED'))
   )
 }
 
@@ -45,6 +52,24 @@ console.log = (...args) => {
   const message = args.join(' ')
   if (shouldHideMessage(message)) return
   originalConsoleLog.apply(console, args)
+}
+
+console.info = (...args) => {
+  const message = args.join(' ')
+  if (shouldHideMessage(message)) return
+  originalConsoleInfo.apply(console, args)
+}
+
+console.debug = (...args) => {
+  const message = args.join(' ')
+  if (shouldHideMessage(message)) return
+  originalConsoleDebug.apply(console, args)
+}
+
+console.trace = (...args) => {
+  const message = args.join(' ')
+  if (shouldHideMessage(message)) return
+  originalConsoleTrace.apply(console, args)
 }
 
 // Перехватываем глобальные ошибки через addEventListener
