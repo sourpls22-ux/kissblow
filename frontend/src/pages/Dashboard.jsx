@@ -303,7 +303,7 @@ const Dashboard = () => {
             type: 'image/jpeg',
             lastModified: Date.now()
           })
-          console.log(`Image converted: ${file.name} (${file.type}) -> JPEG (${file.size} -> ${blob.size} bytes)`)
+          // console.log(`Image converted: ${file.name} (${file.type}) -> JPEG (${file.size} -> ${blob.size} bytes)`)
           resolve(jpegFile)
         }, 'image/jpeg', 0.9)
       }
@@ -318,7 +318,7 @@ const Dashboard = () => {
     
     for (const file of files) {
       if (file.type.startsWith('image/')) {
-        console.log('Converting image to JPEG:', file.name, file.type)
+        // console.log('Converting image to JPEG:', file.name, file.type)
         const jpegFile = await convertImageToJPEG(file)
         processedFiles.push(jpegFile)
       } else {
@@ -904,7 +904,7 @@ const Dashboard = () => {
     }
     
     try {
-      console.log('Starting single media upload:', file.name, file.type, file.size, 'bytes')
+      // console.log('Starting single media upload:', file.name, file.type, file.size, 'bytes')
       
       // Для Chrome iOS - используем другой подход
       const formData = new FormData()
@@ -922,7 +922,7 @@ const Dashboard = () => {
       
       // Проверяем статус ответа
       if (response.status >= 200 && response.status < 300) {
-        console.log('Single file uploaded successfully:', file.name)
+        // console.log('Single file uploaded successfully:', file.name)
 
         // Refresh profile media
         if (editingProfile && editingProfile.id === profileId) {
@@ -2088,9 +2088,9 @@ const Dashboard = () => {
                           multiple
                           disabled={uploadingProfiles.has(editingProfile.id) && !uploadingVideo}
                           onChange={async (e) => {
-                            console.log('File input changed:', e.target.files)
+                            // console.log('File input changed:', e.target.files)
                             if (e.target.files && e.target.files.length > 0 && editingProfile) {
-                              console.log('Files selected:', e.target.files.length, 'editingProfile:', editingProfile.id)
+                              // console.log('Files selected:', e.target.files.length, 'editingProfile:', editingProfile.id)
                               
                               // Проверяем размер файлов
                               const files = Array.from(e.target.files)
@@ -2119,7 +2119,7 @@ const Dashboard = () => {
                               
                               if (processedFiles.length === 1) {
                                 const file = processedFiles[0]
-                                console.log('Single file upload:', file.name, file.type, file.size)
+                                // console.log('Single file upload:', file.name, file.type, file.size)
                                 const fileType = file.type.startsWith('video/') ? 'video' : 'photo'
                                 handleMediaUpload(editingProfile.id, file, fileType)
                               } else {
