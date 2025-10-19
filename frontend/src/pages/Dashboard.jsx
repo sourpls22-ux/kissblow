@@ -71,6 +71,8 @@ const SortableMediaItem = ({ media, editingProfile, onDeleteMedia, isMainPhoto, 
             src={media.url}
             alt={`${editingProfile?.name} ${media.type}`}
             className="w-full h-full object-cover"
+            loading="eager"
+            decoding="async"
             onError={(e) => {
               console.error('Failed to load image:', media.url)
               e.target.style.display = 'none'
@@ -921,8 +923,8 @@ const Dashboard = () => {
       
       // Проверяем статус ответа
       if (response.status >= 200 && response.status < 300) {
-        // console.log('Single file uploaded successfully:', file.name)
-
+        const responseData = response.data
+        
         // Refresh profile media
         if (editingProfile && editingProfile.id === profileId) {
           await fetchProfileMedia(profileId)
@@ -935,7 +937,17 @@ const Dashboard = () => {
           ))
         }
 
-        success(type === 'photo' ? t('dashboard.photoUploaded') : t('dashboard.videoUploaded'))
+        // Handle different response types
+        if (responseData.isConverting) {
+          // Video is being converted in background
+          success('Video uploaded, converting...')
+          
+          // Start checking conversion status
+          checkConversionStatus(profileId, responseData.mediaId)
+        } else {
+          // Regular upload completed
+          success(type === 'photo' ? t('dashboard.photoUploaded') : t('dashboard.videoUploaded'))
+        }
       } else {
         throw new Error(`Upload failed with status: ${response.status}`)
       }
@@ -953,6 +965,33 @@ const Dashboard = () => {
       setProfileUploading(profileId, false) // Конец загрузки
       setUploadingVideo(false) // Конец загрузки видео
     }
+  }
+
+  // Check video conversion status
+  const checkConversionStatus = (profileId, mediaId) => {
+    const checkInterval = setInterval(async () => {
+      try {
+        const response = await axios.get(`/api/profiles/${profileId}/media/${mediaId}/status`)
+        
+        if (response.data.isConverting === false) {
+          clearInterval(checkInterval)
+          
+          if (response.data.conversionError) {
+            error('Video conversion failed: ' + response.data.conversionError)
+          } else {
+            success('Video conversion completed!')
+            // Refresh media to show converted video
+            if (editingProfile && editingProfile.id === profileId) {
+              await fetchProfileMedia(profileId)
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error checking conversion status:', err)
+        clearInterval(checkInterval)
+        error('Failed to check conversion status')
+      }
+    }, 2000) // Check every 2 seconds
   }
 
   const handleMultipleMediaUpload = async (profileId, files) => {
@@ -991,6 +1030,7 @@ const Dashboard = () => {
       // Определяем тип медиа на основе успешно загруженных файлов
       const hasPhotos = successfulUploads.some(result => result.type === 'photo')
       const hasVideos = successfulUploads.some(result => result.type === 'video')
+      const convertingVideos = successfulUploads.filter(result => result.data?.isConverting)
       
       if (successfulUploads.length > 0) {
         // console.log('Successful uploads:', successfulUploads.length)
@@ -1006,13 +1046,26 @@ const Dashboard = () => {
           ))
         }
 
+        // Start checking conversion status for videos
+        convertingVideos.forEach(video => {
+          checkConversionStatus(profileId, video.data.mediaId)
+        })
+
         // Показываем соответствующее сообщение в зависимости от типов файлов
         if (hasPhotos && hasVideos) {
-          success(`${successfulUploads.length} files uploaded successfully`)
+          if (convertingVideos.length > 0) {
+            success(`${successfulUploads.length} files uploaded successfully, ${convertingVideos.length} video(s) converting...`)
+          } else {
+            success(`${successfulUploads.length} files uploaded successfully`)
+          }
         } else if (hasPhotos) {
           success(`${successfulUploads.length} ${t('dashboard.photosUploaded')}`)
         } else if (hasVideos) {
-          success(`${successfulUploads.length} ${t('dashboard.videosUploaded')}`)
+          if (convertingVideos.length > 0) {
+            success(`${successfulUploads.length} video(s) uploaded, converting...`)
+          } else {
+            success(`${successfulUploads.length} ${t('dashboard.videosUploaded')}`)
+          }
         }
       }
 
@@ -1440,7 +1493,8 @@ const Dashboard = () => {
                           src={profile.main_photo_url || profile.image_url || profile.first_photo_url} 
                           alt={capitalizeName(profile.name)}
                           className="w-full h-full object-cover object-center cursor-pointer hover:scale-105 transition-transform duration-300 will-change-transform"
-                          loading="lazy"
+                          loading="eager"
+                          decoding="async"
                           onError={(e) => {
                             console.error('Failed to load profile image:', profile.main_photo_url || profile.image_url || profile.first_photo_url)
                             e.target.style.display = 'none'

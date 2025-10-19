@@ -678,7 +678,8 @@ const Browse = () => {
                     width={400}
                     height={500}
                     fetchpriority={index === 0 ? "high" : "auto"}
-                    loading={index === 0 ? "eager" : "lazy"}
+                    loading="eager"
+                    decoding="async"
                     onError={(e) => {
                       logger.error('Failed to load profile image:', profile.image)
                       e.target.style.display = 'none'

@@ -48,6 +48,40 @@ const convertVideo = (inputPath, outputPath) => {
   })
 }
 
+// Async video conversion function for background processing
+const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
+  try {
+    console.log('Starting background video conversion for media ID:', mediaId)
+    await convertVideo(inputPath, outputPath)
+    
+    // Delete original file
+    fs.unlinkSync(inputPath)
+    
+    // Update URL in database and mark as completed
+    const finalUrl = `/uploads/profiles/${path.basename(outputPath)}`
+    await new Promise((resolve, reject) => {
+      db.run(
+        'UPDATE media SET url = ?, is_converting = 0 WHERE id = ?',
+        [finalUrl, mediaId],
+        (err) => err ? reject(err) : resolve()
+      )
+    })
+    
+    console.log('Background video conversion completed:', finalUrl)
+  } catch (error) {
+    console.error('Background conversion failed:', error)
+    
+    // Mark as conversion error
+    await new Promise((resolve, reject) => {
+      db.run(
+        'UPDATE media SET is_converting = 0, conversion_error = ? WHERE id = ?',
+        [error.message, mediaId],
+        (err) => err ? reject(err) : resolve()
+      )
+    })
+  }
+}
+
 // Cloudflare Turnstile verification
 const verifyTurnstileToken = async (token) => {
   try {
@@ -412,6 +446,19 @@ db.serialize(() => {
     }
   })
 
+  // Добавляем поля для отслеживания конвертации видео
+  db.run(`ALTER TABLE media ADD COLUMN is_converting INTEGER DEFAULT 0`, (err) => {
+    if (err && !err.message.includes('duplicate column name')) {
+      console.error('Error adding is_converting column:', err)
+    }
+  })
+
+  db.run(`ALTER TABLE media ADD COLUMN conversion_error TEXT`, (err) => {
+    if (err && !err.message.includes('duplicate column name')) {
+      console.error('Error adding conversion_error column:', err)
+    }
+  })
+
 
   // Media table for photos and videos
   db.run(`
@@ -421,6 +468,8 @@ db.serialize(() => {
       url TEXT NOT NULL,
       type TEXT NOT NULL CHECK (type IN ('photo', 'video')),
       order_index INTEGER DEFAULT 0,
+      is_converting INTEGER DEFAULT 0,
+      conversion_error TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (profile_id) REFERENCES profiles (id)
     )
@@ -1748,30 +1797,16 @@ app.post('/api/profiles/:id/media', authenticateToken, upload.single('media'), a
     // Handle video conversion
     let finalFilename = req.file.filename
     let mediaUrl = `/uploads/profiles/${req.file.filename}`
+    let isConverting = false
     
     if (type === 'video') {
       const inputPath = req.file.path
       const outputFilename = `video-${Date.now()}.mp4`
       const outputPath = path.join(__dirname, 'uploads', 'profiles', outputFilename)
       
-      try {
-        console.log('Starting video conversion...')
-        await convertVideo(inputPath, outputPath)
-        
-        // Delete original file
-        fs.unlinkSync(inputPath)
-        
-        // Update filename and URL
-        finalFilename = outputFilename
-        mediaUrl = `/uploads/profiles/${outputFilename}`
-        
-        console.log('Video converted successfully:', outputFilename)
-      } catch (error) {
-        console.error('Video conversion failed:', error)
-        // Delete original file on conversion failure
-        fs.unlinkSync(inputPath)
-        return res.status(500).json({ error: 'Video conversion failed' })
-      }
+      // For videos, we'll process asynchronously
+      isConverting = true
+      console.log('Video uploaded, starting background conversion...')
     }
     
     // Get next order index
@@ -1791,8 +1826,8 @@ app.post('/api/profiles/:id/media', authenticateToken, upload.single('media'), a
     // Insert media record
     const insertResult = await new Promise((resolve, reject) => {
       db.run(
-        'INSERT INTO media (profile_id, url, type, order_index) VALUES (?, ?, ?, ?)',
-        [id, mediaUrl, type, nextOrder],
+        'INSERT INTO media (profile_id, url, type, order_index, is_converting) VALUES (?, ?, ?, ?, ?)',
+        [id, mediaUrl, type, nextOrder, isConverting ? 1 : 0],
         function(err) {
           if (err) reject(err)
           else resolve({ lastID: this.lastID })
@@ -1800,13 +1835,32 @@ app.post('/api/profiles/:id/media', authenticateToken, upload.single('media'), a
       )
     })
 
+    // Start background conversion for videos
+    if (type === 'video' && isConverting) {
+      const inputPath = req.file.path
+      const outputFilename = `video-${Date.now()}.mp4`
+      const outputPath = path.join(__dirname, 'uploads', 'profiles', outputFilename)
+      
+      // Start background conversion
+      convertVideoAsync(inputPath, outputPath, insertResult.lastID, id)
+        .catch(err => {
+          console.error('Failed to start background conversion:', err)
+        })
+    }
+
     console.log('Media uploaded successfully:', id)
     console.log('Media saved as:', finalFilename)
+    
+    const responseMessage = isConverting 
+      ? `${type} uploaded successfully, converting...` 
+      : `${type} uploaded successfully`
+    
     res.json({
-      message: `${type} uploaded successfully`,
+      message: responseMessage,
       mediaUrl: mediaUrl,
       mediaId: insertResult.lastID,
-      type: type
+      type: type,
+      isConverting: isConverting
     })
 
   } catch (error) {
@@ -1831,6 +1885,53 @@ app.get('/api/profiles/:id/media', (req, res) => {
       res.json(media)
     }
   )
+})
+
+// Check media conversion status route
+app.get('/api/profiles/:profileId/media/:mediaId/status', authenticateToken, async (req, res) => {
+  const { profileId, mediaId } = req.params
+
+  try {
+    // Check if user owns the profile
+    const profile = await new Promise((resolve, reject) => {
+      db.get(
+        'SELECT * FROM profiles WHERE id = ? AND user_id = ?',
+        [profileId, req.user.id],
+        (err, profile) => {
+          if (err) reject(err)
+          else resolve(profile)
+        }
+      )
+    })
+
+    if (!profile) {
+      return res.status(404).json({ error: 'Profile not found or access denied' })
+    }
+
+    // Get media conversion status
+    const media = await new Promise((resolve, reject) => {
+      db.get(
+        'SELECT is_converting, conversion_error FROM media WHERE id = ? AND profile_id = ?',
+        [mediaId, profileId],
+        (err, media) => {
+          if (err) reject(err)
+          else resolve(media)
+        }
+      )
+    })
+
+    if (!media) {
+      return res.status(404).json({ error: 'Media not found' })
+    }
+
+    res.json({
+      isConverting: media.is_converting === 1,
+      conversionError: media.conversion_error
+    })
+  } catch (error) {
+    console.error('Status check error:', error)
+    res.status(500).json({ error: 'Failed to check status' })
+  }
 })
 
 // Delete media route

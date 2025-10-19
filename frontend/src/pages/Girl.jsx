@@ -450,6 +450,8 @@ const Girl = () => {
                         alt={profile.name}
                         className="w-full h-full object-cover cursor-pointer"
                         onClick={handlePhotoClick}
+                        loading="eager"
+                        decoding="async"
                         onError={(e) => {
                           console.error('Failed to load profile image:', getCurrentMedia().url)
                           e.target.style.display = 'none'
@@ -529,6 +531,8 @@ const Girl = () => {
                               src={media.url}
                               alt={`${profile.name} photo`}
                               className="w-full h-full object-cover hover:opacity-80 transition-opacity"
+                              loading="eager"
+                              decoding="async"
                               onError={(e) => {
                                 console.error('Failed to load image:', media.url)
                                 e.target.style.display = 'none'
