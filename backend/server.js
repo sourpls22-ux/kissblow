@@ -2003,9 +2003,18 @@ app.get('/api/test/payments', (req, res) => {
 
 // Get user payment history
 app.get('/api/user/payments', authenticateToken, (req, res) => {
+  // Скрываем pending платежи старше 1 часа
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+  
   db.all(
-    'SELECT * FROM payments WHERE user_id = ? ORDER BY created_at DESC',
-    [req.user.id],
+    `SELECT * FROM payments 
+     WHERE user_id = ? 
+     AND (
+       status != 'pending' 
+       OR (status = 'pending' AND created_at > ?)
+     )
+     ORDER BY created_at DESC`,
+    [req.user.id, oneHourAgo],
     (err, payments) => {
       if (err) {
         return res.status(500).json({ error: 'Database error' })
