@@ -36,6 +36,10 @@ const shouldHideMessage = (message) => {
     (message.includes('GET') && message.includes('cloudflareinsights.com') && message.includes('ERR_NAME_NOT_RESOLVED')) ||
     // Проверяем на формат без GET (vcd15cbe7772f49c399c6a5babf22c1241717689176015:1 Failed to load resource:)
     /^vcd[a-f0-9]{32}:\d+\s+Failed to load resource: net::ERR_NAME_NOT_RESOLVED$/.test(message) ||
+    // Более общий паттерн для Cloudflare beacon ошибок
+    /^\d+:\d+\s+GET\s+https:\/\/static\.cloudflareinsights\.com\/beacon\.min\.js\/vcd[a-f0-9]{32}\s+net::ERR_NAME_NOT_RESOLVED$/.test(message) ||
+    // Паттерн для ошибок без номера строки
+    /^GET\s+https:\/\/static\.cloudflareinsights\.com\/beacon\.min\.js\/vcd[a-f0-9]{32}\s+net::ERR_NAME_NOT_RESOLVED$/.test(message) ||
     // Violation warnings (performance and deprecated methods)
     message.includes('[Violation]') ||
     message.includes('Avoid using document.write') ||

@@ -245,6 +245,7 @@ const Login = () => {
                   name="password"
                   type="password"
                   required
+                  autoComplete="current-password"
                   value={formData.password}
                   onChange={handleChange}
                   className="input-field-with-icon"
