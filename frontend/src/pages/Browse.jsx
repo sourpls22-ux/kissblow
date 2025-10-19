@@ -93,13 +93,7 @@ const Browse = () => {
         rating: 4.8 // Добавляем рейтинг для отображения
       }))
       
-      // Отладочная информация для проверки полей has_video и reviews_count
-      console.log('Profiles data:', profilesData.map(p => ({
-        name: p.name,
-        has_video: p.has_video,
-        reviews_count: p.reviews_count,
-        is_verified: p.is_verified
-      })))
+      // Отладочная информация убрана для продакшена
       
       // Устанавливаем профили и лайки одновременно
       setProfiles(profilesData)
