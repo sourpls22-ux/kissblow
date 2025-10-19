@@ -179,6 +179,7 @@ const Settings = () => {
                   value={formData.currentPassword}
                   onChange={handleInputChange}
                   required
+                  autoComplete="current-password"
                   className="input-field"
                 />
               </div>
@@ -194,6 +195,7 @@ const Settings = () => {
                   onChange={handleInputChange}
                   required
                   minLength="6"
+                  autoComplete="new-password"
                   className="input-field"
                 />
               </div>
@@ -209,6 +211,7 @@ const Settings = () => {
                   onChange={handleInputChange}
                   required
                   minLength="6"
+                  autoComplete="new-password"
                   className="input-field"
                 />
               </div>

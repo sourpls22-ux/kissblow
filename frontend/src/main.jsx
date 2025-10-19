@@ -53,6 +53,10 @@ const shouldHideMessage = (message) => {
     /\[Violation\].*took \d+ms/.test(message) ||
     /\[Violation\].*handler took \d+ms/.test(message) ||
     /\[Violation\].*Avoid using document\.write/.test(message) ||
+    /\[Violation\].*Forced reflow/.test(message) ||
+    // Дополнительные Violation паттерны
+    message.includes('Forced reflow while executing JavaScript') ||
+    message.includes('Forced reflow') ||
     
     // Cloudflare Turnstile messages
     message.includes('Request for the Private Access Token challenge') ||

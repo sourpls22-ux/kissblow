@@ -104,7 +104,7 @@ const Register = () => {
           // console.log('Redirecting to dashboard')
           navigate('/dashboard')
         } else {
-          console.log('Redirecting to home')
+          // console.log('Redirecting to home')
           navigate('/')
         }
       } else {
