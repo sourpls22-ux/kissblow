@@ -53,18 +53,7 @@ const Girl = () => {
     }
   }
 
-  // Отладочная информация для проверки валюты
-  useEffect(() => {
-    if (profile) {
-      console.log('Profile currency:', profile.currency)
-      console.log('Profile prices:', {
-        price_30min: profile.price_30min,
-        price_1hour: profile.price_1hour,
-        price_2hours: profile.price_2hours,
-        price_night: profile.price_night
-      })
-    }
-  }, [profile])
+  // Отладочная информация убрана для продакшена
 
   const fetchProfileMedia = async (profileId, resetIndex = true) => {
     try {

@@ -10,20 +10,44 @@ import axios from 'axios'
 
 // Скрываем некритические ошибки Cloudflare beacon из консоли
 const originalConsoleError = console.error
-console.error = (...args) => {
-  const message = args.join(' ')
-  // Скрываем ошибки Cloudflare beacon и другие некритические ошибки
-  if (
+const originalConsoleWarn = console.warn
+const originalConsoleLog = console.log
+
+const shouldHideMessage = (message) => {
+  return (
     message.includes('cloudflareinsights.com') ||
     message.includes('beacon.min.js') ||
     message.includes('ERR_NAME_NOT_RESOLVED') ||
-    message.includes('Failed to load resource')
-  ) {
-    return // Не выводим эти ошибки в консоль
-  }
-  // Выводим остальные ошибки как обычно
+    message.includes('Failed to load resource') ||
+    message.includes('net::ERR_NAME_NOT_RESOLVED')
+  )
+}
+
+console.error = (...args) => {
+  const message = args.join(' ')
+  if (shouldHideMessage(message)) return
   originalConsoleError.apply(console, args)
 }
+
+console.warn = (...args) => {
+  const message = args.join(' ')
+  if (shouldHideMessage(message)) return
+  originalConsoleWarn.apply(console, args)
+}
+
+console.log = (...args) => {
+  const message = args.join(' ')
+  if (shouldHideMessage(message)) return
+  originalConsoleLog.apply(console, args)
+}
+
+// Перехватываем глобальные ошибки
+window.addEventListener('error', (event) => {
+  if (shouldHideMessage(event.message)) {
+    event.preventDefault()
+    return false
+  }
+})
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
