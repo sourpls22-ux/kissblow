@@ -330,6 +330,7 @@ const Register = () => {
                   name="email"
                   type="email"
                   required
+                  autoComplete="username"
                   value={formData.email}
                   onChange={handleChange}
                   className="input-field-with-icon"
