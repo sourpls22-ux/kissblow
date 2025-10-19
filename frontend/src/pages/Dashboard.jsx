@@ -940,7 +940,7 @@ const Dashboard = () => {
         // Handle different response types
         if (responseData.isConverting) {
           // Video is being converted in background
-          success('Video uploaded, converting...')
+          success(type === 'photo' ? t('dashboard.photoUploaded') : t('dashboard.videoUploaded'))
           
           // Start checking conversion status
           checkConversionStatus(profileId, responseData.mediaId)
@@ -979,8 +979,7 @@ const Dashboard = () => {
           if (response.data.conversionError) {
             error('Video conversion failed: ' + response.data.conversionError)
           } else {
-            success('Video conversion completed!')
-            // Refresh media to show converted video
+            // Refresh media to show converted video (no toast notification)
             if (editingProfile && editingProfile.id === profileId) {
               await fetchProfileMedia(profileId)
             }
@@ -1053,19 +1052,11 @@ const Dashboard = () => {
 
         // Показываем соответствующее сообщение в зависимости от типов файлов
         if (hasPhotos && hasVideos) {
-          if (convertingVideos.length > 0) {
-            success(`${successfulUploads.length} files uploaded successfully, ${convertingVideos.length} video(s) converting...`)
-          } else {
-            success(`${successfulUploads.length} files uploaded successfully`)
-          }
+          success(`${successfulUploads.length} files uploaded successfully`)
         } else if (hasPhotos) {
           success(`${successfulUploads.length} ${t('dashboard.photosUploaded')}`)
         } else if (hasVideos) {
-          if (convertingVideos.length > 0) {
-            success(`${successfulUploads.length} video(s) uploaded, converting...`)
-          } else {
-            success(`${successfulUploads.length} ${t('dashboard.videosUploaded')}`)
-          }
+          success(`${successfulUploads.length} ${t('dashboard.videosUploaded')}`)
         }
       }
 
