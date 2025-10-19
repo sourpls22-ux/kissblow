@@ -29,7 +29,7 @@ const convertVideo = (inputPath, outputPath) => {
       .format('mp4')
       .videoBitrate('1000k')
       .audioBitrate('128k')
-      .size('1280x720')
+      .videoFilter('scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2:black')
       .on('start', (commandLine) => {
         console.log('FFmpeg process started:', commandLine)
       })
