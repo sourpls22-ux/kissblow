@@ -4,6 +4,7 @@
 
 /* Prevent lazy loading intervention errors */
 img {
+  content-visibility: auto;
   contain-intrinsic-size: 400px 500px;
 }
 
