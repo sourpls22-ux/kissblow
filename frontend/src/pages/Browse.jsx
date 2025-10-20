@@ -875,7 +875,7 @@ const Browse = () => {
             onClick={filtersModalBackdrop.handleClick}
           >
             <div 
-              className="theme-surface rounded-lg p-4 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto modal-content"
+              className="theme-surface rounded-lg p-4 max-w-2xl w-full mx-4 max-h-[calc(100vh-8rem)] sm:max-h-[calc(100vh-8rem)] overflow-y-auto modal-content"
               data-modal-content
             >
               <div className="flex items-center justify-between mb-4">
