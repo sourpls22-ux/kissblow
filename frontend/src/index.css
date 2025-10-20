@@ -62,27 +62,11 @@ body.modal-open {
   .modal-content {
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
-    max-height: calc(100vh - 6rem);
-    margin-bottom: 1rem;
   }
   
   body.modal-open {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: none;
-  }
-  
-  /* Учитываем динамическую высоту мобильного браузера */
-  @supports (height: 100dvh) {
-    .modal-content {
-      max-height: calc(100dvh - 6rem);
-    }
-  }
-}
-
-/* Десктоп - оставляем больше места */
-@media (min-width: 769px) {
-  .modal-content {
-    max-height: calc(100vh - 8rem);
   }
 }
 
