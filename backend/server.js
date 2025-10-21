@@ -51,7 +51,39 @@ const convertVideo = (inputPath, outputPath) => {
 // Async video conversion function for background processing
 const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
   try {
-    console.log('Starting background video conversion for media ID:', mediaId)
+    // Check conversion attempts
+    const media = await new Promise((resolve, reject) => {
+      db.get('SELECT conversion_attempts FROM media WHERE id = ?', [mediaId], (err, media) => {
+        if (err) reject(err)
+        else resolve(media)
+      })
+    })
+    
+    const MAX_ATTEMPTS = 3
+    if (media && media.conversion_attempts >= MAX_ATTEMPTS) {
+      console.error(`Max conversion attempts (${MAX_ATTEMPTS}) reached for media ${mediaId}`)
+      await new Promise((resolve) => {
+        db.run(
+          'UPDATE media SET is_converting = 0, conversion_error = ? WHERE id = ?',
+          [`Maximum conversion attempts (${MAX_ATTEMPTS}) reached. Please try uploading a different video format.`, mediaId],
+          () => resolve()
+        )
+      })
+      return
+    }
+    
+    // Increment conversion attempts
+    await new Promise((resolve) => {
+      db.run(
+        'UPDATE media SET conversion_attempts = conversion_attempts + 1 WHERE id = ?',
+        [mediaId],
+        () => resolve()
+      )
+    })
+    
+    const currentAttempt = (media?.conversion_attempts || 0) + 1
+    console.log(`Starting background video conversion for media ID: ${mediaId} (attempt ${currentAttempt}/${MAX_ATTEMPTS})`)
+    
     await convertVideo(inputPath, outputPath)
     
     // Delete original file
@@ -61,7 +93,7 @@ const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
     const finalUrl = `/uploads/profiles/${path.basename(outputPath)}`
     await new Promise((resolve, reject) => {
       db.run(
-        'UPDATE media SET url = ?, is_converting = 0 WHERE id = ?',
+        'UPDATE media SET url = ?, is_converting = 0, conversion_error = NULL WHERE id = ?',
         [finalUrl, mediaId],
         (err) => err ? reject(err) : resolve()
       )
@@ -71,12 +103,24 @@ const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
   } catch (error) {
     console.error('Background conversion failed:', error)
     
+    // Get current attempts count
+    const media = await new Promise((resolve) => {
+      db.get('SELECT conversion_attempts FROM media WHERE id = ?', [mediaId], (err, media) => {
+        resolve(media || { conversion_attempts: 0 })
+      })
+    })
+    
+    const MAX_ATTEMPTS = 3
+    const errorMessage = media.conversion_attempts >= MAX_ATTEMPTS - 1
+      ? `Conversion failed after ${MAX_ATTEMPTS} attempts. Please try uploading a different video format (MP4, MOV, or AVI recommended).`
+      : `Conversion failed: ${error.message}. Attempt ${media.conversion_attempts}/${MAX_ATTEMPTS}.`
+    
     // Mark as conversion error
-    await new Promise((resolve, reject) => {
+    await new Promise((resolve) => {
       db.run(
         'UPDATE media SET is_converting = 0, conversion_error = ? WHERE id = ?',
-        [error.message, mediaId],
-        (err) => err ? reject(err) : resolve()
+        [errorMessage, mediaId],
+        () => resolve()
       )
     })
   }
@@ -470,10 +514,20 @@ db.serialize(() => {
       order_index INTEGER DEFAULT 0,
       is_converting INTEGER DEFAULT 0,
       conversion_error TEXT,
+      conversion_attempts INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (profile_id) REFERENCES profiles (id)
     )
   `)
+  
+  // Миграция: добавляем conversion_attempts если его нет
+  db.run(`
+    ALTER TABLE media ADD COLUMN conversion_attempts INTEGER DEFAULT 0
+  `, (err) => {
+    if (err && !err.message.includes('duplicate column')) {
+      console.error('Migration error (conversion_attempts):', err)
+    }
+  })
 
   // Reviews table
   db.run(`
@@ -860,7 +914,7 @@ app.get('/api/user/profiles', authenticateToken, (req, res) => {
      FROM profiles p 
      LEFT JOIN media m ON p.main_photo_id = m.id 
      WHERE p.user_id = ? 
-     ORDER BY p.created_at DESC`,
+     ORDER BY p.is_active DESC, p.created_at DESC`,
     [req.user.id],
     (err, profiles) => {
       if (err) {
@@ -907,7 +961,9 @@ app.get('/api/health', (req, res) => {
 
 // Profiles routes
 app.get('/api/profiles', (req, res) => {
-  const { city } = req.query
+  const { city, page = 1, limit = 24 } = req.query
+  const offset = (parseInt(page) - 1) * parseInt(limit)
+  
   let query = `
     SELECT p.*, 
            m.url as main_photo_url,
@@ -936,12 +992,46 @@ app.get('/api/profiles', (req, res) => {
   query += ` ORDER BY is_boosted DESC, 
              CASE WHEN p.last_payment_at IS NOT NULL THEN datetime(p.last_payment_at) ELSE datetime(p.created_at) END DESC,
              p.created_at DESC`
+  
+  // Add pagination
+  query += ` LIMIT ? OFFSET ?`
+  params.push(parseInt(limit), offset)
 
-  db.all(query, params, (err, profiles) => {
+  // Get total count for pagination
+  let countQuery = `SELECT COUNT(*) as total FROM profiles p WHERE p.is_active = 1`
+  let countParams = []
+  
+  if (city) {
+    countQuery += ' AND p.city LIKE ?'
+    countParams.push(`%${city}%`)
+  }
+
+  // Execute both queries
+  db.get(countQuery, countParams, (err, countResult) => {
     if (err) {
       return res.status(500).json({ error: 'Database error' })
     }
-    res.json(profiles)
+
+    db.all(query, params, (err, profiles) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' })
+      }
+      
+      const total = countResult.total
+      const totalPages = Math.ceil(total / parseInt(limit))
+      
+      res.json({
+        profiles,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          totalPages,
+          hasNext: parseInt(page) < totalPages,
+          hasPrev: parseInt(page) > 1
+        }
+      })
+    })
   })
 })
 
@@ -1911,7 +2001,7 @@ app.get('/api/profiles/:profileId/media/:mediaId/status', authenticateToken, asy
     // Get media conversion status
     const media = await new Promise((resolve, reject) => {
       db.get(
-        'SELECT is_converting, conversion_error FROM media WHERE id = ? AND profile_id = ?',
+        'SELECT is_converting, conversion_error, conversion_attempts FROM media WHERE id = ? AND profile_id = ?',
         [mediaId, profileId],
         (err, media) => {
           if (err) reject(err)
@@ -1925,8 +2015,9 @@ app.get('/api/profiles/:profileId/media/:mediaId/status', authenticateToken, asy
     }
 
     res.json({
-      isConverting: media.is_converting === 1,
-      conversionError: media.conversion_error
+      is_converting: media.is_converting || 0,
+      conversion_error: media.conversion_error || null,
+      conversion_attempts: media.conversion_attempts || 0
     })
   } catch (error) {
     console.error('Status check error:', error)

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { User, Settings, Plus, X, Trash2, Edit, User as UserIcon, Calendar, MapPin, Ruler, Weight, Heart, Phone, MessageCircle, Globe, DollarSign, FileText, Camera, Video, ChevronUp, ChevronDown } from 'lucide-react'
+import { User, Settings, Plus, X, Trash2, Edit, User as UserIcon, Calendar, MapPin, Ruler, Weight, Heart, Phone, MessageCircle, Globe, DollarSign, FileText, Camera, Video, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useTranslation } from '../hooks/useTranslation'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
@@ -32,7 +32,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 
 // Sortable Media Item Component
-const SortableMediaItem = ({ media, editingProfile, onDeleteMedia, isMainPhoto, onMoveUp, onMoveDown }) => {
+const SortableMediaItem = ({ media, editingProfile, onDeleteMedia, isMainPhoto, onMoveUp, onMoveDown, isConverting, conversionError }) => {
   const { t } = useTranslation()
   const [videoLoaded, setVideoLoaded] = useState(false)
   const {
@@ -187,6 +187,32 @@ const SortableMediaItem = ({ media, editingProfile, onDeleteMedia, isMainPhoto, 
           Can't drag video
         </div>
       )}
+      
+      {/* Conversion Status Overlay */}
+      {media.type === 'video' && isConverting && (
+        <div className="absolute inset-0 bg-black/80 rounded-lg flex flex-col items-center justify-center z-10">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-3"></div>
+          <p className="text-white text-sm font-medium text-center px-2">
+            {t('dashboard.videoConverting')}
+          </p>
+          <p className="text-white/80 text-xs text-center px-2 mt-2">
+            {t('dashboard.videoConvertingHint')}
+          </p>
+        </div>
+      )}
+      
+      {/* Conversion Error Overlay */}
+      {media.type === 'video' && conversionError && (
+        <div className="absolute inset-0 bg-red-500/90 rounded-lg flex flex-col items-center justify-center z-10 p-2">
+          <X size={32} className="text-white mb-2" />
+          <p className="text-white text-sm font-medium text-center">
+            {t('dashboard.videoConversionFailed')}
+          </p>
+          <p className="text-white/80 text-xs text-center mt-1">
+            {conversionError}
+          </p>
+        </div>
+      )}
     </div>
   )
 }
@@ -194,6 +220,8 @@ const SortableMediaItem = ({ media, editingProfile, onDeleteMedia, isMainPhoto, 
 const Dashboard = () => {
   const [profiles, setProfiles] = useState([])
   const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [profilesPerPage] = useState(12)
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingProfile, setEditingProfile] = useState(null)
   const [profileMedia, setProfileMedia] = useState([])
@@ -204,6 +232,9 @@ const Dashboard = () => {
   const [cityError, setCityError] = useState(false)
   const [uploadingProfiles, setUploadingProfiles] = useState(new Set())
   const [uploadingVideo, setUploadingVideo] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [convertingVideos, setConvertingVideos] = useState(new Set())
+  const [conversionErrors, setConversionErrors] = useState({})
   
   // Функция для управления состоянием загрузки
   const setProfileUploading = (profileId, isUploading) => {
@@ -379,11 +410,24 @@ const Dashboard = () => {
     }))
   }
 
+  // Функция для сортировки профилей: активные сверху, новые выше
+  const sortProfiles = (profilesList) => {
+    return [...profilesList].sort((a, b) => {
+      // Сначала сортируем по is_active (активные первыми)
+      if (a.is_active !== b.is_active) {
+        return b.is_active - a.is_active
+      }
+      // Затем по дате создания (новые первыми)
+      return new Date(b.created_at) - new Date(a.created_at)
+    })
+  }
+
   // Функция для загрузки данных
   const fetchData = async () => {
     try {
       const profilesResponse = await axios.get('/api/user/profiles')
-      setProfiles(profilesResponse.data)
+      // Сортируем профили при загрузке (на случай если бэкенд вернул в другом порядке)
+      setProfiles(sortProfiles(profilesResponse.data))
     } catch (error) {
       console.error('Failed to fetch data:', error)
     } finally {
@@ -458,7 +502,11 @@ const Dashboard = () => {
 
       // Продолжаем с отправкой формы
       const response = await axios.post('/api/profiles/create', { turnstileToken: token })
-      setProfiles([response.data.profile, ...profiles])
+      
+      // Добавляем новый профиль и сортируем (активные сверху, потом новые)
+      const updatedProfiles = [response.data.profile, ...profiles]
+      setProfiles(sortProfiles(updatedProfiles))
+      
       success(t('dashboard.profileCreated'))
       setShowCreateProfileModal(false)
       setTurnstileToken('')
@@ -483,7 +531,11 @@ const Dashboard = () => {
     try {
       // console.log('Creating profile with token:', token)
       const response = await axios.post('/api/profiles/create', { turnstileToken: token })
-      setProfiles([response.data.profile, ...profiles])
+      
+      // Добавляем новый профиль и сортируем (активные сверху, потом новые)
+      const updatedProfiles = [response.data.profile, ...profiles]
+      setProfiles(sortProfiles(updatedProfiles))
+      
       success(t('dashboard.profileCreated'))
       setShowCreateProfileModal(false)
       setTurnstileToken('')
@@ -614,11 +666,16 @@ const Dashboard = () => {
         return
       }
 
-      setProfiles(profiles.map(profile => 
+      const updatedProfiles = profiles.map(profile => 
         profile.id === profileId 
           ? { ...profile, is_active: 1, boost_expires_at: response.data.boostExpiresAt }
           : profile
-      ))
+      )
+      
+      // Сортируем профили после активации
+      setProfiles(sortProfiles(updatedProfiles))
+      // Возвращаемся на первую страницу, чтобы увидеть активированный профиль
+      setCurrentPage(1)
       success(response.data.message)
       
       // Обновляем баланс в хедере
@@ -637,11 +694,17 @@ const Dashboard = () => {
   const handleDeactivateProfile = async (profileId) => {
     try {
       await axios.post(`/api/profiles/${profileId}/deactivate`)
-      setProfiles(profiles.map(profile => 
+      
+      const updatedProfiles = profiles.map(profile => 
         profile.id === profileId 
           ? { ...profile, is_active: 0 }
           : profile
-      ))
+      )
+      
+      // Сортируем профили после деактивации
+      setProfiles(sortProfiles(updatedProfiles))
+      // Возвращаемся на первую страницу
+      setCurrentPage(1)
       success('Profile deactivated successfully!')
     } catch (err) {
       console.error('Failed to deactivate profile:', err)
@@ -902,6 +965,7 @@ const Dashboard = () => {
     setProfileUploading(profileId, true) // Начало загрузки
     if (type === 'video') {
       setUploadingVideo(true) // Начало загрузки видео
+      setUploadProgress(0)
     }
     
     try {
@@ -916,9 +980,15 @@ const Dashboard = () => {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-        timeout: 30000, // 30 секунд
+        timeout: type === 'video' ? 600000 : 60000, // 10 минут для видео, 1 минута для фото
         maxContentLength: Infinity,
-        maxBodyLength: Infinity
+        maxBodyLength: Infinity,
+        onUploadProgress: (progressEvent) => {
+          if (type === 'video') {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+            setUploadProgress(percentCompleted)
+          }
+        }
       })
       
       // Проверяем статус ответа
@@ -940,7 +1010,8 @@ const Dashboard = () => {
         // Handle different response types
         if (responseData.isConverting) {
           // Video is being converted in background
-          success(type === 'photo' ? t('dashboard.photoUploaded') : t('dashboard.videoUploaded'))
+          setConvertingVideos(prev => new Set([...prev, responseData.mediaId]))
+          success(t('dashboard.videoUploaded'))
           
           // Start checking conversion status
           checkConversionStatus(profileId, responseData.mediaId)
@@ -963,34 +1034,78 @@ const Dashboard = () => {
       }
     } finally {
       setProfileUploading(profileId, false) // Конец загрузки
-      setUploadingVideo(false) // Конец загрузки видео
+      if (type === 'video') {
+        setUploadingVideo(false) // Конец загрузки видео
+        setUploadProgress(0)
+      }
     }
   }
 
-  // Check video conversion status
+  // Check video conversion status with smart polling (progressive intervals)
   const checkConversionStatus = (profileId, mediaId) => {
-    const checkInterval = setInterval(async () => {
-      try {
-        const response = await axios.get(`/api/profiles/${profileId}/media/${mediaId}/status`)
-        
-        if (response.data.isConverting === false) {
-          clearInterval(checkInterval)
+    let checkCount = 0
+    let currentInterval = 2000 // Start with 2 seconds
+    
+    const scheduleNextCheck = () => {
+      setTimeout(async () => {
+        try {
+          const response = await axios.get(`/api/profiles/${profileId}/media/${mediaId}/status`)
           
-          if (response.data.conversionError) {
-            error('Video conversion failed: ' + response.data.conversionError)
-          } else {
-            // Refresh media to show converted video (no toast notification)
+          if (!response.data.is_converting) {
+            // Conversion completed or failed
+            setConvertingVideos(prev => {
+              const newSet = new Set(prev)
+              newSet.delete(mediaId)
+              return newSet
+            })
+            
+            if (response.data.conversion_error) {
+              // Conversion failed
+              setConversionErrors(prev => ({
+                ...prev,
+                [mediaId]: response.data.conversion_error
+              }))
+              error(t('dashboard.videoConversionFailed') + ': ' + response.data.conversion_error)
+            } else {
+              // Conversion succeeded
+              setConversionErrors(prev => {
+                const newErrors = { ...prev }
+                delete newErrors[mediaId]
+                return newErrors
+              })
+              success(t('dashboard.videoConversionSuccess'))
+            }
+            
+            // Refresh media
             if (editingProfile && editingProfile.id === profileId) {
               await fetchProfileMedia(profileId)
             }
+            
+            return // Stop polling
           }
+          
+          // Still converting - schedule next check with progressive interval
+          checkCount++
+          if (checkCount < 10) {
+            currentInterval = 2000 // First 20 seconds: every 2 seconds
+          } else if (checkCount < 30) {
+            currentInterval = 5000 // Next 100 seconds: every 5 seconds
+          } else {
+            currentInterval = 10000 // After that: every 10 seconds
+          }
+          
+          scheduleNextCheck()
+          
+        } catch (err) {
+          console.error('Error checking conversion status:', err)
+          // Retry with longer interval
+          currentInterval = 10000
+          scheduleNextCheck()
         }
-      } catch (err) {
-        console.error('Error checking conversion status:', err)
-        clearInterval(checkInterval)
-        error('Failed to check conversion status')
-      }
-    }, 2000) // Check every 2 seconds
+      }, currentInterval)
+    }
+    
+    scheduleNextCheck() // Start the polling
   }
 
   const handleMultipleMediaUpload = async (profileId, files) => {
@@ -1474,7 +1589,7 @@ const Dashboard = () => {
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
             {profiles.length > 0 ? (
-              profiles.map((profile) => (
+              profiles.slice((currentPage - 1) * profilesPerPage, currentPage * profilesPerPage).map((profile) => (
                 <div key={profile.id} className="theme-surface border theme-border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 flex flex-col group">
                   {/* Фотография профиля */}
                   <div className="relative h-56 sm:h-64 overflow-hidden">
@@ -1616,6 +1731,69 @@ const Dashboard = () => {
               </div>
             )}
           </div>
+          
+          {/* Pagination */}
+          {profiles.length > profilesPerPage && (
+            <div className="mt-8 flex flex-col items-center space-y-4">
+              {/* Page Info */}
+              <div className="theme-text-secondary text-sm">
+                Showing {((currentPage - 1) * profilesPerPage) + 1} - {Math.min(currentPage * profilesPerPage, profiles.length)} of {profiles.length} profiles
+              </div>
+
+              {/* Page Numbers */}
+              <nav className="flex items-center space-x-2" aria-label="Pagination">
+                {/* Previous Button */}
+                <button
+                  onClick={() => {
+                    setCurrentPage(prev => Math.max(prev - 1, 1))
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
+                  disabled={currentPage === 1}
+                  className="flex items-center space-x-1 px-3 py-2 rounded-lg border theme-border theme-text hover:bg-onlyfans-accent/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Previous page"
+                >
+                  <ChevronLeft size={18} />
+                  <span className="hidden sm:inline">Previous</span>
+                </button>
+
+                {/* Page Numbers */}
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: Math.ceil(profiles.length / profilesPerPage) }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => {
+                        setCurrentPage(page)
+                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                      }}
+                      className={`px-3 py-2 rounded-lg transition-colors font-medium ${
+                        currentPage === page
+                          ? 'bg-onlyfans-accent text-white'
+                          : 'theme-text hover:bg-onlyfans-accent/10 border theme-border'
+                      }`}
+                      aria-label={`Page ${page}`}
+                      aria-current={currentPage === page ? 'page' : undefined}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Next Button */}
+                <button
+                  onClick={() => {
+                    setCurrentPage(prev => Math.min(prev + 1, Math.ceil(profiles.length / profilesPerPage)))
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
+                  disabled={currentPage === Math.ceil(profiles.length / profilesPerPage)}
+                  className="flex items-center space-x-1 px-3 py-2 rounded-lg border theme-border theme-text hover:bg-onlyfans-accent/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Next page"
+                >
+                  <span className="hidden sm:inline">Next</span>
+                  <ChevronRight size={18} />
+                </button>
+              </nav>
+            </div>
+          )}
           
           {/* Boost System Tip */}
           {profiles.length > 0 && (
@@ -2223,6 +2401,22 @@ const Dashboard = () => {
                       </label>
                     </div>
                     
+                    {/* Upload Progress Bar */}
+                    {uploadingVideo && uploadProgress > 0 && uploadProgress < 100 && (
+                      <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                            {t('dashboard.uploadProgress')}: {uploadProgress}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2">
+                          <div 
+                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${uploadProgress}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
                      
                      {/* Media Grid with Drag & Drop */}
                      {profileMedia.length > 0 ? (
@@ -2245,6 +2439,8 @@ const Dashboard = () => {
                                  isMainPhoto={index === 0 && media.type === 'photo'}
                                  onMoveUp={movePhotoUp}
                                  onMoveDown={movePhotoDown}
+                                 isConverting={convertingVideos.has(media.id)}
+                                 conversionError={conversionErrors[media.id]}
                                />
                              ))}
                            </div>

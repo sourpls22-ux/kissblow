@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { useSearchParams, Link, useNavigate, useLocation, useParams } from 'react-router-dom'
-import { MapPin, Star, RefreshCw, User, Filter, X, Search, Globe, Heart } from 'lucide-react'
+import { MapPin, Star, RefreshCw, User, Filter, X, Search, Globe, Heart, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { useTranslation } from '../hooks/useTranslation'
 import { useModalBackdrop } from '../hooks/useModalBackdrop'
 import { useScrollLock, useModalScroll } from '../hooks/useScrollLock'
 import { formatPrice } from '../utils/currency'
 import { cities, searchCities, popularCities } from '../data/cities'
 import SEOHead from '../components/SEOHead'
+import ScrollToTopButton from '../components/ScrollToTopButton'
 import { generateLocalBusinessSchema, generateItemListSchema, generateBreadcrumbSchema } from '../utils/schemaMarkup'
 import { logger } from '../utils/logger'
 import axios from 'axios'
@@ -18,16 +19,25 @@ const CountriesSection = lazy(() => import('../components/CountriesSection'))
 const BlogSection = lazy(() => import('../components/BlogSection'))
 
 const Browse = () => {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { keyword } = useParams()
   const [profiles, setProfiles] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [profileLikes, setProfileLikes] = useState({})
   const [showFilters, setShowFilters] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [filteredCities, setFilteredCities] = useState([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 24,
+    total: 0,
+    totalPages: 0,
+    hasNext: false,
+    hasPrev: false
+  })
   const [filters, setFilters] = useState({
     minAge: '',
     maxAge: '',
@@ -45,6 +55,7 @@ const Browse = () => {
   })
   const city = searchParams.get('city') || ''
   const service = searchParams.get('service') || ''
+  const currentPage = parseInt(searchParams.get('page') || '1')
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
@@ -83,29 +94,55 @@ const Browse = () => {
     }
   }, [location.state, navigate])
 
-  const fetchProfiles = async () => {
+  const fetchProfiles = async (page = 1, append = false) => {
     try {
-      // Добавляем timestamp для предотвращения кэширования
-      const response = await axios.get(`/api/profiles?t=${Date.now()}`)
-      const profilesData = response.data.map(profile => ({
+      if (append) {
+        setLoadingMore(true)
+      } else {
+        setLoading(true)
+      }
+      
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: '24',
+        t: Date.now().toString()
+      })
+      
+      if (city) {
+        params.append('city', city)
+      }
+      
+      const response = await axios.get(`/api/profiles?${params}`)
+      const { profiles: profilesData, pagination: paginationData } = response.data
+      
+      const formattedProfiles = profilesData.map(profile => ({
         ...profile,
         image: profile.main_photo_url || profile.image_url || profile.first_photo_url,
-        rating: 4.8 // Добавляем рейтинг для отображения
+        rating: 4.8
       }))
       
-      // Отладочная информация убрана для продакшена
+      if (append) {
+        setProfiles(prev => [...prev, ...formattedProfiles])
+      } else {
+        setProfiles(formattedProfiles)
+        // Scroll to top when changing pages via pagination
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }
       
-      // Устанавливаем профили и лайки одновременно
-      setProfiles(profilesData)
-      await fetchAllLikes(profilesData)
+      setPagination(paginationData)
+      await fetchAllLikes(formattedProfiles, append)
+      
     } catch (error) {
       logger.error('Failed to fetch profiles:', error)
       setProfiles([])
+    } finally {
+      setLoading(false)
+      setLoadingMore(false)
     }
   }
 
   // Функция для загрузки лайков всех профилей
-  const fetchAllLikes = async (profilesData = profiles) => {
+  const fetchAllLikes = async (profilesData, append = false) => {
     try {
       const likesPromises = profilesData.map(async (profile) => {
         try {
@@ -122,7 +159,12 @@ const Browse = () => {
       likesData.forEach(({ profileId, likesCount }) => {
         likesMap[profileId] = likesCount
       })
-      setProfileLikes(likesMap)
+      
+      if (append) {
+        setProfileLikes(prev => ({ ...prev, ...likesMap }))
+      } else {
+        setProfileLikes(likesMap)
+      }
     } catch (error) {
       logger.error('Failed to fetch likes:', error)
     }
@@ -138,21 +180,10 @@ const Browse = () => {
       setFilters(prev => ({ ...prev, services: [service] }))
     }
     
-    // Загружаем профили только при первом рендере или изменении параметров
-    if (profiles.length === 0) {
-      setLoading(true)
-      fetchProfiles().finally(() => setLoading(false))
-    }
+    // Загружаем профили для текущей страницы
+    fetchProfiles(currentPage, false)
     
-    // Обновляем данные каждые 30 секунд для синхронизации медиа (увеличиваем интервал)
-    const interval = setInterval(() => {
-      if (profiles.length > 0) {
-        fetchProfiles()
-      }
-    }, 30000)
-    
-    return () => clearInterval(interval)
-  }, [city, service])
+  }, [city, service, currentPage])
 
   // Фильтрация городов по введенному тексту
   useEffect(() => {
@@ -388,6 +419,38 @@ const Browse = () => {
 
   const filteredProfiles = profiles.filter(applyFilters)
 
+  // Handle Load More button - НЕ меняет URL, просто добавляет профили
+  const handleLoadMore = () => {
+    const nextPage = currentPage + 1
+    fetchProfiles(nextPage, true) // append = true
+  }
+
+  // Handle page navigation - меняет URL и заменяет профили
+  const handlePageChange = (page) => {
+    const params = new URLSearchParams(searchParams)
+    params.set('page', page.toString())
+    setSearchParams(params)
+    // fetchProfiles будет вызван автоматически через useEffect с append=false
+  }
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const { totalPages } = pagination
+    const current = currentPage
+    const delta = 2 // Pages to show around current page
+    const pages = []
+
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || (i >= current - delta && i <= current + delta)) {
+        pages.push(i)
+      } else if (pages[pages.length - 1] !== '...') {
+        pages.push('...')
+      }
+    }
+
+    return pages
+  }
+
   // Generate SEO data
   const generateSEOData = () => {
     const baseUrl = window.location.origin
@@ -411,12 +474,38 @@ const Browse = () => {
       structuredData = generateItemListSchema(filteredProfiles, "Escort Profiles")
     }
 
+    // Generate prev/next URLs for pagination
+    const currentUrl = `${baseUrl}${window.location.pathname}`
+    const params = new URLSearchParams(window.location.search)
+    
+    let prevPage = null
+    let nextPage = null
+    
+    if (pagination.hasPrev) {
+      const prevParams = new URLSearchParams(params)
+      const prevPageNum = currentPage - 1
+      if (prevPageNum > 1) {
+        prevParams.set('page', prevPageNum.toString())
+      } else {
+        prevParams.delete('page')
+      }
+      prevPage = `${currentUrl}${prevParams.toString() ? '?' + prevParams.toString() : ''}`
+    }
+    
+    if (pagination.hasNext) {
+      const nextParams = new URLSearchParams(params)
+      nextParams.set('page', (currentPage + 1).toString())
+      nextPage = `${currentUrl}?${nextParams.toString()}`
+    }
+
     return {
       title,
       description,
       keywords,
       url: `${baseUrl}${window.location.pathname}${window.location.search}`,
-      structuredData
+      structuredData,
+      prevPage,
+      nextPage
     }
   }
 
@@ -724,11 +813,94 @@ const Browse = () => {
           ))}
         </div>
 
-        {filteredProfiles.length === 0 && (
+        {filteredProfiles.length === 0 && !loading && (
           <div className="text-center py-12">
             <p className="theme-text-secondary text-xl">
               {city ? `${t('browse.noProfiles')} "${city}"` : t('browse.noProfilesGeneral')}
             </p>
+          </div>
+        )}
+
+        {/* Load More Button */}
+        {pagination.hasNext && filteredProfiles.length > 0 && (
+          <div className="mt-12 flex justify-center">
+            <button
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className="flex items-center space-x-2 bg-onlyfans-accent text-white px-8 py-3 rounded-lg hover:opacity-80 transition-colors disabled:opacity-50 font-medium text-lg"
+            >
+              {loadingMore ? (
+                <>
+                  <Loader2 size={20} className="animate-spin" />
+                  <span>Loading...</span>
+                </>
+              ) : (
+                <>
+                  <RefreshCw size={20} />
+                  <span>Load More Profiles</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* Pagination Navigation */}
+        {pagination.totalPages > 1 && filteredProfiles.length > 0 && (
+          <div className="mt-8 flex flex-col items-center space-y-4">
+            {/* Page Info */}
+            <div className="theme-text-secondary text-sm">
+              Showing {((currentPage - 1) * pagination.limit) + 1} - {Math.min(currentPage * pagination.limit, pagination.total)} of {pagination.total} profiles
+            </div>
+
+            {/* Page Numbers */}
+            <nav className="flex items-center space-x-2" aria-label="Pagination">
+              {/* Previous Button */}
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={!pagination.hasPrev}
+                className="flex items-center space-x-1 px-3 py-2 rounded-lg border theme-border theme-text hover:bg-onlyfans-accent/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Previous page"
+              >
+                <ChevronLeft size={18} />
+                <span className="hidden sm:inline">Previous</span>
+              </button>
+
+              {/* Page Numbers */}
+              <div className="flex items-center space-x-1">
+                {getPageNumbers().map((page, index) => (
+                  page === '...' ? (
+                    <span key={`ellipsis-${index}`} className="px-3 py-2 theme-text-secondary">
+                      ...
+                    </span>
+                  ) : (
+                    <button
+                      key={page}
+                      onClick={() => handlePageChange(page)}
+                      className={`px-3 py-2 rounded-lg transition-colors font-medium ${
+                        currentPage === page
+                          ? 'bg-onlyfans-accent text-white'
+                          : 'theme-text hover:bg-onlyfans-accent/10 border theme-border'
+                      }`}
+                      aria-label={`Page ${page}`}
+                      aria-current={currentPage === page ? 'page' : undefined}
+                    >
+                      {page}
+                    </button>
+                  )
+                ))}
+              </div>
+
+              {/* Next Button */}
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={!pagination.hasNext}
+                className="flex items-center space-x-1 px-3 py-2 rounded-lg border theme-border theme-text hover:bg-onlyfans-accent/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Next page"
+              >
+                <span className="hidden sm:inline">Next</span>
+                <ChevronRight size={18} />
+              </button>
+            </nav>
           </div>
         )}
 
@@ -850,21 +1022,23 @@ const Browse = () => {
           </div>
         </div>
 
-        {/* SEO Sections */}
-        <div className="mt-16 space-y-16">
-          <Suspense fallback={<div className="text-center py-8 theme-text-secondary">Loading...</div>}>
-            <PopularLocations />
-          </Suspense>
-          <Suspense fallback={<div className="text-center py-8 theme-text-secondary">Loading...</div>}>
-            <KeywordsSection />
-          </Suspense>
-          <Suspense fallback={<div className="text-center py-8 theme-text-secondary">Loading...</div>}>
-            <CountriesSection />
-          </Suspense>
-          <Suspense fallback={<div className="text-center py-8 theme-text-secondary">Loading...</div>}>
-            <BlogSection />
-          </Suspense>
-        </div>
+        {/* SEO Sections - ТОЛЬКО на первой странице */}
+        {currentPage === 1 && (
+          <div className="mt-16 space-y-16">
+            <Suspense fallback={<div className="text-center py-8 theme-text-secondary">Loading...</div>}>
+              <PopularLocations />
+            </Suspense>
+            <Suspense fallback={<div className="text-center py-8 theme-text-secondary">Loading...</div>}>
+              <KeywordsSection />
+            </Suspense>
+            <Suspense fallback={<div className="text-center py-8 theme-text-secondary">Loading...</div>}>
+              <CountriesSection />
+            </Suspense>
+            <Suspense fallback={<div className="text-center py-8 theme-text-secondary">Loading...</div>}>
+              <BlogSection />
+            </Suspense>
+          </div>
+        )}
 
         {/* Filters Modal */}
         {showFilters && (
@@ -1128,6 +1302,9 @@ const Browse = () => {
         )}
       </div>
     </div>
+
+    {/* Scroll to Top Button */}
+    <ScrollToTopButton />
     </>
   )
 }

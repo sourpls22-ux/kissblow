@@ -7,10 +7,16 @@ import { countriesData } from '../data/countriesData'
 const CountriesSection = () => {
   const { t } = useTranslation()
   const [expandedCountry, setExpandedCountry] = useState(null)
+  const [showAll, setShowAll] = useState(false)
 
   const toggleCountry = (countryName) => {
     setExpandedCountry(expandedCountry === countryName ? null : countryName)
   }
+
+  // Показываем первые 10 стран или все
+  const INITIAL_COUNTRIES = 10
+  const displayedCountries = showAll ? countriesData : countriesData.slice(0, INITIAL_COUNTRIES)
+  const remainingCount = countriesData.length - INITIAL_COUNTRIES
 
 
   const renderCountryCard = (country) => {
@@ -69,8 +75,34 @@ const CountriesSection = () => {
       {/* Сетка 4 колонки для всех стран */}
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-          {countriesData.map((country) => renderCountryCard(country))}
+          {displayedCountries.map((country) => renderCountryCard(country))}
         </div>
+
+        {/* Load More Button */}
+        {!showAll && remainingCount > 0 && (
+          <div className="mt-8 flex justify-center">
+            <button
+              onClick={() => setShowAll(true)}
+              className="flex items-center space-x-2 bg-onlyfans-accent text-white px-6 py-3 rounded-lg hover:opacity-80 transition-colors font-medium"
+            >
+              <ChevronDown size={20} />
+              <span>Show {remainingCount} more {remainingCount === 1 ? 'country' : 'countries'}</span>
+            </button>
+          </div>
+        )}
+
+        {/* Collapse Button */}
+        {showAll && (
+          <div className="mt-8 flex justify-center">
+            <button
+              onClick={() => setShowAll(false)}
+              className="flex items-center space-x-2 border-2 border-onlyfans-accent text-onlyfans-accent px-6 py-3 rounded-lg hover:bg-onlyfans-accent hover:text-white transition-colors font-medium"
+            >
+              <ChevronRight size={20} className="rotate-[-90deg]" />
+              <span>Show less</span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

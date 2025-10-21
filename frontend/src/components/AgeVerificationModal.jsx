@@ -48,20 +48,27 @@ const AgeVerificationModal = () => {
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black bg-opacity-90 flex items-start sm:items-center justify-center z-50 p-4 overflow-y-auto"
       onMouseDown={modalBackdrop.handleMouseDown}
       onMouseUp={modalBackdrop.handleMouseUp}
       onClick={modalBackdrop.handleClick}
+      onScroll={handleModalScroll}
+      onTouchMove={handleTouchScroll}
+      style={{ 
+        WebkitOverflowScrolling: 'touch',
+        paddingTop: 'max(1rem, env(safe-area-inset-top))',
+        paddingBottom: 'max(1rem, env(safe-area-inset-bottom))'
+      }}
     >
       <div 
-        className="theme-surface rounded-lg p-8 max-w-md w-full border theme-border shadow-2xl modal-content"
+        className="theme-surface rounded-lg p-6 sm:p-8 max-w-md w-full border theme-border shadow-2xl modal-content my-auto"
         data-modal-content
       >
         <div className="text-center">
           {/* Warning Icon */}
-          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 dark:bg-red-900/20 mb-6">
+          <div className="mx-auto flex items-center justify-center h-12 w-12 sm:h-16 sm:w-16 rounded-full bg-red-100 dark:bg-red-900/20 mb-4 sm:mb-6">
             <svg 
-              className="h-8 w-8 text-red-600 dark:text-red-400" 
+              className="h-6 w-6 sm:h-8 sm:w-8 text-red-600 dark:text-red-400" 
               fill="none" 
               viewBox="0 0 24 24" 
               stroke="currentColor"
@@ -76,21 +83,21 @@ const AgeVerificationModal = () => {
           </div>
 
           {/* Title */}
-          <h2 className="text-2xl font-bold theme-text mb-4">
+          <h2 className="text-xl sm:text-2xl font-bold theme-text mb-3 sm:mb-4">
             Age Verification Required
           </h2>
 
           {/* Content */}
-          <div className="space-y-4 mb-8">
-            <p className="theme-text-secondary text-lg leading-relaxed">
+          <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
+            <p className="theme-text-secondary text-base sm:text-lg leading-relaxed">
               You must be <strong className="theme-text">18 years or older</strong> to access this website.
             </p>
             
-            <p className="theme-text-secondary text-sm leading-relaxed">
+            <p className="theme-text-secondary text-xs sm:text-sm leading-relaxed">
               By clicking "I am 18+" below, you confirm that:
             </p>
             
-            <ul className="text-left theme-text-secondary text-sm space-y-2">
+            <ul className="text-left theme-text-secondary text-xs sm:text-sm space-y-1.5 sm:space-y-2">
               <li className="flex items-start">
                 <span className="text-onlyfans-accent mr-2">•</span>
                 You are at least 18 years of age
@@ -114,14 +121,14 @@ const AgeVerificationModal = () => {
           <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={handleDecline}
-              className="flex-1 px-6 py-3 border theme-border rounded-lg theme-text hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium"
+              className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 border theme-border rounded-lg theme-text hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium text-sm sm:text-base"
             >
               I am under 18
             </button>
             <button
               onClick={handleConfirm}
               disabled={isLoading}
-              className="flex-1 px-6 py-3 bg-onlyfans-accent hover:bg-onlyfans-accent/80 disabled:opacity-50 text-white rounded-lg transition-colors font-medium flex items-center justify-center"
+              className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-onlyfans-accent hover:bg-onlyfans-accent/80 disabled:opacity-50 text-white rounded-lg transition-colors font-medium flex items-center justify-center text-sm sm:text-base"
             >
               {isLoading ? (
                 <>
@@ -138,7 +145,7 @@ const AgeVerificationModal = () => {
           </div>
 
           {/* Footer Note */}
-          <p className="text-xs theme-text-secondary mt-6 leading-relaxed">
+          <p className="text-xs theme-text-secondary mt-4 sm:mt-6 leading-relaxed">
             This website contains adult content and is intended for mature audiences only. 
             If you are under 18, please leave this site immediately.
           </p>

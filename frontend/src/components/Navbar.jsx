@@ -69,13 +69,13 @@ const Navbar = () => {
                 {/* Show balance, top up and my profiles for model accounts - visible on all devices */}
                 {user?.accountType === 'model' && (
                   <>
-                    <div className="flex items-center space-x-1 sm:space-x-2 theme-text bg-onlyfans-dark/20 px-3 sm:px-3 py-1 sm:py-1 rounded-lg">
-                      <DollarSign size={16} className="text-[#02c464] sm:w-4 sm:h-4" />
-                      <span className="font-semibold text-sm sm:text-sm" style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif" }}>{balance}</span>
+                    <div className="flex items-center space-x-1 sm:space-x-2 theme-text bg-onlyfans-dark/20 px-3 py-1 rounded-lg">
+                      <DollarSign size={16} className="text-[#02c464]" />
+                      <span className="font-medium text-sm" style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif" }}>{balance}</span>
                     </div>
                     <Link 
                       to="/topup" 
-                      className="flex items-center space-x-1 sm:space-x-0 bg-[#02c464] text-white px-3 sm:px-3 py-0.5 sm:py-1 rounded-lg hover:opacity-80 transition-colors text-sm sm:text-sm font-medium"
+                      className="flex items-center justify-center space-x-1 sm:space-x-0 bg-[#02c464] text-white px-4 py-1 rounded-lg hover:opacity-80 transition-colors text-sm font-medium"
                       style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif" }}
                     >
                       <DollarSign size={16} className="sm:hidden" />
@@ -83,7 +83,7 @@ const Navbar = () => {
                     </Link>
                     <Link 
                       to="/dashboard" 
-                      className="flex items-center space-x-1 sm:space-x-0 bg-onlyfans-accent text-white px-3 sm:px-3 py-0.5 sm:py-1 rounded-lg hover:opacity-80 transition-colors text-sm sm:text-sm font-medium"
+                      className="flex items-center justify-center space-x-1 sm:space-x-0 bg-onlyfans-accent text-white px-4 py-1 rounded-lg hover:opacity-80 transition-colors text-sm font-medium"
                       style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif" }}
                     >
                       <User size={16} className="sm:hidden" />

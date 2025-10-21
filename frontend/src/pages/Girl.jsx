@@ -10,6 +10,7 @@ import SearchBar from '../components/SearchBar'
 import SEOHead from '../components/SEOHead'
 import Breadcrumbs from '../components/Breadcrumbs'
 import { generateProfileSchema, generateBreadcrumbSchema } from '../utils/schemaMarkup'
+import ScrollToTopButton from '../components/ScrollToTopButton'
 import axios from 'axios'
 
 const Girl = () => {
@@ -999,6 +1000,9 @@ const Girl = () => {
 
 
       </div>
+
+      {/* Scroll to Top Button */}
+      <ScrollToTopButton />
     </>
   )
 }

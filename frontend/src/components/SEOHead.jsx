@@ -7,7 +7,9 @@ const SEOHead = ({
   image = '/og-image.jpg',
   url,
   type = 'website',
-  structuredData
+  structuredData,
+  prevPage,
+  nextPage
 }) => {
   const fullTitle = title ? `${title} | KissBlow.me` : 'KissBlow.me - Verified Escort Directory'
   const fullDescription = description || 'Discover verified escort services worldwide. Professional profiles, secure booking, and trusted standards. Your verified escort directory.'
@@ -28,6 +30,10 @@ const SEOHead = ({
       <meta name="description" content={fullDescription} />
       {keywords && <meta name="keywords" content={keywords} />}
       {fullUrl && fullUrl.startsWith('http') && <link rel="canonical" href={fullUrl} />}
+      
+      {/* Pagination Tags for SEO */}
+      {prevPage && <link rel="prev" href={prevPage} />}
+      {nextPage && <link rel="next" href={nextPage} />}
       
       {/* Open Graph Tags */}
       <meta property="og:title" content={fullTitle} />
