@@ -1039,269 +1039,269 @@ const Browse = () => {
             </Suspense>
           </div>
         )}
+      </div>
+    </div>
 
-        {/* Filters Modal */}
-        {showFilters && (
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 pt-20"
-            onMouseDown={filtersModalBackdrop.handleMouseDown}
-            onMouseUp={filtersModalBackdrop.handleMouseUp}
-            onClick={filtersModalBackdrop.handleClick}
-          >
-            <div 
-              className="theme-surface rounded-lg p-4 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto modal-content"
-              data-modal-content
+    {/* Filters Modal - вынесено наружу для правильного центрирования */}
+    {showFilters && (
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        onMouseDown={filtersModalBackdrop.handleMouseDown}
+        onMouseUp={filtersModalBackdrop.handleMouseUp}
+        onClick={filtersModalBackdrop.handleClick}
+      >
+        <div 
+          className="theme-surface rounded-lg p-4 max-w-2xl w-full max-h-[90vh] overflow-y-auto border theme-border modal-content"
+          data-modal-content
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold theme-text">{t('browse.filters.title')}</h2>
+            <button
+              onClick={() => setShowFilters(false)}
+              className="text-theme-text-secondary hover:text-theme-text transition-colors"
             >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold theme-text">{t('browse.filters.title')}</h2>
-                <button
-                  onClick={() => setShowFilters(false)}
-                  className="text-theme-text-secondary hover:text-theme-text transition-colors"
-                >
-                  <X size={20} />
-                </button>
-              </div>
+              <X size={20} />
+            </button>
+          </div>
 
-              <div className="space-y-4">
-                {/* Age and Price Range */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {/* Age Range */}
-                  <div className="max-w-xs">
-                    <h3 className="text-sm font-semibold theme-text mb-2">Age</h3>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-xs font-medium theme-text mb-1">Min</label>
-                        <input
-                          type="number"
-                          value={filters.minAge}
-                          onChange={(e) => handleFilterChange('minAge', e.target.value)}
-                          className="input-field py-2 text-sm"
-                          placeholder="18"
-                          min="18"
-                          max="99"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium theme-text mb-1">Max</label>
-                        <input
-                          type="number"
-                          value={filters.maxAge}
-                          onChange={(e) => handleFilterChange('maxAge', e.target.value)}
-                          className="input-field py-2 text-sm"
-                          placeholder="99"
-                          min="18"
-                          max="99"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Price Range */}
-                  <div className="max-w-xs">
-                    <h3 className="text-sm font-semibold theme-text mb-2">Price ($)</h3>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-xs font-medium theme-text mb-1">Min</label>
-                        <input
-                          type="number"
-                          value={filters.minPrice}
-                          onChange={(e) => handleFilterChange('minPrice', e.target.value)}
-                          className="input-field py-2 text-sm"
-                          placeholder="0"
-                          min="0"
-                          max="999999"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium theme-text mb-1">Max</label>
-                        <input
-                          type="number"
-                          value={filters.maxPrice}
-                          onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
-                          className="input-field py-2 text-sm"
-                          placeholder="999999"
-                          min="0"
-                          max="999999"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Height and Weight Range */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {/* Height Range */}
-                  <div className="max-w-xs">
-                    <h3 className="text-sm font-semibold theme-text mb-2">Height (cm)</h3>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-xs font-medium theme-text mb-1">Min</label>
-                        <input
-                          type="number"
-                          value={filters.minHeight}
-                          onChange={(e) => handleFilterChange('minHeight', e.target.value)}
-                          className="input-field py-2 text-sm"
-                          placeholder="100"
-                          min="100"
-                          max="250"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium theme-text mb-1">Max</label>
-                        <input
-                          type="number"
-                          value={filters.maxHeight}
-                          onChange={(e) => handleFilterChange('maxHeight', e.target.value)}
-                          className="input-field py-2 text-sm"
-                          placeholder="250"
-                          min="100"
-                          max="250"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Weight Range */}
-                  <div className="max-w-xs">
-                    <h3 className="text-sm font-semibold theme-text mb-2">Weight (kg)</h3>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-xs font-medium theme-text mb-1">Min</label>
-                        <input
-                          type="number"
-                          value={filters.minWeight}
-                          onChange={(e) => handleFilterChange('minWeight', e.target.value)}
-                          className="input-field py-2 text-sm"
-                          placeholder="30"
-                          min="30"
-                          max="200"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium theme-text mb-1">Max</label>
-                        <input
-                          type="number"
-                          value={filters.maxWeight}
-                          onChange={(e) => handleFilterChange('maxWeight', e.target.value)}
-                          className="input-field py-2 text-sm"
-                          placeholder="200"
-                          min="30"
-                          max="200"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bust */}
-                <div className="max-w-xs">
-                  <h3 className="text-sm font-semibold theme-text mb-2">Bust</h3>
-                  <div className="grid grid-cols-1 gap-2">
-                    <select
-                      value={filters.bust}
-                      onChange={(e) => handleFilterChange('bust', e.target.value)}
+          <div className="space-y-4">
+            {/* Age and Price Range */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Age Range */}
+              <div className="max-w-xs">
+                <h3 className="text-sm font-semibold theme-text mb-2">Age</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs font-medium theme-text mb-1">Min</label>
+                    <input
+                      type="number"
+                      value={filters.minAge}
+                      onChange={(e) => handleFilterChange('minAge', e.target.value)}
                       className="input-field py-2 text-sm"
-                    >
-                      <option value="">Any</option>
-                      <option value="A">A</option>
-                      <option value="B">B</option>
-                      <option value="C">C</option>
-                      <option value="D">D</option>
-                      <option value="E">E</option>
-                      <option value="F">F</option>
-                    </select>
+                      placeholder="18"
+                      min="18"
+                      max="99"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium theme-text mb-1">Max</label>
+                    <input
+                      type="number"
+                      value={filters.maxAge}
+                      onChange={(e) => handleFilterChange('maxAge', e.target.value)}
+                      className="input-field py-2 text-sm"
+                      placeholder="99"
+                      min="18"
+                      max="99"
+                    />
                   </div>
                 </div>
-
-                {/* Разделитель перед Services */}
-                <div className="border-t border-gray-200 my-4"></div>
-
-                {/* Services */}
-                <div>
-                  <h3 className="text-sm font-semibold theme-text mb-2">Services</h3>
-                  <div className="grid grid-cols-3 gap-2">
-                    {['Anal sex', 'Oral without condom', 'Kissing', 'Cunnilingus', 'Cum in mouth', 'Cum on face', 'Cum on body', 'Classic massage', 'Erotic massage', 'Striptease', 'Shower together', 'Strapon', 'Rimming', 'Golden shower (for men)', 'Domination', 'Blowjob in the car', 'Virtual sex', 'Photo/video'].map((service) => (
-                      <label key={service} className="flex items-center space-x-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={filters.services.includes(service)}
-                          onChange={() => handleServiceToggle(service)}
-                          className="rounded border-gray-300 text-onlyfans-accent focus:ring-onlyfans-accent w-3 h-3"
-                        />
-                        <span className="theme-text text-xs">{service}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Разделитель перед Additional Filters */}
-                <div className="border-t border-gray-200 my-4"></div>
-
-                {/* Additional Filters */}
-                <div>
-                  <h3 className="text-sm font-semibold theme-text mb-2">Additional Filters</h3>
-                  <div className="grid grid-cols-3 gap-4">
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={filters.verified}
-                        onChange={handleVerifiedToggle}
-                        className="rounded border-gray-300 text-onlyfans-accent focus:ring-onlyfans-accent w-3 h-3"
-                      />
-                      <span className="theme-text text-xs">Verified Only</span>
-                    </label>
-                    
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={filters.hasReviews}
-                        onChange={handleHasReviewsToggle}
-                        className="rounded border-gray-300 text-onlyfans-accent focus:ring-onlyfans-accent w-3 h-3"
-                      />
-                      <span className="theme-text text-xs">With Reviews</span>
-                    </label>
-                    
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={filters.hasVideo}
-                        onChange={handleHasVideoToggle}
-                        className="rounded border-gray-300 text-onlyfans-accent focus:ring-onlyfans-accent w-3 h-3"
-                      />
-                      <span className="theme-text text-xs">With Video</span>
-                    </label>
-                  </div>
-                </div>
-
               </div>
 
-              <div className="flex items-center justify-between mt-6 pt-4 border-t theme-border">
-                <button
-                  onClick={clearFilters}
-                  className="px-3 py-2 text-sm text-theme-text-secondary hover:text-theme-text transition-colors"
-                >
-{t('browse.filters.clear')}
-                </button>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => setShowFilters(false)}
-                    className="px-4 py-2 text-sm border theme-border text-theme-text rounded-lg hover:bg-onlyfans-accent/10 transition-colors"
-                  >
-{t('browse.filters.cancel')}
-                  </button>
-                  <button
-                    onClick={() => setShowFilters(false)}
-                    className="px-4 py-2 text-sm bg-onlyfans-accent text-white rounded-lg hover:opacity-80 transition-colors"
-                  >
-{t('browse.filters.apply')}
-                  </button>
+              {/* Price Range */}
+              <div className="max-w-xs">
+                <h3 className="text-sm font-semibold theme-text mb-2">Price ($)</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs font-medium theme-text mb-1">Min</label>
+                    <input
+                      type="number"
+                      value={filters.minPrice}
+                      onChange={(e) => handleFilterChange('minPrice', e.target.value)}
+                      className="input-field py-2 text-sm"
+                      placeholder="0"
+                      min="0"
+                      max="999999"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium theme-text mb-1">Max</label>
+                    <input
+                      type="number"
+                      value={filters.maxPrice}
+                      onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
+                      className="input-field py-2 text-sm"
+                      placeholder="999999"
+                      min="0"
+                      max="999999"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
+
+            {/* Height and Weight Range */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Height Range */}
+              <div className="max-w-xs">
+                <h3 className="text-sm font-semibold theme-text mb-2">Height (cm)</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs font-medium theme-text mb-1">Min</label>
+                    <input
+                      type="number"
+                      value={filters.minHeight}
+                      onChange={(e) => handleFilterChange('minHeight', e.target.value)}
+                      className="input-field py-2 text-sm"
+                      placeholder="100"
+                      min="100"
+                      max="250"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium theme-text mb-1">Max</label>
+                    <input
+                      type="number"
+                      value={filters.maxHeight}
+                      onChange={(e) => handleFilterChange('maxHeight', e.target.value)}
+                      className="input-field py-2 text-sm"
+                      placeholder="250"
+                      min="100"
+                      max="250"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Weight Range */}
+              <div className="max-w-xs">
+                <h3 className="text-sm font-semibold theme-text mb-2">Weight (kg)</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs font-medium theme-text mb-1">Min</label>
+                    <input
+                      type="number"
+                      value={filters.minWeight}
+                      onChange={(e) => handleFilterChange('minWeight', e.target.value)}
+                      className="input-field py-2 text-sm"
+                      placeholder="30"
+                      min="30"
+                      max="200"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium theme-text mb-1">Max</label>
+                    <input
+                      type="number"
+                      value={filters.maxWeight}
+                      onChange={(e) => handleFilterChange('maxWeight', e.target.value)}
+                      className="input-field py-2 text-sm"
+                      placeholder="200"
+                      min="30"
+                      max="200"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bust */}
+            <div className="max-w-xs">
+              <h3 className="text-sm font-semibold theme-text mb-2">Bust</h3>
+              <div className="grid grid-cols-1 gap-2">
+                <select
+                  value={filters.bust}
+                  onChange={(e) => handleFilterChange('bust', e.target.value)}
+                  className="input-field py-2 text-sm"
+                >
+                  <option value="">Any</option>
+                  <option value="A">A</option>
+                  <option value="B">B</option>
+                  <option value="C">C</option>
+                  <option value="D">D</option>
+                  <option value="E">E</option>
+                  <option value="F">F</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Разделитель перед Services */}
+            <div className="border-t border-gray-200 my-4"></div>
+
+            {/* Services */}
+            <div>
+              <h3 className="text-sm font-semibold theme-text mb-2">Services</h3>
+              <div className="grid grid-cols-3 gap-2">
+                {['Anal sex', 'Oral without condom', 'Kissing', 'Cunnilingus', 'Cum in mouth', 'Cum on face', 'Cum on body', 'Classic massage', 'Erotic massage', 'Striptease', 'Shower together', 'Strapon', 'Rimming', 'Golden shower (for men)', 'Domination', 'Blowjob in the car', 'Virtual sex', 'Photo/video'].map((service) => (
+                  <label key={service} className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filters.services.includes(service)}
+                      onChange={() => handleServiceToggle(service)}
+                      className="rounded border-gray-300 text-onlyfans-accent focus:ring-onlyfans-accent w-3 h-3"
+                    />
+                    <span className="theme-text text-xs">{service}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Разделитель перед Additional Filters */}
+            <div className="border-t border-gray-200 my-4"></div>
+
+            {/* Additional Filters */}
+            <div>
+              <h3 className="text-sm font-semibold theme-text mb-2">Additional Filters</h3>
+              <div className="grid grid-cols-3 gap-4">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filters.verified}
+                    onChange={handleVerifiedToggle}
+                    className="rounded border-gray-300 text-onlyfans-accent focus:ring-onlyfans-accent w-3 h-3"
+                  />
+                  <span className="theme-text text-xs">Verified Only</span>
+                </label>
+                
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filters.hasReviews}
+                    onChange={handleHasReviewsToggle}
+                    className="rounded border-gray-300 text-onlyfans-accent focus:ring-onlyfans-accent w-3 h-3"
+                  />
+                  <span className="theme-text text-xs">With Reviews</span>
+                </label>
+                
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filters.hasVideo}
+                    onChange={handleHasVideoToggle}
+                    className="rounded border-gray-300 text-onlyfans-accent focus:ring-onlyfans-accent w-3 h-3"
+                  />
+                  <span className="theme-text text-xs">With Video</span>
+                </label>
+              </div>
+            </div>
+
           </div>
-        )}
+
+          <div className="flex items-center justify-between mt-6 pt-4 border-t theme-border">
+            <button
+              onClick={clearFilters}
+              className="px-3 py-2 text-sm text-theme-text-secondary hover:text-theme-text transition-colors"
+            >
+{t('browse.filters.clear')}
+            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setShowFilters(false)}
+                className="px-4 py-2 text-sm border theme-border text-theme-text rounded-lg hover:bg-onlyfans-accent/10 transition-colors"
+              >
+{t('browse.filters.cancel')}
+              </button>
+              <button
+                onClick={() => setShowFilters(false)}
+                className="px-4 py-2 text-sm bg-onlyfans-accent text-white rounded-lg hover:opacity-80 transition-colors"
+              >
+{t('browse.filters.apply')}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    )}
 
     {/* Scroll to Top Button */}
     <ScrollToTopButton />
