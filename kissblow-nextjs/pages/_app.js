@@ -1,6 +1,6 @@
 import '../styles/globals.css'
 import Script from 'next/script'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, startTransition } from 'react'
 import { ThemeProvider } from '../contexts/ThemeContext'
 import { AuthProvider } from '../contexts/AuthContext'
 import { BalanceProvider } from '../contexts/BalanceContext'
@@ -13,7 +13,10 @@ function MyApp({ Component, pageProps }) {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    setMounted(true)
+    // Используем startTransition для отложенного обновления во время гидратации
+    startTransition(() => {
+      setMounted(true)
+    })
   }, [])
 
   return (
