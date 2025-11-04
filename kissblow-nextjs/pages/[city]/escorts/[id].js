@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, startTransition } from 'react'
 import { Search } from 'lucide-react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
@@ -59,11 +59,15 @@ export default function Girl({ profile, profileMedia, initialReviews, cityName: 
   // Инициализация state с данными из props
   useEffect(() => {
     if (profile) {
-      setLikesCount(profile.likes_count || 0)
-      setIsLiked(profile.is_liked || false)
+      startTransition(() => {
+        setLikesCount(profile.likes_count || 0)
+        setIsLiked(profile.is_liked || false)
+      })
     }
     if (initialReviews) {
-      setReviews(initialReviews)
+      startTransition(() => {
+        setReviews(initialReviews)
+      })
     }
   }, [profile, initialReviews])
 

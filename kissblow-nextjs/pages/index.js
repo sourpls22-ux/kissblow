@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, lazy, Suspense } from 'react'
+import { useState, useEffect, useRef, lazy, Suspense, startTransition } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { Search, Filter, Globe, RefreshCw, Star, User, MapPin, Heart, X, Loader2 } from 'lucide-react'
@@ -291,8 +291,10 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
       fetchProfiles()
     } else if (router.isReady && !city && !page && !search) {
       // Используем ISR данные для базовой страницы
-      setProfiles(initialProfiles)
-      setPagination(initialPagination)
+      startTransition(() => {
+        setProfiles(initialProfiles)
+        setPagination(initialPagination)
+      })
     }
   }, [router.isReady, city, page, search])
 
