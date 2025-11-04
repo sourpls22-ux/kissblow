@@ -1,4 +1,4 @@
-import { verifyTurnstileToken } from '../../../lib/utils/turnstile.js'
+import { verifyTurnstileToken } from '../../lib/utils/turnstile.js'
 
 // Отправка email
 async function sendContactEmail({ name, email, category, message, urls }) {
