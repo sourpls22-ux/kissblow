@@ -4,6 +4,12 @@ const nextConfig = {
   poweredByHeader: false, // Убрать X-Powered-By header
   compress: true, // Включить сжатие ответов
   
+  // ВРЕМЕННО для диагностики - отключить минификацию
+  swcMinify: false,
+  
+  // Включить детальные ошибки
+  productionBrowserSourceMaps: true,
+  
   images: {
     domains: ['localhost', 'kissblow.me'],
     formats: ['image/webp', 'image/avif'],
