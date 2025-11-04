@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, startTransition } from 'react'
 import { hasAgeVerification } from '../utils/ageVerification'
 
 const AgeVerificationModal = () => {
@@ -11,7 +11,10 @@ const AgeVerificationModal = () => {
     if (typeof window !== 'undefined') {
       const hasVerified = hasAgeVerification()
       if (!hasVerified) {
-        setIsVisible(true)
+        // Используем startTransition для отложенного обновления во время гидратации
+        startTransition(() => {
+          setIsVisible(true)
+        })
       }
     }
   }, [])

@@ -21,11 +21,14 @@ export const LanguageProvider = ({ children }) => {
   useEffect(() => {
     // Загружаем язык из localStorage только на клиенте
     if (typeof window !== 'undefined') {
-      const savedLanguage = localStorage.getItem('kissblow-language')
-      if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'ru')) {
-        setLanguage(savedLanguage)
-      }
-      setIsLoaded(true)
+      // Используем startTransition для отложенного обновления во время гидратации
+      startTransition(() => {
+        const savedLanguage = localStorage.getItem('kissblow-language')
+        if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'ru')) {
+          setLanguage(savedLanguage)
+        }
+        setIsLoaded(true)
+      })
     }
   }, [])
 

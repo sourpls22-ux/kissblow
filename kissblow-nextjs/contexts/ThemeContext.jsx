@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, startTransition } from 'react'
 
 const ThemeContext = createContext()
 
@@ -18,16 +18,19 @@ export const ThemeProvider = ({ children }) => {
   useEffect(() => {
     // Загружаем тему из localStorage только на клиенте
     if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem('kissblow-theme')
-      if (savedTheme && (savedTheme === 'dark' || savedTheme === 'light')) {
-        setTheme(savedTheme)
-      } else {
-        // Check system preference
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-          setTheme('light')
+      // Используем startTransition для отложенного обновления во время гидратации
+      startTransition(() => {
+        const savedTheme = localStorage.getItem('kissblow-theme')
+        if (savedTheme && (savedTheme === 'dark' || savedTheme === 'light')) {
+          setTheme(savedTheme)
+        } else {
+          // Check system preference
+          if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+            setTheme('light')
+          }
         }
-      }
-      setIsLoaded(true)
+        setIsLoaded(true)
+      })
     }
   }, [])
 

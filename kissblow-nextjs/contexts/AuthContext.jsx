@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, startTransition } from 'react'
 import axios from 'axios'
 
 const AuthContext = createContext()
@@ -36,7 +36,10 @@ export const AuthProvider = ({ children }) => {
       if (token) {
         try {
           const response = await axios.get(`${''}/api/user/profile`)
-          setUser(response.data)
+          // Используем startTransition для отложенного обновления во время гидратации
+          startTransition(() => {
+            setUser(response.data)
+          })
         } catch (error) {
           console.error('Auth check failed:', error)
           logout()
