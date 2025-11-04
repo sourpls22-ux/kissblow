@@ -87,8 +87,8 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  // Import Turnstile verification (CommonJS module)
-  const { verifyTurnstileToken } = require('../../../lib/utils/turnstile.js')
+  // Dynamic import for Turnstile verification
+  const { verifyTurnstileToken } = await import('../../../lib/utils/turnstile.js')
 
   try {
     // Извлекаем данные из тела запроса
