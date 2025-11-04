@@ -8,9 +8,11 @@ const AgeVerificationModal = () => {
 
   useEffect(() => {
     // Check if user has already verified age
-    const hasVerified = hasAgeVerification()
-    if (!hasVerified) {
-      setIsVisible(true)
+    if (typeof window !== 'undefined') {
+      const hasVerified = hasAgeVerification()
+      if (!hasVerified) {
+        setIsVisible(true)
+      }
     }
   }, [])
 
@@ -39,6 +41,8 @@ const AgeVerificationModal = () => {
 
   // Block body scroll when modal is visible
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return
+    
     if (isVisible) {
       document.body.style.overflow = 'hidden'
     } else {
@@ -46,7 +50,9 @@ const AgeVerificationModal = () => {
     }
 
     return () => {
-      document.body.style.overflow = 'unset'
+      if (typeof document !== 'undefined') {
+        document.body.style.overflow = 'unset'
+      }
     }
   }, [isVisible])
 

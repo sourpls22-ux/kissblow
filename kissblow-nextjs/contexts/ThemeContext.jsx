@@ -33,20 +33,24 @@ export const ThemeProvider = ({ children }) => {
 
   useEffect(() => {
     // Save theme to localStorage and apply theme only after loading
-    if (typeof window !== 'undefined' && isLoaded) {
+    if (typeof window !== 'undefined' && isLoaded && typeof document !== 'undefined') {
       localStorage.setItem('kissblow-theme', theme)
       
-      // Apply theme to document
-      document.documentElement.setAttribute('data-theme', theme)
-      
-      // Update body classes
-      if (theme === 'light') {
-        document.body.classList.remove('dark-theme')
-        document.body.classList.add('light-theme')
-      } else {
-        document.body.classList.remove('light-theme')
-        document.body.classList.add('dark-theme')
-      }
+      // Apply theme to document только после hydration (отложенное выполнение)
+      requestAnimationFrame(() => {
+        if (typeof document !== 'undefined') {
+          document.documentElement.setAttribute('data-theme', theme)
+          
+          // Update body classes
+          if (theme === 'light') {
+            document.body.classList.remove('dark-theme')
+            document.body.classList.add('light-theme')
+          } else {
+            document.body.classList.remove('light-theme')
+            document.body.classList.add('dark-theme')
+          }
+        }
+      })
     }
   }, [theme, isLoaded])
 
