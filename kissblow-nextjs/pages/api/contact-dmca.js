@@ -1,30 +1,8 @@
-const nodemailer = require('nodemailer')
-
-// Верификация Turnstile токена
-async function verifyTurnstileToken(token) {
-  const secretKey = process.env.TURNSTILE_SECRET_KEY
-  const url = 'https://challenges.cloudflare.com/turnstile/v0/siteverify'
-
-  const formData = new URLSearchParams()
-  formData.append('secret', secretKey)
-  formData.append('response', token)
-
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      body: formData,
-    })
-    const data = await response.json()
-    return data.success
-  } catch (error) {
-    console.error('Turnstile verification error:', error)
-    return false
-  }
-}
-
 // Отправка email
 async function sendContactEmail({ name, email, category, message, urls }) {
-  const transporter = nodemailer.createTransport({
+  // Dynamic import to avoid webpack issues
+  const nodemailer = await import('nodemailer')
+  const transporter = nodemailer.default.createTransport({
     host: process.env.SMTP_HOST,
     port: process.env.SMTP_PORT,
     secure: false, // true для 465, false для других портов
@@ -108,6 +86,9 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
+
+  // Dynamic import for Turnstile verification
+  const { verifyTurnstileToken } = await import('../../../lib/utils/turnstile.js')
 
   try {
     // Извлекаем данные из тела запроса

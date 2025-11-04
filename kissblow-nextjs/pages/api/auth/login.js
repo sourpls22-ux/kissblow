@@ -6,10 +6,10 @@ export default async function handler(req, res) {
   // Dynamic import to avoid webpack issues
   const bcrypt = await import('bcryptjs')
   const jwt = await import('jsonwebtoken')
-  const axios = await import('axios')
-    const { default: DatabaseQuery } = await import('../../../lib/database/query.js')
+  const { default: DatabaseQuery } = await import('../../../lib/database/query.js')
   const { validateEmail, validatePassword, validateTurnstileToken, sanitizeString } = await import('../../../lib/validation/schemas.js')
   const { logger, logDatabaseError } = await import('../../../lib/logger.js')
+  const { verifyTurnstileToken } = await import('../../../lib/utils/turnstile.js')
 
   const { email, password, turnstileToken } = req.body
 
@@ -90,30 +90,5 @@ export default async function handler(req, res) {
     logDatabaseError('user_login', error)
     logger.error('Login error:', { error: error.message, email: sanitizeString(email) })
     res.status(500).json({ error: 'Internal server error' })
-  }
-}
-
-// Cloudflare Turnstile verification
-const verifyTurnstileToken = async (token) => {
-  try {
-    const axios = await import('axios')
-    
-    const secretKey = process.env.NODE_ENV === 'development'
-      ? '1x0000000000000000000000000000000AA' // Test secret
-      : process.env.TURNSTILE_SECRET_KEY // Production secret
-    
-    const formData = `secret=${secretKey}&response=${token}`
-
-    const response = await axios.default.post('https://challenges.cloudflare.com/turnstile/v0/siteverify', formData, {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
-    })
-
-    const result = response.data
-    return result.success
-  } catch (error) {
-    console.error('Turnstile verification error:', error)
-    return false
   }
 }

@@ -21,7 +21,28 @@ module.exports = {
       max_memory_restart: '1G',
       env_production: {
         NODE_ENV: 'production',
-        PORT: 3000
+        PORT: 3000,
+        FRONTEND_URL: 'https://kissblow.me',
+        BACKEND_URL: 'https://kissblow.me',
+        NEXT_PUBLIC_API_URL: 'https://kissblow.me',
+        NEXT_PUBLIC_SITE_URL: 'https://kissblow.me',
+        JWT_SECRET: '97bb471b4bfcf5d6aa352e11b506793b490be3bfc86fdabd9ebf561e324be2f9',
+        JWT_REFRESH_SECRET: '97bb471b4bfcf5d6aa352e11b506793b490be3bfc86fdabd9ebf561e324be2f9',
+        ATLOS_MERCHANT_ID: 'OAK1D092DB',
+        ATLOS_API_SECRET: '4VWilRiqpcJugiHmAZw22hNtTrPyFpCR',
+        FROM_NAME: 'KissBlow',
+        FROM_EMAIL: 'info@kissblow.me',
+        SMTP_HOST: 'smtp.maileroo.com',
+        SMTP_PORT: '587',
+        SMTP_USER: 'info@kissblow.me',
+        SMTP_PASS: 'fc2a921dc5121aa28db22736',
+        TURNSTILE_SECRET_KEY: '0x4AAAAAAB55qsf9O0xRE1LdFIiEjgACTqY',
+        TURNSTILE_SITE_KEY: '0x4AAAAAAB55qr99duHk2JQk',
+        DB_PATH: './database.sqlite',
+        DATABASE_PATH: './database.sqlite',
+        REVALIDATE_SECRET: 'cb26a55ba58392d24f20c1404b0ac4b6dd8894be5b8de281522f6170ed9c2ff5',
+        NEXT_PUBLIC_REVALIDATE_SECRET: 'cb26a55ba58392d24f20c1404b0ac4b6dd8894be5b8de281522f6170ed9c2ff5',
+        ALLOWED_ORIGINS: 'https://kissblow.me,https://www.kissblow.me'
       }
     },
     {
