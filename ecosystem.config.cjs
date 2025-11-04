@@ -1,6 +1,30 @@
 module.exports = {
   apps: [
     {
+      name: 'kissblow-nextjs',
+      script: 'npm',
+      args: 'start',
+      cwd: './kissblow-nextjs',
+      instances: 2,
+      exec_mode: 'cluster',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000
+      },
+      error_file: './logs/nextjs-err.log',
+      out_file: './logs/nextjs-out.log',
+      log_file: './logs/nextjs-combined.log',
+      time: true,
+      autorestart: true,
+      max_restarts: 10,
+      min_uptime: '10s',
+      max_memory_restart: '1G',
+      env_production: {
+        NODE_ENV: 'production',
+        PORT: 3000
+      }
+    },
+    {
       name: 'kissblow-backend',
       script: './backend/server.js',
       instances: 1,

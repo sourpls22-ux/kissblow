@@ -1,0 +1,198 @@
+import { useState } from 'react'
+import Link from 'next/link'
+import { Filter, Calendar, User, ArrowRight } from 'lucide-react'
+import SEOHead from '../components/SEOHead'
+import Breadcrumbs from '../components/Breadcrumbs'
+import { blogPosts } from '../data/blogPosts'
+import { useTranslation } from '../hooks/useTranslation'
+
+const Blog = () => {
+  const { t } = useTranslation()
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('all')
+
+  const lastUpdated = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+
+  const categories = [
+    { value: 'all', label: t('blog.categories.all') },
+    { value: 'Safety Guide', label: t('blog.categories.safetyGuide') },
+    { value: 'Travel Guide', label: t('blog.categories.travelGuide') },
+    { value: 'Guide', label: t('blog.categories.guide') },
+    { value: 'Safety Tips', label: t('blog.categories.safetyTips') }
+  ]
+
+  // Filter posts based on search and category
+  const filteredPosts = blogPosts.filter(post => {
+    const matchesSearch = searchQuery === '' || 
+      post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      post.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      post.keywords.toLowerCase().includes(searchQuery.toLowerCase())
+    
+    const matchesCategory = selectedCategory === 'all' || post.category === selectedCategory
+    
+    return matchesSearch && matchesCategory
+  })
+
+  const seoData = {
+    title: t('blog.seo.title'),
+    description: t('blog.seo.description'),
+    keywords: t('blog.seo.keywords'),
+    url: 'https://kissblow.me/blog',
+    canonical: 'https://kissblow.me/blog',
+    alternate: { ru: 'https://kissblow.me/ru/blog' }
+  }
+
+  const breadcrumbs = [
+    { name: t('breadcrumbs.home'), path: '/' },
+    { name: t('blog.title'), path: '/blog' }
+  ]
+
+  return (
+    <>
+      <SEOHead {...seoData} />
+      
+      <div className="min-h-screen theme-bg py-8">
+        <div className="max-w-6xl mx-auto px-4">
+          {/* Breadcrumbs */}
+          <div className="mb-6">
+            <Breadcrumbs items={breadcrumbs} />
+          </div>
+          
+          
+          {/* Header */}
+          <div className="text-center mb-8 sm:mb-12">
+            <h1 className="text-2xl sm:text-4xl font-bold theme-text mb-4">
+              {t('blog.title')}
+            </h1>
+            <p className="text-base sm:text-xl theme-text-secondary max-w-3xl mx-auto">
+              {t('blog.subtitle')}
+            </p>
+          </div>
+
+          {/* Blog Content Section */}
+          <div className="mb-12">
+            <h2 className="text-2xl font-semibold theme-text mb-6">{t('blog.latestArticles')}</h2>
+            <p className="text-sm theme-text-secondary mt-4">Last updated: {lastUpdated}</p>
+          </div>
+
+          {/* Search and Filters Section */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold theme-text mb-4">{t('blog.searchAndFilter')}</h3>
+            <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                placeholder={t('blog.searchPlaceholder')}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-4 pr-4 py-3 input-field rounded-lg"
+              />
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Filter size={20} className="text-theme-text-secondary" />
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="input-field py-3 px-4 rounded-lg"
+              >
+                {categories.map(category => (
+                  <option key={category.value} value={category.value}>
+                    {category.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            </div>
+          </div>
+
+          {/* Blog Posts Section */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold theme-text mb-6">{t('blog.articles')}</h3>
+            
+            {/* Blog Posts Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            {filteredPosts.map((post) => (
+              <article key={post.id} className="theme-surface rounded-lg border theme-border hover:shadow-lg transition-shadow flex flex-col h-full" role="article" aria-labelledby={`post-${post.id}-title`}>
+                <div className="p-4 sm:p-6 flex flex-col flex-grow">
+                  <div className="flex items-center space-x-4 mb-3">
+                    <span className="px-2 py-1 bg-onlyfans-accent/10 text-onlyfans-accent text-xs font-medium rounded">
+                      {post.category}
+                    </span>
+                    <span className="text-theme-text-secondary text-sm">{post.readTime}</span>
+                  </div>
+                  
+                  <h3 id={`post-${post.id}-title`} className="text-xl font-semibold theme-text mb-3 line-clamp-2">
+                    {post.title}
+                  </h3>
+                  
+                  <p className="theme-text-secondary mb-4 line-clamp-3 flex-grow">
+                    {post.excerpt}
+                  </p>
+                  
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4">
+                    <div className="flex items-center space-x-2 text-sm theme-text-secondary">
+                      <User size={14} />
+                      <span>{post.author}</span>
+                      <Calendar size={14} />
+                      <span>{new Date(post.date).toLocaleDateString()}</span>
+                    </div>
+                    
+                    <Link 
+                      href={`/blog/${post.id}`}
+                      className="flex items-center justify-center sm:justify-end space-x-1 text-onlyfans-accent hover:opacity-80 transition-colors"
+                    >
+                      <span className="text-sm font-medium">{t('blog.readMore')}</span>
+                      <ArrowRight size={14} />
+                    </Link>
+                  </div>
+                </div>
+              </article>
+            ))}
+            </div>
+          </div>
+
+          {/* No Results */}
+          {filteredPosts.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-lg theme-text-secondary">
+                {t('blog.noPosts')}
+              </p>
+            </div>
+          )}
+
+          {/* Stats */}
+          <div className="mt-12 bg-gradient-to-r from-onlyfans-accent/10 to-onlyfans-dark/10 rounded-lg p-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+              <div>
+                <div className="text-3xl font-bold text-onlyfans-accent mb-2">
+                  {blogPosts.length}
+                </div>
+                <div className="text-theme-text-secondary">{t('blog.expertArticles')}</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-onlyfans-accent mb-2">
+                  {categories.length - 1}
+                </div>
+                <div className="text-theme-text-secondary">Categories</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-onlyfans-accent mb-2">
+                  5+
+                </div>
+                <div className="text-theme-text-secondary">Safety Guides</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
+// Removed getStaticProps to avoid large page-data from translations
+
+export default Blog
+
+
+
