@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, startTransition } from 'react'
+import { createContext, useContext, useState, useEffect } from 'react'
 import { useAuth } from './AuthContext'
 import axios from 'axios'
 
@@ -18,29 +18,23 @@ export const BalanceProvider = ({ children }) => {
   const { isAuthenticated, token, user } = useAuth()
 
   // Функция для получения баланса
-  const fetchBalance = useCallback(async () => {
+  const fetchBalance = async () => {
     if (!isAuthenticated || !token || user?.accountType !== 'model') {
-      startTransition(() => {
-        setBalance(0)
-      })
+      setBalance(0)
       return
     }
 
     setIsLoading(true)
     try {
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/user/balance`)
-      startTransition(() => {
-        setBalance(response.data.balance || 0)
-        setIsLoading(false)
-      })
+      const response = await axios.get(`${''}/api/user/balance`)
+      setBalance(response.data.balance || 0)
     } catch (error) {
       console.error('Failed to fetch balance:', error)
-      startTransition(() => {
-        setBalance(0)
-        setIsLoading(false)
-      })
+      setBalance(0)
+    } finally {
+      setIsLoading(false)
     }
-  }, [isAuthenticated, token, user?.accountType])
+  }
 
   // Функция для обновления баланса (вызывается после операций)
   const updateBalance = async () => {
@@ -50,14 +44,9 @@ export const BalanceProvider = ({ children }) => {
   // Автоматически загружаем баланс при изменении аутентификации
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Отложить загрузку до завершения гидратации
-      const timer = setTimeout(() => {
-        fetchBalance()
-      }, 0)
-
-      return () => clearTimeout(timer)
+      fetchBalance()
     }
-  }, [fetchBalance])
+  }, [isAuthenticated, token, user?.accountType])
 
   const value = {
     balance,

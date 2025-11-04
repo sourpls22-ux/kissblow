@@ -9,7 +9,6 @@ export default async function handler(req, res) {
   const { default: DatabaseQuery } = await import('../../../lib/database/query.js')
   const { validateEmail, validatePassword, validateTurnstileToken, sanitizeString } = await import('../../../lib/validation/schemas.js')
   const { logger, logDatabaseError } = await import('../../../lib/logger.js')
-  // Dynamic import for Turnstile verification
   const { verifyTurnstileToken } = await import('../../../lib/utils/turnstile.js')
 
   const { email, password, turnstileToken } = req.body

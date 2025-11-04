@@ -1,7 +1,7 @@
-const axios = require('axios')
+import axios from 'axios'
 
 // Cloudflare Turnstile verification
-const verifyTurnstileToken = async (token) => {
+export const verifyTurnstileToken = async (token) => {
   try {
     const formData = new URLSearchParams()
     
@@ -28,7 +28,7 @@ const verifyTurnstileToken = async (token) => {
 }
 
 // Validate Turnstile token with custom error handling
-const validateTurnstile = async (token, action = null) => {
+export const validateTurnstile = async (token, action = null) => {
   try {
     const formData = new URLSearchParams()
     
@@ -71,5 +71,3 @@ const validateTurnstile = async (token, action = null) => {
     }
   }
 }
-
-module.exports = { verifyTurnstileToken, validateTurnstile }

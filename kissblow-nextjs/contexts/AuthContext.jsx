@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, startTransition } from 'react'
+import React, { createContext, useContext, useState, useEffect } from 'react'
 import axios from 'axios'
 
 const AuthContext = createContext()
@@ -35,47 +35,26 @@ export const AuthProvider = ({ children }) => {
     const checkAuth = async () => {
       if (token) {
         try {
-          const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/user/profile`)
-          startTransition(() => {
-            setUser(response.data)
-            setLoading(false)
-          })
+          const response = await axios.get(`${''}/api/user/profile`)
+          setUser(response.data)
         } catch (error) {
           console.error('Auth check failed:', error)
-          startTransition(() => {
-            setToken(null)
-            setUser(null)
-            if (typeof window !== 'undefined') {
-              localStorage.removeItem('kissblow-token')
-            }
-            delete axios.defaults.headers.common['Authorization']
-            setLoading(false)
-          })
+          logout()
         }
-      } else {
-        startTransition(() => {
-          setLoading(false)
-        })
       }
+      setLoading(false)
     }
 
-    // Отложить проверку до завершения гидратации
-    const timer = setTimeout(() => {
-      checkAuth()
-    }, 0)
-
-    return () => clearTimeout(timer)
+    checkAuth()
   }, [token])
 
   const login = async (email, password, turnstileToken) => {
     try {
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/login`, { email, password, turnstileToken })
+      const response = await axios.post(`${''}/api/auth/login`, { email, password, turnstileToken })
       const { accessToken: newToken, user: userData } = response.data
       
-      startTransition(() => {
-        setToken(newToken)
-        setUser(userData)
-      })
+      setToken(newToken)
+      setUser(userData)
       if (typeof window !== 'undefined') {
         localStorage.setItem('kissblow-token', newToken)
       }
@@ -97,15 +76,13 @@ export const AuthProvider = ({ children }) => {
     console.log('AuthContext register called with:', { name, email, password: '***', accountType, turnstileToken: turnstileToken ? 'present' : 'missing' })
     try {
       console.log('AuthContext: Making axios request to /api/auth/register')
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/register`, { name, email, password, accountType, turnstileToken })
+      const response = await axios.post(`${''}/api/auth/register`, { name, email, password, accountType, turnstileToken })
       console.log('AuthContext: Received response:', response.status, response.data)
       const { accessToken: newToken, user: userData } = response.data
       console.log('AuthContext: Setting user data:', userData)
       
-      startTransition(() => {
-        setToken(newToken)
-        setUser(userData)
-      })
+      setToken(newToken)
+      setUser(userData)
       console.log('AuthContext: User state updated to:', userData)
       if (typeof window !== 'undefined') {
         localStorage.setItem('kissblow-token', newToken)
@@ -126,10 +103,8 @@ export const AuthProvider = ({ children }) => {
   }
 
   const logout = () => {
-    startTransition(() => {
-      setToken(null)
-      setUser(null)
-    })
+    setToken(null)
+    setUser(null)
     if (typeof window !== 'undefined') {
       localStorage.removeItem('kissblow-token')
     }
@@ -137,9 +112,7 @@ export const AuthProvider = ({ children }) => {
   }
 
   const updateUser = (userData) => {
-    startTransition(() => {
-      setUser(userData)
-    })
+    setUser(userData)
   }
 
   const value = {
