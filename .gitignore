@@ -100,6 +100,7 @@ uploads/
 public/uploads/
 backend/uploads/
 backend/uploads/profiles/
+profiles/
 
 # Editor directories and files
 .vscode/
