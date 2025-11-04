@@ -11,6 +11,8 @@ export default function ContactModal({ isOpen, onClose, profile }) {
 
   // Блокировка скролла при открытии модалки
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return
+    
     if (isOpen) {
       document.body.style.overflow = 'hidden'
     } else {
@@ -19,12 +21,16 @@ export default function ContactModal({ isOpen, onClose, profile }) {
 
     // Cleanup при размонтировании
     return () => {
-      document.body.style.overflow = 'unset'
+      if (typeof document !== 'undefined') {
+        document.body.style.overflow = 'unset'
+      }
     }
   }, [isOpen])
 
   // Закрытие по ESC
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return
+    
     const handleEsc = (e) => {
       if (e.key === 'Escape') {
         onClose()
@@ -36,7 +42,9 @@ export default function ContactModal({ isOpen, onClose, profile }) {
     }
 
     return () => {
-      document.removeEventListener('keydown', handleEsc)
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('keydown', handleEsc)
+      }
     }
   }, [isOpen, onClose])
 

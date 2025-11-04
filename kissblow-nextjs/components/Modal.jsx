@@ -5,6 +5,8 @@ const Modal = ({ isOpen, onClose, title, children, buttonRef }) => {
   const modalRef = useRef(null)
 
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return
+    
     const handleEscape = (e) => {
       if (e.key === 'Escape') {
         onClose()
@@ -24,9 +26,11 @@ const Modal = ({ isOpen, onClose, title, children, buttonRef }) => {
     }
 
     return () => {
-      document.removeEventListener('keydown', handleEscape)
-      document.removeEventListener('mousedown', handleClickOutside)
-      document.body.style.overflow = 'unset'
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('keydown', handleEscape)
+        document.removeEventListener('mousedown', handleClickOutside)
+        document.body.style.overflow = 'unset'
+      }
     }
   }, [isOpen, onClose])
 

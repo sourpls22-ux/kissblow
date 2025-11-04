@@ -46,6 +46,8 @@ const CitySearchInput = () => {
 
   // Закрытие автокомплита при клике вне поля
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return
+    
     const handleClickOutside = (event) => {
       if (inputRef.current && !inputRef.current.contains(event.target) &&
           suggestionsRef.current && !suggestionsRef.current.contains(event.target)) {
@@ -55,7 +57,9 @@ const CitySearchInput = () => {
 
     document.addEventListener('mousedown', handleClickOutside)
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('mousedown', handleClickOutside)
+      }
     }
   }, [])
 

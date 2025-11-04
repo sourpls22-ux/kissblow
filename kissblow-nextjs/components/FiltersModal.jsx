@@ -24,19 +24,29 @@ const FiltersModal = ({ onClose, onApply, initialFilters = {} }) => {
 
   // Блокировка скролла при открытии
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return
+    
     document.body.style.overflow = 'hidden'
     return () => {
-      document.body.style.overflow = 'unset'
+      if (typeof document !== 'undefined') {
+        document.body.style.overflow = 'unset'
+      }
     }
   }, [])
 
   // Закрытие по ESC
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return
+    
     const handleEsc = (e) => {
       if (e.key === 'Escape') onClose()
     }
     document.addEventListener('keydown', handleEsc)
-    return () => document.removeEventListener('keydown', handleEsc)
+    return () => {
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('keydown', handleEsc)
+      }
+    }
   }, [onClose])
 
   const handleChange = (field, value) => {

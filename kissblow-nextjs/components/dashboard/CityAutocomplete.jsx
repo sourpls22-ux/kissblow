@@ -56,6 +56,8 @@ export default function CityAutocomplete({
 
   // Обработка клика вне компонента
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return
+    
     const handleClickOutside = (event) => {
       if (
         suggestionsRef.current && 
@@ -69,7 +71,11 @@ export default function CityAutocomplete({
     }
 
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    return () => {
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('mousedown', handleClickOutside)
+      }
+    }
   }, [])
 
   const handleInputChange = (e) => {
