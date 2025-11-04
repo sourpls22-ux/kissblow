@@ -24,10 +24,12 @@ function MyApp({ Component, pageProps }) {
           <BalanceProvider>
             <LanguageProvider>
               <ToastProvider>
-                <AgeVerificationModal />
-                <Layout>
-                  <Component {...pageProps} />
-                </Layout>
+                <div suppressHydrationWarning>
+                  <AgeVerificationModal />
+                  <Layout>
+                    <Component {...pageProps} />
+                  </Layout>
+                </div>
               </ToastProvider>
             </LanguageProvider>
           </BalanceProvider>

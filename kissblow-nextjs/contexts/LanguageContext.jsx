@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, startTransition } from 'react'
+import { useRouter } from 'next/router'
 
 const LanguageContext = createContext()
 
@@ -11,12 +12,14 @@ export const useLanguage = () => {
 }
 
 export const LanguageProvider = ({ children }) => {
+  const router = useRouter()
+  
   // Всегда начинаем с языка по умолчанию для SSR
   const [language, setLanguage] = useState('en')
   const [isLoaded, setIsLoaded] = useState(false)
 
   useEffect(() => {
-    // Загружаем язык из localStorage только на клиенте синхронно
+    // Загружаем язык из localStorage только на клиенте
     if (typeof window !== 'undefined') {
       const savedLanguage = localStorage.getItem('kissblow-language')
       if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'ru')) {
@@ -32,42 +35,6 @@ export const LanguageProvider = ({ children }) => {
       localStorage.setItem('kissblow-language', language)
     }
   }, [language, isLoaded])
-
-  useEffect(() => {
-    // Перенаправляем на правильную языковую версию при загрузке
-    if (typeof window !== 'undefined' && isLoaded) {
-      const currentPath = window.location.pathname
-
-      // Хелперы нормализации путей для RU/EN
-      const isRuPath = (p) => p === '/ru' || p.startsWith('/ru/')
-      const toRu = (p) => {
-        if (p === '/') return '/ru'
-        if (isRuPath(p)) return p
-        return `/ru${p}`
-      }
-      const toEn = (p) => {
-        if (p === '/ru') return '/'
-        if (p.startsWith('/ru/')) return p.replace('/ru', '')
-        return p
-      }
-      
-      // Проверяем, что это одна из наших локализованных страниц
-      const localizedPages = ['/', '/terms', '/privacy', '/about', '/how-it-works', '/contact-dmca', '/blog', '/search', '/login', '/register', '/forgot-password', '/404', '/dashboard', '/settings', '/payment-history', '/topup', '/escorts']
-      const isProfilePage = currentPath.match(/^\/[^\/]+\/escorts\/[^\/]+$/) || currentPath.match(/^\/ru\/[^\/]+\/escorts\/[^\/]+$/)
-      const isResetPasswordPage = currentPath.match(/^\/reset-password\/[^\/]+$/) || currentPath.match(/^\/ru\/reset-password\/[^\/]+$/)
-      const isLocalizedPage = localizedPages.some(page => currentPath.startsWith(page)) || isProfilePage || isResetPasswordPage
-      
-      if (isLocalizedPage) {
-        const currentlyRu = isRuPath(currentPath)
-        if (language === 'ru' && !currentlyRu) {
-          window.location.href = toRu(currentPath)
-        } else if (language === 'en' && currentlyRu) {
-          window.location.href = toEn(currentPath)
-        }
-      }
-    }
-  }, [language, isLoaded])
-
 
   // Универсальная функция для получения локализованного пути
   const isRuPath = (p) => p === '/ru' || p.startsWith('/ru/')
@@ -90,10 +57,13 @@ export const LanguageProvider = ({ children }) => {
     startTransition(() => {
       setLanguage(prev => {
         const newLang = prev === 'en' ? 'ru' : 'en'
-        if (typeof window !== 'undefined') {
+        if (typeof window !== 'undefined' && router.isReady) {
           document.cookie = `kissblow-language=${newLang}; path=/; max-age=31536000`
-          const currentPath = window.location.pathname
-          window.location.href = newLang === 'ru' ? toRu(currentPath) : toEn(currentPath)
+          const currentPath = router.asPath
+          const newPath = newLang === 'ru' ? toRu(currentPath) : toEn(currentPath)
+          
+          // Используем Next.js router вместо window.location.href
+          router.push(newPath, undefined, { shallow: false })
         }
         return newLang
       })
