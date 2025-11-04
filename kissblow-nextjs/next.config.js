@@ -10,6 +10,16 @@ const nextConfig = {
   // Включить детальные ошибки
   productionBrowserSourceMaps: true,
   
+  webpack: (config, { dev, isServer }) => {
+    if (!dev && !isServer) {
+      config.optimization = {
+        ...config.optimization,
+        minimize: false,
+      }
+    }
+    return config
+  },
+  
   images: {
     domains: ['localhost', 'kissblow.me'],
     formats: ['image/webp', 'image/avif'],
