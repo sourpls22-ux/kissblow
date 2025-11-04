@@ -1,3 +1,5 @@
+import { verifyTurnstileToken } from '../../../lib/utils/turnstile.js'
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -9,7 +11,6 @@ export default async function handler(req, res) {
   const { default: DatabaseQuery } = await import('../../../lib/database/query.js')
   const { validateEmail, validatePassword, validateTurnstileToken, sanitizeString } = await import('../../../lib/validation/schemas.js')
   const { logger, logDatabaseError } = await import('../../../lib/logger.js')
-  const { verifyTurnstileToken } = await import('../../../lib/utils/turnstile.js')
 
   const { email, password, turnstileToken } = req.body
 

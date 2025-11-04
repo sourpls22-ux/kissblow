@@ -1,3 +1,5 @@
+import { verifyTurnstileToken } from '../../../lib/utils/turnstile.js'
+
 // Отправка email
 async function sendContactEmail({ name, email, category, message, urls }) {
   // Dynamic import to avoid webpack issues
@@ -86,9 +88,6 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
-
-  // Dynamic import for Turnstile verification
-  const { verifyTurnstileToken } = await import('../../../lib/utils/turnstile.js')
 
   try {
     // Извлекаем данные из тела запроса

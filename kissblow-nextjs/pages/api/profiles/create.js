@@ -1,3 +1,5 @@
+import { validateTurnstile } from '../../../lib/utils/turnstile.js'
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -10,7 +12,6 @@ export default async function handler(req, res) {
     const sqlite3 = await import('sqlite3')
     const path = await import('path')
     const { revalidateHomepage, revalidateCity } = await import('../../../lib/utils/revalidation.js')
-    const { validateTurnstile } = await import('../../../lib/utils/turnstile.js')
     const { logger, logDatabaseError } = await import('../../../lib/logger.js')
     
     const dbPath = path.join(process.cwd(), 'database.sqlite')
