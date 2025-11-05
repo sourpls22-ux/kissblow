@@ -15,6 +15,13 @@ class DatabasePool {
     
     this.dbPath = process.env.DATABASE_PATH || process.env.DB_PATH || path.join(process.cwd(), 'database.sqlite')
     
+    logger.info('DatabasePool constructor', { 
+      dbPath: this.dbPath,
+      DATABASE_PATH: process.env.DATABASE_PATH,
+      DB_PATH: process.env.DB_PATH,
+      cwd: process.cwd()
+    })
+    
     // Initialize the pool
     this.initialize()
   }
@@ -39,9 +46,10 @@ class DatabasePool {
 
   async createConnection() {
     return new Promise((resolve, reject) => {
+      logger.info('Creating database connection', { dbPath: this.dbPath })
       const db = new sqlite3.Database(this.dbPath, (err) => {
         if (err) {
-          logger.error('Failed to create database connection', { error: err.message })
+          logger.error('Failed to create database connection', { error: err.message, dbPath: this.dbPath })
           reject(err)
         } else {
           // Configure connection
@@ -165,16 +173,17 @@ class DatabasePool {
   }
 
   async executeQueryOne(sql, params = []) {
-    const connection = await this.getConnection()
-    
     try {
+      const connection = await this.getConnection()
+      
       return new Promise((resolve, reject) => {
         connection.db.get(sql, params, (err, row) => {
           if (err) {
             logger.error('Database query error', { 
               error: err.message, 
               sql: sql.substring(0, 100) + '...',
-              connectionId: connection.id
+              connectionId: connection.id,
+              dbPath: this.dbPath
             })
             reject(err)
           } else {
@@ -185,9 +194,16 @@ class DatabasePool {
             resolve(row)
           }
         })
+      }).finally(() => {
+        this.releaseConnection(connection)
       })
-    } finally {
-      this.releaseConnection(connection)
+    } catch (error) {
+      logger.error('Failed to get connection for query', { 
+        error: error.message, 
+        sql: sql.substring(0, 100) + '...',
+        dbPath: this.dbPath
+      })
+      throw error
     }
   }
 
