@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, lazy, Suspense } from 'react'
+import { useState, useEffect, useRef, lazy, Suspense, startTransition } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { Search, Filter, Globe, RefreshCw, Star, User, MapPin, Heart, X, Loader2 } from 'lucide-react'
@@ -161,7 +161,9 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
   // Обработка initialProfiles для правильного отображения изображений
   useEffect(() => {
     if (initialProfiles && initialProfiles.length > 0) {
-      setProfiles(initialProfiles)
+      startTransition(() => {
+        setProfiles(initialProfiles)
+      })
     }
   }, [initialProfiles])
 
@@ -288,11 +290,15 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
   // Загрузка при изменении city/page/search
   useEffect(() => {
     if (router.isReady && (city || page || search)) {
-      fetchProfiles()
+      startTransition(() => {
+        fetchProfiles()
+      })
     } else if (router.isReady && !city && !page && !search) {
       // Используем ISR данные для базовой страницы
-      setProfiles(initialProfiles)
-      setPagination(initialPagination)
+      startTransition(() => {
+        setProfiles(initialProfiles)
+        setPagination(initialPagination)
+      })
     }
   }, [router.isReady, city, page, search])
 
