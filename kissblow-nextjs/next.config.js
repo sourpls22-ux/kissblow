@@ -10,22 +10,6 @@ const nextConfig = {
   // Включить детальные ошибки
   productionBrowserSourceMaps: true,
   
-  webpack: (config, { dev, isServer, webpack }) => {
-    if (!dev && !isServer) {
-      // Принудительно используем development версию React через NODE_ENV
-      config.plugins.push(
-        new webpack.DefinePlugin({
-          'process.env.NODE_ENV': JSON.stringify('development'),
-        })
-      )
-      config.optimization = {
-        ...config.optimization,
-        minimize: false,
-      }
-    }
-    return config
-  },
-  
   images: {
     domains: ['localhost', 'kissblow.me'],
     formats: ['image/webp', 'image/avif'],

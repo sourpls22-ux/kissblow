@@ -89,7 +89,20 @@ export default async function handler(req, res) {
 
   } catch (error) {
     logDatabaseError('user_login', error)
-    logger.error('Login error:', { error: error.message, email: sanitizeString(email) })
-    res.status(500).json({ error: 'Internal server error' })
+    logger.error('Login error:', { error: error.message, stack: error.stack, email: sanitizeString(email) })
+    
+    // Используем детальное логирование для продакшн
+    const errorId = Date.now().toString(36)
+    logger.error(`Login Error ID: ${errorId}`, {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      email: sanitizeString(email)
+    })
+    
+    res.status(500).json({ 
+      error: 'Internal server error',
+      errorId: process.env.NODE_ENV === 'production' ? errorId : undefined
+    })
   }
 }

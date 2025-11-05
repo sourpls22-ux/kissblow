@@ -1,6 +1,6 @@
 import '../styles/globals.css'
 import Script from 'next/script'
-import { useState, useEffect, startTransition } from 'react'
+import { useState, useEffect } from 'react'
 import { ThemeProvider } from '../contexts/ThemeContext'
 import { AuthProvider } from '../contexts/AuthContext'
 import { BalanceProvider } from '../contexts/BalanceContext'
@@ -13,10 +13,28 @@ function MyApp({ Component, pageProps }) {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    // Используем startTransition для отложенного обновления во время гидратации
-    startTransition(() => {
-      setMounted(true)
-    })
+    setMounted(true)
+
+    // Обработка глобальных ошибок
+    const handleError = (error, errorInfo) => {
+      console.error('Global error:', error, errorInfo)
+    }
+
+    // Обработка необработанных промисов
+    const handleUnhandledRejection = (event) => {
+      console.error('Unhandled promise rejection:', event.reason)
+      handleError(event.reason, { type: 'unhandledRejection' })
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('error', (event) => handleError(event.error, event))
+      window.addEventListener('unhandledrejection', handleUnhandledRejection)
+
+      return () => {
+        window.removeEventListener('error', handleError)
+        window.removeEventListener('unhandledrejection', handleUnhandledRejection)
+      }
+    }
   }, [])
 
   return (

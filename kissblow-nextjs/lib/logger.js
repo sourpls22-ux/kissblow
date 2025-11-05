@@ -75,6 +75,54 @@ if (process.env.NODE_ENV !== 'production') {
   logger.add(new winston.transports.Console({
     format: consoleFormat
   }))
+} else {
+  // Add console transport for production errors only
+  logger.add(new winston.transports.Console({
+    level: 'error', // Only log errors to console in production
+    format: winston.format.combine(
+      winston.format.timestamp({
+        format: 'YYYY-MM-DD HH:mm:ss'
+      }),
+      winston.format.errors({ stack: true }),
+      winston.format.printf(({ timestamp, level, message, ...meta }) => {
+        let msg = `${timestamp} [${level}]: ${message}`
+        if (meta.error) {
+          msg += `\nError: ${meta.error}`
+        }
+        if (meta.stack) {
+          msg += `\nStack: ${meta.stack}`
+        }
+        if (Object.keys(meta).length > 0) {
+          msg += `\nMeta: ${JSON.stringify(meta, null, 2)}`
+        }
+        return msg
+      })
+    )
+  }))
+  
+  // Also add console transport for errorLogger
+  errorLogger.add(new winston.transports.Console({
+    level: 'error',
+    format: winston.format.combine(
+      winston.format.timestamp({
+        format: 'YYYY-MM-DD HH:mm:ss'
+      }),
+      winston.format.errors({ stack: true }),
+      winston.format.printf(({ timestamp, level, message, ...meta }) => {
+        let msg = `${timestamp} [${level}]: ${message}`
+        if (meta.error) {
+          msg += `\nError: ${meta.error}`
+        }
+        if (meta.stack) {
+          msg += `\nStack: ${meta.stack}`
+        }
+        if (Object.keys(meta).length > 0) {
+          msg += `\nMeta: ${JSON.stringify(meta, null, 2)}`
+        }
+        return msg
+      })
+    )
+  }))
 }
 
 // Create specialized loggers
@@ -122,23 +170,34 @@ const logApiRequest = (req, res, responseTime) => {
 }
 
 const logApiError = (req, error, additionalInfo = {}) => {
-  errorLogger.error('API Error', {
-    method: req.method,
-    url: req.url,
-    error: error.message,
-    stack: error.stack,
-    userId: req.user?.id || null,
+  const errorData = {
+    method: req?.method || 'UNKNOWN',
+    url: req?.url || 'UNKNOWN',
+    error: error?.message || String(error),
+    stack: error?.stack || (error instanceof Error ? error.stack : 'No stack trace'),
+    userId: req?.user?.id || null,
+    ip: req?.ip || req?.connection?.remoteAddress || null,
     ...additionalInfo
-  })
+  }
+  
+  errorLogger.error('API Error', errorData)
+  
+  // Дополнительно логируем в основной logger для консоли в продакшн
+  logger.error('API Error', errorData)
 }
 
 const logDatabaseError = (operation, error, query = null) => {
-  errorLogger.error('Database Error', {
+  const errorData = {
     operation,
-    error: error.message,
-    stack: error.stack,
+    error: error?.message || String(error),
+    stack: error?.stack || (error instanceof Error ? error.stack : 'No stack trace'),
     query: query ? query.substring(0, 200) + '...' : null
-  })
+  }
+  
+  errorLogger.error('Database Error', errorData)
+  
+  // Дополнительно логируем в основной logger для консоли в продакшн
+  logger.error('Database Error', errorData)
 }
 
 const logFileOperation = (operation, filePath, success, error = null) => {

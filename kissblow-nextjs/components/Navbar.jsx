@@ -20,8 +20,6 @@ const Navbar = () => {
 
   // Close dropdown and mobile menu when clicking outside
   useEffect(() => {
-    if (typeof window === 'undefined' || typeof document === 'undefined') return
-    
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false)
@@ -33,9 +31,7 @@ const Navbar = () => {
 
     document.addEventListener('mousedown', handleClickOutside)
     return () => {
-      if (typeof document !== 'undefined') {
-        document.removeEventListener('mousedown', handleClickOutside)
-      }
+      document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [])
 
