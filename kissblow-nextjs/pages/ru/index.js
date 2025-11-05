@@ -13,7 +13,6 @@ import { cities, searchCities, popularCities } from '../../data/cities'
 import { generateWebSiteSchema, generateItemListSchema } from '../../utils/schemaMarkup'
 import axios from 'axios'
 
-// ВРЕМЕННО: отключаем lazy для диагностики проблемы гидратации
 import PopularLocations from '../../components/PopularLocations'
 import KeywordsSection from '../../components/KeywordsSection'
 import CountriesSection from '../../components/CountriesSection'

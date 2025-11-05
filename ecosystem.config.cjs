@@ -38,8 +38,8 @@ module.exports = {
         SMTP_PASS: 'fc2a921dc5121aa28db22736',
         TURNSTILE_SECRET_KEY: '0x4AAAAAAB55qsf9O0xRE1LdFIiEjgACTqY',
         TURNSTILE_SITE_KEY: '0x4AAAAAAB55qr99duHk2JQk',
-        DB_PATH: './database.sqlite',
-        DATABASE_PATH: './database.sqlite',
+        DB_PATH: '/var/www/kissblow/kissblow-nextjs/database.sqlite',
+        DATABASE_PATH: '/var/www/kissblow/kissblow-nextjs/database.sqlite',
         REVALIDATE_SECRET: 'cb26a55ba58392d24f20c1404b0ac4b6dd8894be5b8de281522f6170ed9c2ff5',
         NEXT_PUBLIC_REVALIDATE_SECRET: 'cb26a55ba58392d24f20c1404b0ac4b6dd8894be5b8de281522f6170ed9c2ff5',
         ALLOWED_ORIGINS: 'https://kissblow.me,https://www.kissblow.me'

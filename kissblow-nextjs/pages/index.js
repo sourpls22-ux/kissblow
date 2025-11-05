@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, startTransition } from 'react'
-// import { useState, useEffect, useRef, lazy, Suspense, startTransition } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { Search, Filter, Globe, RefreshCw, Star, User, MapPin, Heart, X, Loader2 } from 'lucide-react'
@@ -14,15 +13,10 @@ import { cities, searchCities, popularCities } from '../data/cities'
 import { generateWebSiteSchema, generateItemListSchema } from '../utils/schemaMarkup'
 import axios from 'axios'
 
-// ВРЕМЕННО: отключаем lazy для диагностики проблемы гидратации
 import PopularLocations from '../components/PopularLocations'
 import KeywordsSection from '../components/KeywordsSection'
 import CountriesSection from '../components/CountriesSection'
 import BlogSection from '../components/BlogSection'
-// const PopularLocations = lazy(() => import('../components/PopularLocations'))
-// const KeywordsSection = lazy(() => import('../components/KeywordsSection'))
-// const CountriesSection = lazy(() => import('../components/CountriesSection'))
-// const BlogSection = lazy(() => import('../components/BlogSection'))
 
 // 🔥 ISR: данные загружаются на сервере при build/revalidate
 export async function getStaticProps() {

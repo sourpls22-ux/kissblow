@@ -13,7 +13,7 @@ class DatabasePool {
     this.activeConnections = new Set()
     this.waitingQueue = []
     
-    this.dbPath = path.join(process.cwd(), 'database.sqlite')
+    this.dbPath = process.env.DATABASE_PATH || process.env.DB_PATH || path.join(process.cwd(), 'database.sqlite')
     
     // Initialize the pool
     this.initialize()
