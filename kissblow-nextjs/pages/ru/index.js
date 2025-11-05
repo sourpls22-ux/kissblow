@@ -227,19 +227,27 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
       )
       
       if (append) {
-        setProfiles(prev => [...prev, ...formattedProfiles])
+        startTransition(() => {
+          setProfiles(prev => [...prev, ...formattedProfiles])
+        })
       } else {
-        setProfiles(formattedProfiles)
+        startTransition(() => {
+          setProfiles(formattedProfiles)
+        })
         // Scroll to top when changing pages via pagination
         window.scrollTo({ top: 0, behavior: 'smooth' })
       }
       
-      setPagination(paginationData)
+      startTransition(() => {
+        setPagination(paginationData)
+      })
       await fetchAllLikes(formattedProfiles, append)
       
     } catch (error) {
       console.error('Failed to fetch profiles:', error)
-      setProfiles([])
+      startTransition(() => {
+        setProfiles([])
+      })
     } finally {
       setLoading(false)
       setLoadingMore(false)
@@ -276,11 +284,15 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
       }))
       
       if (append) {
-        setProfiles(prev => [...prev, ...updatedProfiles])
-        setProfileLikes(prev => ({ ...prev, ...likesMap }))
+        startTransition(() => {
+          setProfiles(prev => [...prev, ...updatedProfiles])
+          setProfileLikes(prev => ({ ...prev, ...likesMap }))
+        })
       } else {
-        setProfiles(updatedProfiles)
-        setProfileLikes(likesMap)
+        startTransition(() => {
+          setProfiles(updatedProfiles)
+          setProfileLikes(likesMap)
+        })
       }
     } catch (error) {
       console.error('Failed to fetch likes:', error)
