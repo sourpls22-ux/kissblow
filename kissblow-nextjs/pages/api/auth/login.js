@@ -8,13 +8,23 @@ export default async function handler(req, res) {
   // Dynamic import to avoid webpack issues
   const bcrypt = await import('bcryptjs')
   const jwt = await import('jsonwebtoken')
-  const { default: DatabaseQuery } = await import('../../../lib/database/query.js')
+  const DatabaseQueryModule = await import('../../../lib/database/query.js')
+  const DatabaseQuery = DatabaseQueryModule.default || DatabaseQueryModule
   const { validateEmail, validatePassword, validateTurnstileToken, sanitizeString } = await import('../../../lib/validation/schemas.js')
   const { logger, logDatabaseError } = await import('../../../lib/logger.js')
 
   const { email, password, turnstileToken } = req.body
 
   try {
+    // Check JWT_SECRET before proceeding
+    if (!process.env.JWT_SECRET) {
+      logger.error('JWT_SECRET is not defined in environment variables')
+      return res.status(500).json({ error: 'Server configuration error' })
+    }
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' })
+    }
 
     if (!validateEmail(email)) {
       return res.status(400).json({ error: 'Invalid email format' })
@@ -88,8 +98,9 @@ export default async function handler(req, res) {
     })
 
   } catch (error) {
+    const emailForLog = email ? sanitizeString(email) : 'unknown'
     logDatabaseError('user_login', error)
-    logger.error('Login error:', { error: error.message, stack: error.stack, email: sanitizeString(email) })
+    logger.error('Login error:', { error: error.message, stack: error.stack, email: emailForLog })
     
     // Используем детальное логирование для продакшн
     const errorId = Date.now().toString(36)
@@ -97,7 +108,7 @@ export default async function handler(req, res) {
       message: error.message,
       stack: error.stack,
       name: error.name,
-      email: sanitizeString(email)
+      email: emailForLog
     })
     
     res.status(500).json({ 
