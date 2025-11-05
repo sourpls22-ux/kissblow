@@ -10,6 +10,27 @@ const nextConfig = {
   // Включить детальные ошибки
   productionBrowserSourceMaps: true,
   
+  // Настройка webpack для отключения минификации React (детальные ошибки)
+  webpack: (config, { dev, isServer }) => {
+    // Для отображения детальных ошибок React в продакшн
+    if (!dev && !isServer) {
+      // Отключаем минификацию для отображения детальных ошибок
+      config.optimization = {
+        ...config.optimization,
+        minimize: false,
+      }
+      
+      // Используем development версию React для детальных ошибок
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'react$': require.resolve('react'),
+        'react-dom$': require.resolve('react-dom'),
+      }
+    }
+    
+    return config
+  },
+  
   images: {
     domains: ['localhost', 'kissblow.me'],
     formats: ['image/webp', 'image/avif'],
