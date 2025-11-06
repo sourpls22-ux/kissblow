@@ -98,19 +98,31 @@ export default async function handler(req, res) {
     })
 
   } catch (error) {
-    const emailForLog = email ? sanitizeString(email) : 'unknown'
-    logDatabaseError('user_login', error)
-    logger.error('Login error:', { error: error.message, stack: error.stack, email: emailForLog })
+    // Безопасное получение email для лога (sanitizeString может быть не определен)
+    const emailForLog = email ? (typeof sanitizeString === 'function' ? sanitizeString(email) : String(email).substring(0, 50)) : 'unknown'
     
-    // Используем детальное логирование для продакшн
+    // Безопасное логирование (logger и logDatabaseError могут быть не определены)
+    try {
+      if (typeof logDatabaseError === 'function') {
+        logDatabaseError('user_login', error)
+      }
+      if (typeof logger !== 'undefined' && logger && typeof logger.error === 'function') {
+        logger.error('Login error:', { error: error.message, stack: error.stack, email: emailForLog })
+        
+        const errorId = Date.now().toString(36)
+        logger.error(`Login Error ID: ${errorId}`, {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+          email: emailForLog
+        })
+      }
+    } catch (logError) {
+      // Если логирование не удалось, просто выводим в консоль
+      console.error('Login error (logging failed):', error.message, logError.message)
+    }
+    
     const errorId = Date.now().toString(36)
-    logger.error(`Login Error ID: ${errorId}`, {
-      message: error.message,
-      stack: error.stack,
-      name: error.name,
-      email: emailForLog
-    })
-    
     res.status(500).json({ 
       error: 'Internal server error',
       errorId: process.env.NODE_ENV === 'production' ? errorId : undefined
