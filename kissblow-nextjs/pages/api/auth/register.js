@@ -10,7 +10,21 @@ export default async function handler(req, res) {
     const jwt = await import('jsonwebtoken')
     const sqlite3 = await import('sqlite3')
     const path = await import('path')
-    const { logger } = await import('../../../lib/logger.js')
+    
+    // Get logger with fallback
+    let logger
+    try {
+      const loggerModule = await import('../../../lib/logger.js')
+      logger = loggerModule.logger
+    } catch (err) {
+      // Fallback to console if logger import fails
+      logger = {
+        info: (...args) => console.log('[INFO]', ...args),
+        error: (...args) => console.error('[ERROR]', ...args),
+        warn: (...args) => console.warn('[WARN]', ...args)
+      }
+    }
+    
     const { validateEmail, validatePassword, validateName, validateTurnstileToken, sanitizeString } = await import('../../../lib/validation/schemas.js')
     const { verifyTurnstileToken } = await import('../../../lib/utils/turnstile.js')
     
@@ -139,7 +153,18 @@ export default async function handler(req, res) {
     })
 
   } catch (error) {
-    const { logger } = await import('../../../lib/logger.js')
+    // Get logger with fallback
+    let logger
+    try {
+      const loggerModule = await import('../../../lib/logger.js')
+      logger = loggerModule.logger
+    } catch (err) {
+      logger = {
+        info: (...args) => console.log('[INFO]', ...args),
+        error: (...args) => console.error('[ERROR]', ...args),
+        warn: (...args) => console.warn('[WARN]', ...args)
+      }
+    }
     logger.error('Registration error', {
       message: error.message,
       stack: error.stack,

@@ -1,12 +1,25 @@
 import axios from 'axios'
 
+// Helper function to get logger with fallback
+const getLogger = async () => {
+  try {
+    const { logger } = await import('../logger.js')
+    return logger
+  } catch (err) {
+    // Fallback to console if logger import fails
+    return {
+      info: (...args) => console.log('[INFO]', ...args),
+      error: (...args) => console.error('[ERROR]', ...args),
+      warn: (...args) => console.warn('[WARN]', ...args)
+    }
+  }
+}
+
 // Cloudflare Turnstile verification
 export const verifyTurnstileToken = async (token) => {
   try {
     const formData = new URLSearchParams()
-    
-    // Dynamic import logger to avoid webpack issues
-    const { logger } = await import('../logger.js')
+    const logger = await getLogger()
     
     // Use test secret for localhost, production secret for production
     const secretKey = process.env.NODE_ENV === 'development' 
@@ -56,8 +69,7 @@ export const verifyTurnstileToken = async (token) => {
       hostname: response.data.hostname
     }
   } catch (error) {
-    // Dynamic import logger to avoid webpack issues
-    const { logger } = await import('../logger.js')
+    const logger = await getLogger()
     logger.error('Turnstile verification error', {
       message: error.message,
       response: error.response?.data,
@@ -97,7 +109,7 @@ export const validateTurnstile = async (token, action = null) => {
     const { success, 'error-codes': errorCodes } = response.data
     
     if (!success) {
-      const { logger } = await import('../logger.js')
+      const logger = await getLogger()
       logger.error('Turnstile validation failed', { errorCodes })
       return {
         success: false,
@@ -110,7 +122,7 @@ export const validateTurnstile = async (token, action = null) => {
       errors: []
     }
   } catch (error) {
-    const { logger } = await import('../logger.js')
+    const logger = await getLogger()
     logger.error('Turnstile validation error', {
       message: error.message,
       stack: error.stack,
