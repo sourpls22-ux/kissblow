@@ -21,7 +21,9 @@ module.exports = {
       max_memory_restart: '1G',
       env_production: {
         NODE_ENV: 'production',
-        PORT: 3000
+        PORT: 3000,
+        TURNSTILE_SECRET_KEY: '0x4AAAAAAB55qsf900xRE1LdFiiEjgACTqY',
+        TURNSTILE_SITE_KEY: '0x4AAAAAAB55qr99duHk2JQk'
         // Все остальные переменные будут браться из .env.production
       }
     },
@@ -61,7 +63,7 @@ module.exports = {
         SMTP_PORT: '587',
         SMTP_USER: 'info@kissblow.me',
         SMTP_PASS: 'fc2a921dc5121aa28db22736',
-        TURNSTILE_SECRET_KEY: '0x4AAAAAAB55qsf9O0xRE1LdFIiEjgACTqY',
+        TURNSTILE_SECRET_KEY: '0x4AAAAAAB55qsf900xRE1LdFiiEjgACTqY',
         TURNSTILE_SITE_KEY: '0x4AAAAAAB55qr99duHk2JQk',
         DB_PATH: './database.sqlite',
         TELEGRAM_BOT_TOKEN: '7762390260:AAHBTsEZXFl1VL200pZO54qicwuEKomhnYY',
