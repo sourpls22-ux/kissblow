@@ -3,18 +3,20 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  // Dynamic import to avoid webpack issues
-  const bcrypt = await import('bcryptjs')
-  const jwt = await import('jsonwebtoken')
-  const DatabaseQueryModule = await import('../../../lib/database/query.js')
-  const DatabaseQuery = DatabaseQueryModule.default || DatabaseQueryModule
-  const { validateEmail, validatePassword, validateName, validateTurnstileToken, sanitizeString } = await import('../../../lib/validation/schemas.js')
-  const { logger, logDatabaseError } = await import('../../../lib/logger.js')
-  const { verifyTurnstileToken } = await import('../../../lib/utils/turnstile.js')
-
-  const { email, password, name, accountType, turnstileToken } = req.body
-
+  let db = null
   try {
+    // Dynamic import to avoid webpack issues
+    const bcrypt = await import('bcryptjs')
+    const jwt = await import('jsonwebtoken')
+    const sqlite3 = await import('sqlite3')
+    const path = await import('path')
+    const { validateEmail, validatePassword, validateName, validateTurnstileToken, sanitizeString } = await import('../../../lib/validation/schemas.js')
+    const { verifyTurnstileToken } = await import('../../../lib/utils/turnstile.js')
+    
+    const dbPath = process.env.DB_PATH || path.join(process.cwd(), 'database.sqlite')
+    db = new sqlite3.Database(dbPath)
+
+    const { email, password, name, accountType, turnstileToken } = req.body
 
     console.log('Register request body:', { email, password, name, accountType, turnstileToken: turnstileToken ? 'present' : 'missing' })
 
@@ -47,10 +49,12 @@ export default async function handler(req, res) {
     }
 
     // Check if user already exists
-    const existingUser = await DatabaseQuery.get(
-      'SELECT id FROM users WHERE email = ?', 
-      [sanitizedEmail]
-    )
+    const existingUser = await new Promise((resolve, reject) => {
+      db.get('SELECT id FROM users WHERE email = ?', [sanitizedEmail], (err, row) => {
+        if (err) reject(err)
+        else resolve(row)
+      })
+    })
 
     if (existingUser) {
       return res.status(409).json({ error: 'User already exists' })
@@ -61,10 +65,16 @@ export default async function handler(req, res) {
     const hashedPassword = await bcryptLib.hash(password, 10)
 
     // Create user
-    const result = await DatabaseQuery.run(
-      'INSERT INTO users (email, password, name, account_type, created_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)',
-      [sanitizedEmail, hashedPassword, sanitizedName, accountType || 'member']
-    )
+    const result = await new Promise((resolve, reject) => {
+      db.run(
+        'INSERT INTO users (email, password, name, account_type, created_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)',
+        [sanitizedEmail, hashedPassword, sanitizedName, accountType || 'member'],
+        function(err) {
+          if (err) reject(err)
+          else resolve({ lastID: this.lastID, changes: this.changes })
+        }
+      )
+    })
 
     // Generate tokens
     const jwtLib = jwt.default || jwt
@@ -80,13 +90,6 @@ export default async function handler(req, res) {
       { expiresIn: '7d' }
     )
 
-    logger.info('User registration successful', { 
-      userId: result.lastID, 
-      email: sanitizedEmail,
-      accountType,
-      name: sanitizedName
-    })
-
     res.status(201).json({
       message: 'User created successfully',
       accessToken,
@@ -100,28 +103,19 @@ export default async function handler(req, res) {
     })
 
   } catch (error) {
-    // Log error to console for debugging
     console.error('Registration error:', {
       message: error.message,
       stack: error.stack,
-      name: error.name,
-      email: email || 'unknown'
+      name: error.name
     })
-    
-    try {
-      if (typeof logDatabaseError === 'function') {
-        logDatabaseError('user_registration', error)
-      }
-      if (typeof logger !== 'undefined' && logger && typeof logger.error === 'function') {
-        logger.error('Registration error:', { error: error.message, email: sanitizeString(email) })
-      }
-    } catch (logError) {
-      console.error('Failed to log error:', logError.message)
-    }
     
     res.status(500).json({ 
       error: 'Internal server error',
       errorId: process.env.NODE_ENV === 'production' ? Date.now().toString(36) : undefined
     })
+  } finally {
+    if (db) {
+      db.close()
+    }
   }
 }
