@@ -3,6 +3,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
+  console.log('=== REGISTER API CALLED ===')
+  console.log('Request method:', req.method)
+  console.log('Request body keys:', Object.keys(req.body || {}))
+  console.log('Turnstile token present:', !!req.body?.turnstileToken)
+
   let db = null
   try {
     // Dynamic import to avoid webpack issues
@@ -42,10 +47,26 @@ export default async function handler(req, res) {
 
     // Verify Turnstile token
     if (turnstileToken) {
+      console.log('=== Turnstile Verification Debug ===')
+      console.log('Token (first 30 chars):', turnstileToken.substring(0, 30))
+      console.log('TURNSTILE_SECRET_KEY exists:', !!process.env.TURNSTILE_SECRET_KEY)
+      console.log('TURNSTILE_SECRET_KEY value:', process.env.TURNSTILE_SECRET_KEY ? process.env.TURNSTILE_SECRET_KEY.substring(0, 30) + '...' : 'NOT SET')
+      console.log('NODE_ENV:', process.env.NODE_ENV)
+      
       const turnstileResult = await verifyTurnstileToken(turnstileToken)
+      console.log('Turnstile verification result:', turnstileResult)
+      console.log('=== End Turnstile Debug ===')
+      
       if (!turnstileResult) {
-        return res.status(400).json({ error: 'Security verification failed' })
+        console.log('Turnstile verification FAILED')
+        return res.status(400).json({ 
+          error: 'Security verification failed',
+          details: 'Please complete the security challenge correctly'
+        })
       }
+      console.log('Turnstile verification SUCCESS')
+    } else {
+      console.log('No Turnstile token provided')
     }
 
     // Check if user already exists
