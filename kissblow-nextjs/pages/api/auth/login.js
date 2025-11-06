@@ -61,20 +61,22 @@ export default async function handler(req, res) {
     }
 
     // Check password
-    const isValidPassword = await bcrypt.compare(password, user.password)
+    const bcryptLib = bcrypt.default || bcrypt
+    const isValidPassword = await bcryptLib.compare(password, user.password)
     if (!isValidPassword) {
       logger.warn('Login attempt with invalid password', { userId: user.id, email: sanitizeString(email) })
       return res.status(401).json({ error: 'Invalid credentials' })
     }
 
     // Generate tokens
-    const accessToken = jwt.sign(
+    const jwtLib = jwt.default || jwt
+    const accessToken = jwtLib.sign(
       { id: user.id, email: user.email, accountType: user.account_type },
       process.env.JWT_SECRET,
       { expiresIn: '15m' }
     )
 
-    const refreshToken = jwt.sign(
+    const refreshToken = jwtLib.sign(
       { id: user.id },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
@@ -98,6 +100,14 @@ export default async function handler(req, res) {
     })
 
   } catch (error) {
+    // Log error to console for debugging
+    console.error('Login error:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      email: email || 'unknown'
+    })
+    
     // Безопасное получение email для лога (sanitizeString может быть не определен)
     const emailForLog = email ? (typeof sanitizeString === 'function' ? sanitizeString(email) : String(email).substring(0, 50)) : 'unknown'
     

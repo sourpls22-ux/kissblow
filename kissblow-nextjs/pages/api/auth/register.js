@@ -8,7 +8,8 @@ export default async function handler(req, res) {
   // Dynamic import to avoid webpack issues
   const bcrypt = await import('bcryptjs')
   const jwt = await import('jsonwebtoken')
-  const { default: DatabaseQuery } = await import('../../../lib/database/query.js')
+  const DatabaseQueryModule = await import('../../../lib/database/query.js')
+  const DatabaseQuery = DatabaseQueryModule.default || DatabaseQueryModule
   const { validateEmail, validatePassword, validateName, validateTurnstileToken, sanitizeString } = await import('../../../lib/validation/schemas.js')
   const { logger, logDatabaseError } = await import('../../../lib/logger.js')
 
@@ -57,7 +58,8 @@ export default async function handler(req, res) {
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.default.hash(password, 10)
+    const bcryptLib = bcrypt.default || bcrypt
+    const hashedPassword = await bcryptLib.hash(password, 10)
 
     // Create user
     const result = await DatabaseQuery.run(
@@ -66,13 +68,14 @@ export default async function handler(req, res) {
     )
 
     // Generate tokens
-    const accessToken = jwt.sign(
+    const jwtLib = jwt.default || jwt
+    const accessToken = jwtLib.sign(
       { id: result.lastID, email: sanitizedEmail, accountType },
       process.env.JWT_SECRET,
       { expiresIn: '15m' }
     )
 
-    const refreshToken = jwt.sign(
+    const refreshToken = jwtLib.sign(
       { id: result.lastID },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
@@ -98,8 +101,28 @@ export default async function handler(req, res) {
     })
 
   } catch (error) {
-    logDatabaseError('user_registration', error)
-    logger.error('Registration error:', { error: error.message, email: sanitizeString(email) })
-    res.status(500).json({ error: 'Internal server error' })
+    // Log error to console for debugging
+    console.error('Registration error:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      email: email || 'unknown'
+    })
+    
+    try {
+      if (typeof logDatabaseError === 'function') {
+        logDatabaseError('user_registration', error)
+      }
+      if (typeof logger !== 'undefined' && logger && typeof logger.error === 'function') {
+        logger.error('Registration error:', { error: error.message, email: sanitizeString(email) })
+      }
+    } catch (logError) {
+      console.error('Failed to log error:', logError.message)
+    }
+    
+    res.status(500).json({ 
+      error: 'Internal server error',
+      errorId: process.env.NODE_ENV === 'production' ? Date.now().toString(36) : undefined
+    })
   }
 }
