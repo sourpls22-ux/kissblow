@@ -54,17 +54,24 @@ export default async function handler(req, res) {
       console.log('NODE_ENV:', process.env.NODE_ENV)
       
       const turnstileResult = await verifyTurnstileToken(turnstileToken)
-      console.log('Turnstile verification result:', turnstileResult)
+      console.log('Turnstile verification result:', JSON.stringify(turnstileResult, null, 2))
       console.log('=== End Turnstile Debug ===')
       
-      if (!turnstileResult) {
-        console.log('Turnstile verification FAILED')
+      if (!turnstileResult || !turnstileResult.success) {
+        console.log('Turnstile verification FAILED', {
+          success: turnstileResult?.success,
+          errorCodes: turnstileResult?.errorCodes,
+          error: turnstileResult?.error
+        })
         return res.status(400).json({ 
           error: 'Security verification failed',
-          details: 'Please complete the security challenge correctly'
+          details: turnstileResult?.errorCodes?.join(', ') || turnstileResult?.error || 'Please complete the security challenge correctly'
         })
       }
-      console.log('Turnstile verification SUCCESS')
+      console.log('Turnstile verification SUCCESS', {
+        challengeTs: turnstileResult.challengeTs,
+        hostname: turnstileResult.hostname
+      })
     } else {
       console.log('No Turnstile token provided')
     }
