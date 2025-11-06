@@ -1,5 +1,3 @@
-import { verifyTurnstileToken } from '../../../lib/utils/turnstile.js'
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -8,6 +6,7 @@ export default async function handler(req, res) {
   // Dynamic import только для внешних пакетов
   const bcrypt = await import('bcryptjs')
   const jwt = await import('jsonwebtoken')
+  const { verifyTurnstileToken } = await import('../../../lib/utils/turnstile.js')
   
   // CommonJS require для внутренних модулей (избегаем проблем с циклическими зависимостями)
   const DatabaseQuery = require('../../../lib/database/query.js')
