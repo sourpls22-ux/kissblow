@@ -3,11 +3,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  console.log('=== REGISTER API CALLED ===')
-  console.log('Request method:', req.method)
-  console.log('Request body keys:', Object.keys(req.body || {}))
-  console.log('Turnstile token present:', !!req.body?.turnstileToken)
-
   let db = null
   try {
     // Dynamic import to avoid webpack issues
@@ -15,15 +10,28 @@ export default async function handler(req, res) {
     const jwt = await import('jsonwebtoken')
     const sqlite3 = await import('sqlite3')
     const path = await import('path')
+    const { logger } = await import('../../../lib/logger.js')
     const { validateEmail, validatePassword, validateName, validateTurnstileToken, sanitizeString } = await import('../../../lib/validation/schemas.js')
     const { verifyTurnstileToken } = await import('../../../lib/utils/turnstile.js')
+    
+    logger.info('=== REGISTER API CALLED ===', {
+      method: req.method,
+      bodyKeys: Object.keys(req.body || {}),
+      turnstileTokenPresent: !!req.body?.turnstileToken
+    })
     
     const dbPath = process.env.DB_PATH || path.join(process.cwd(), 'database.sqlite')
     db = new sqlite3.Database(dbPath)
 
     const { email, password, name, accountType, turnstileToken } = req.body
 
-    console.log('Register request body:', { email, password, name, accountType, turnstileToken: turnstileToken ? 'present' : 'missing' })
+    logger.info('Register request body', { 
+      email, 
+      password: password ? '***' : 'missing', 
+      name, 
+      accountType, 
+      turnstileToken: turnstileToken ? 'present' : 'missing' 
+    })
 
     if (!validateEmail(email)) {
       return res.status(400).json({ error: 'Invalid email format' })
@@ -47,18 +55,18 @@ export default async function handler(req, res) {
 
     // Verify Turnstile token
     if (turnstileToken) {
-      console.log('=== Turnstile Verification Debug ===')
-      console.log('Token (first 30 chars):', turnstileToken.substring(0, 30))
-      console.log('TURNSTILE_SECRET_KEY exists:', !!process.env.TURNSTILE_SECRET_KEY)
-      console.log('TURNSTILE_SECRET_KEY value:', process.env.TURNSTILE_SECRET_KEY ? process.env.TURNSTILE_SECRET_KEY.substring(0, 30) + '...' : 'NOT SET')
-      console.log('NODE_ENV:', process.env.NODE_ENV)
+      logger.info('=== Turnstile Verification Debug ===', {
+        tokenPrefix: turnstileToken.substring(0, 30),
+        turnstileSecretKeyExists: !!process.env.TURNSTILE_SECRET_KEY,
+        turnstileSecretKeyPrefix: process.env.TURNSTILE_SECRET_KEY ? process.env.TURNSTILE_SECRET_KEY.substring(0, 30) + '...' : 'NOT SET',
+        nodeEnv: process.env.NODE_ENV
+      })
       
       const turnstileResult = await verifyTurnstileToken(turnstileToken)
-      console.log('Turnstile verification result:', JSON.stringify(turnstileResult, null, 2))
-      console.log('=== End Turnstile Debug ===')
+      logger.info('Turnstile verification result', turnstileResult)
       
       if (!turnstileResult || !turnstileResult.success) {
-        console.log('Turnstile verification FAILED', {
+        logger.error('Turnstile verification FAILED', {
           success: turnstileResult?.success,
           errorCodes: turnstileResult?.errorCodes,
           error: turnstileResult?.error
@@ -68,12 +76,12 @@ export default async function handler(req, res) {
           details: turnstileResult?.errorCodes?.join(', ') || turnstileResult?.error || 'Please complete the security challenge correctly'
         })
       }
-      console.log('Turnstile verification SUCCESS', {
+      logger.info('Turnstile verification SUCCESS', {
         challengeTs: turnstileResult.challengeTs,
         hostname: turnstileResult.hostname
       })
     } else {
-      console.log('No Turnstile token provided')
+      logger.warn('No Turnstile token provided')
     }
 
     // Check if user already exists
@@ -131,7 +139,8 @@ export default async function handler(req, res) {
     })
 
   } catch (error) {
-    console.error('Registration error:', {
+    const { logger } = await import('../../../lib/logger.js')
+    logger.error('Registration error', {
       message: error.message,
       stack: error.stack,
       name: error.name

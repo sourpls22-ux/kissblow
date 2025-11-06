@@ -5,13 +5,16 @@ export const verifyTurnstileToken = async (token) => {
   try {
     const formData = new URLSearchParams()
     
+    // Dynamic import logger to avoid webpack issues
+    const { logger } = await import('../logger.js')
+    
     // Use test secret for localhost, production secret for production
     const secretKey = process.env.NODE_ENV === 'development' 
       ? '1x0000000000000000000000000000000AA' // Test secret
       : process.env.TURNSTILE_SECRET_KEY // Production secret
     
     if (!secretKey) {
-      console.error('TURNSTILE_SECRET_KEY is not set!', {
+      logger.error('TURNSTILE_SECRET_KEY is not set!', {
         nodeEnv: process.env.NODE_ENV,
         hasSecretKey: !!process.env.TURNSTILE_SECRET_KEY
       })
@@ -25,7 +28,7 @@ export const verifyTurnstileToken = async (token) => {
     formData.append('secret', secretKey)
     formData.append('response', token)
     
-    console.log('Turnstile verification request:', {
+    logger.info('Turnstile verification request', {
       tokenPrefix: token ? token.substring(0, 30) : 'missing',
       secretKeyPrefix: secretKey.substring(0, 30) + '...',
       nodeEnv: process.env.NODE_ENV
@@ -37,7 +40,13 @@ export const verifyTurnstileToken = async (token) => {
       }
     })
     
-    console.log('Turnstile verification response:', JSON.stringify(response.data, null, 2))
+    logger.info('Turnstile verification response', {
+      success: response.data.success,
+      errorCodes: response.data['error-codes'],
+      challengeTs: response.data['challenge_ts'],
+      hostname: response.data.hostname,
+      fullResponse: response.data
+    })
     
     // Return full response for better debugging
     return {
@@ -47,7 +56,14 @@ export const verifyTurnstileToken = async (token) => {
       hostname: response.data.hostname
     }
   } catch (error) {
-    console.error('Turnstile verification error:', error.message, error.response?.data)
+    // Dynamic import logger to avoid webpack issues
+    const { logger } = await import('../logger.js')
+    logger.error('Turnstile verification error', {
+      message: error.message,
+      response: error.response?.data,
+      stack: error.stack,
+      code: error.code
+    })
     return { 
       success: false, 
       errorCodes: ['network-error'],
@@ -81,7 +97,8 @@ export const validateTurnstile = async (token, action = null) => {
     const { success, 'error-codes': errorCodes } = response.data
     
     if (!success) {
-      console.error('Turnstile validation failed:', errorCodes)
+      const { logger } = await import('../logger.js')
+      logger.error('Turnstile validation failed', { errorCodes })
       return {
         success: false,
         errors: errorCodes || ['unknown-error']
@@ -93,7 +110,12 @@ export const validateTurnstile = async (token, action = null) => {
       errors: []
     }
   } catch (error) {
-    console.error('Turnstile validation error:', error)
+    const { logger } = await import('../logger.js')
+    logger.error('Turnstile validation error', {
+      message: error.message,
+      stack: error.stack,
+      response: error.response?.data
+    })
     return {
       success: false,
       errors: ['network-error']
