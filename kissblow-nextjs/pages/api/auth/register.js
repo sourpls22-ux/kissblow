@@ -5,13 +5,14 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  // Dynamic import to avoid webpack issues
+  // Dynamic import только для внешних пакетов
   const bcrypt = await import('bcryptjs')
   const jwt = await import('jsonwebtoken')
-  const DatabaseQueryModule = await import('../../../lib/database/query.js')
-  const DatabaseQuery = DatabaseQueryModule.default || DatabaseQueryModule
-  const { validateEmail, validatePassword, validateName, validateTurnstileToken, sanitizeString } = await import('../../../lib/validation/schemas.js')
-  const { logger, logDatabaseError } = await import('../../../lib/logger.js')
+  
+  // CommonJS require для внутренних модулей (избегаем проблем с циклическими зависимостями)
+  const DatabaseQuery = require('../../../lib/database/query.js')
+  const { validateEmail, validatePassword, validateName, validateTurnstileToken, sanitizeString } = require('../../../lib/validation/schemas.js')
+  const { logger, logDatabaseError } = require('../../../lib/logger.js')
 
   const { email, password, name, accountType, turnstileToken } = req.body
 
