@@ -131,12 +131,14 @@ export default async function handler(req, res) {
         log('Turnstile verification FAILED', {
           success: turnstileResult?.success,
           errorCodes: turnstileResult?.errorCodes,
-          error: turnstileResult?.error
+          error: turnstileResult?.error,
+          details: turnstileResult?.details
         })
         logger.error('Turnstile verification FAILED', {
           success: turnstileResult?.success,
           errorCodes: turnstileResult?.errorCodes,
-          error: turnstileResult?.error
+          error: turnstileResult?.error,
+          details: turnstileResult?.details
         })
         return res.status(400).json({ 
           error: 'Security verification failed',

@@ -70,16 +70,33 @@ export const verifyTurnstileToken = async (token) => {
     }
   } catch (error) {
     const logger = await getLogger()
-    logger.error('Turnstile verification error', {
+    
+    // Логируем полную информацию об ошибке
+    const errorDetails = {
       message: error.message,
-      response: error.response?.data,
-      stack: error.stack,
-      code: error.code
-    })
+      code: error.code,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      headers: error.response?.headers ? Object.keys(error.response.headers) : null,
+      config: {
+        url: error.config?.url,
+        method: error.config?.method,
+        data: error.config?.data ? error.config.data.toString().substring(0, 200) : null
+      },
+      stack: error.stack
+    }
+    
+    logger.error('Turnstile verification error - FULL DETAILS', errorDetails)
+    
+    // Если есть response.data, используем error-codes из него
+    const errorCodes = error.response?.data?.['error-codes'] || ['network-error']
+    
     return { 
       success: false, 
-      errorCodes: ['network-error'],
-      error: error.message
+      errorCodes: errorCodes,
+      error: error.message,
+      details: errorDetails
     }
   }
 }
