@@ -8,7 +8,29 @@ export default async function handler(req, res) {
   try {
     const sqlite3 = await import('sqlite3')
     const path = await import('path')
-    const { cacheManager } = await import('../../../lib/cache/decorators.js')
+    
+    // Используем require для CommonJS модулей
+    let cacheManagerModule
+    try {
+      cacheManagerModule = require('../../../lib/cache/decorators.js')
+    } catch (requireError) {
+      // Fallback на динамический import если require не работает
+      cacheManagerModule = await import('../../../lib/cache/decorators.js')
+      // Обрабатываем случай, когда динамический import возвращает default
+      if (cacheManagerModule.default && cacheManagerModule.default.cacheManager) {
+        cacheManagerModule = cacheManagerModule.default
+      }
+    }
+    
+    const { cacheManager } = cacheManagerModule
+    
+    if (!cacheManager) {
+      console.error('cacheManager is undefined', { 
+        moduleKeys: Object.keys(cacheManagerModule),
+        hasDefault: !!cacheManagerModule.default 
+      })
+      throw new Error('cacheManager not found in module')
+    }
 
     const { city, page = 1, limit = 24 } = req.query
     const offset = (parseInt(page) - 1) * parseInt(limit)
@@ -121,8 +143,32 @@ export default async function handler(req, res) {
     })
 
   } catch (error) {
-    console.error('Database error:', error)
-    res.status(500).json({ error: 'Database error' })
+    console.error('Profiles API error:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code
+    })
+    
+    // Записываем в файл для отладки
+    try {
+      const fs = require('fs')
+      const path = require('path')
+      const logDir = path.join(process.cwd(), 'logs')
+      if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir, { recursive: true })
+      }
+      const logFile = path.join(logDir, 'profiles-api-errors.log')
+      const logMessage = `${new Date().toISOString()}\nError: ${error.message}\nStack: ${error.stack}\n\n`
+      fs.appendFileSync(logFile, logMessage)
+    } catch (logError) {
+      console.error('Failed to write error log:', logError)
+    }
+    
+    res.status(500).json({ 
+      error: 'Database error',
+      message: process.env.NODE_ENV === 'development' ? error.message : undefined
+    })
   } finally {
     if (db) {
       db.close()
