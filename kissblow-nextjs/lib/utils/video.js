@@ -190,6 +190,13 @@ const convertVideo = (inputPath, outputPath, onProgress = null) => {
 const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
   logToFile('convertVideoAsync START', { inputPath, outputPath, mediaId, profileId })
   
+  // Создаем новое подключение к БД для этой операции
+  // Глобальное подключение может быть закрыто или использоваться в другом контексте
+  const sqlite3 = require('sqlite3')
+  const pathModule = require('path')
+  const dbPath = pathModule.join(process.cwd(), 'database.sqlite')
+  const conversionDb = new sqlite3.Database(dbPath)
+  
   try {
     // Check if input file exists
     if (!fs.existsSync(inputPath)) {
@@ -202,7 +209,7 @@ const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
     
     // Check conversion attempts
     const media = await new Promise((resolve, reject) => {
-      db.get('SELECT conversion_attempts FROM media WHERE id = ?', [mediaId], (err, media) => {
+      conversionDb.get('SELECT conversion_attempts FROM media WHERE id = ?', [mediaId], (err, media) => {
         if (err) {
           logToFile('convertVideoAsync - Database error getting media', { error: err.message, mediaId })
           reject(err)
@@ -217,7 +224,7 @@ const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
     if (media && media.conversion_attempts >= MAX_ATTEMPTS) {
       console.error(`Max conversion attempts (${MAX_ATTEMPTS}) reached for media ${mediaId}`)
       await new Promise((resolve) => {
-        db.run(
+        conversionDb.run(
           'UPDATE media SET is_converting = 0, conversion_error = ? WHERE id = ?',
           [`Maximum conversion attempts (${MAX_ATTEMPTS}) reached. Please try uploading a different video format.`, mediaId],
           () => resolve()
@@ -228,7 +235,7 @@ const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
     
     // Increment conversion attempts
     await new Promise((resolve) => {
-      db.run(
+      conversionDb.run(
         'UPDATE media SET conversion_attempts = conversion_attempts + 1 WHERE id = ?',
         [mediaId],
         () => resolve()
@@ -254,7 +261,7 @@ const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
         console.log(`[Progress Update] Media ${mediaId}: ${progressValue.toFixed(1)}%`)
         
         await new Promise((resolve) => {
-          db.run(
+          conversionDb.run(
             'UPDATE media SET conversion_progress = ? WHERE id = ?',
             [progressValue, mediaId],
             function(err) {
@@ -296,7 +303,7 @@ const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
     const finalUrl = `/uploads/profiles/${path.basename(outputPath)}`
     logToFile('convertVideoAsync - Updating database with final URL', { mediaId, finalUrl })
     await new Promise((resolve, reject) => {
-      db.run(
+      conversionDb.run(
         'UPDATE media SET url = ?, is_converting = 0, conversion_error = NULL, conversion_progress = 100 WHERE id = ?',
         [finalUrl, mediaId],
         (err) => {
@@ -319,7 +326,7 @@ const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
       const { revalidateProfileUpdates } = await import('./revalidation.js')
       // Получаем город профиля для ревалидации
       const profileData = await new Promise((resolve, reject) => {
-        db.get('SELECT city FROM profiles WHERE id = ?', [profileId], (err, row) => {
+        conversionDb.get('SELECT city FROM profiles WHERE id = ?', [profileId], (err, row) => {
           if (err) reject(err)
           else resolve(row)
         })
@@ -346,7 +353,7 @@ const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
     
     // Get current attempts count
     const media = await new Promise((resolve) => {
-      db.get('SELECT conversion_attempts FROM media WHERE id = ?', [mediaId], (err, media) => {
+      conversionDb.get('SELECT conversion_attempts FROM media WHERE id = ?', [mediaId], (err, media) => {
         resolve(media || { conversion_attempts: 0 })
       })
     })
@@ -358,12 +365,16 @@ const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
     
     // Mark as conversion error
     await new Promise((resolve) => {
-      db.run(
+      conversionDb.run(
         'UPDATE media SET is_converting = 0, conversion_error = ?, conversion_progress = 0 WHERE id = ?',
         [errorMessage, mediaId],
         () => resolve()
       )
     })
+  } finally {
+    // Закрываем подключение к БД в любом случае
+    conversionDb.close()
+    logToFile('convertVideoAsync - Database connection closed', { mediaId })
   }
 }
 
