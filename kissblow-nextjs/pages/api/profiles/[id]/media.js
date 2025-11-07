@@ -32,15 +32,27 @@ export default async function handler(req, res) {
       const dbPath = path.join(process.cwd(), 'database.sqlite')
       db = new sqlite3.Database(dbPath)
 
+      // Проверяем параметр include_converting - для страницы редактирования нужны все медиа
+      const includeConverting = req.query.include_converting === 'true'
+
       const media = await new Promise((resolve, reject) => {
-        db.all(
-          'SELECT * FROM media WHERE profile_id = ? ORDER BY order_index ASC',
-          [id],
-          (err, media) => {
-            if (err) reject(err)
-            else resolve(media)
-          }
-        )
+        let query
+        let params
+        
+        if (includeConverting) {
+          // Для страницы редактирования возвращаем все медиа, включая конвертирующиеся
+          query = 'SELECT * FROM media WHERE profile_id = ? ORDER BY order_index ASC'
+          params = [id]
+        } else {
+          // Для страницы профиля фильтруем видео в процессе конвертации
+          query = 'SELECT * FROM media WHERE profile_id = ? AND (is_converting = 0 OR is_converting IS NULL) ORDER BY order_index ASC'
+          params = [id]
+        }
+        
+        db.all(query, params, (err, media) => {
+          if (err) reject(err)
+          else resolve(media)
+        })
       })
 
       res.json(media)
@@ -174,14 +186,35 @@ export default async function handler(req, res) {
           }
 
           // Process uploaded file (convert if needed)
-          log('Processing uploaded file', { path: req.file.path })
-          const processResult = await processUploadedFile(req.file)
-          log('File processing result', { success: processResult.success, error: processResult.error })
-          if (!processResult.success) {
-            log('File processing failed', { error: processResult.error })
-            return res.status(400).json({ error: `File processing failed: ${processResult.error}` })
+          // Для видео: конвертируем только изображения синхронно, видео конвертируем в фоне
+          let processResult
+          let needsBackgroundVideoConversion = false
+          
+          if (type === 'video') {
+            // Для видео проверяем формат, но не конвертируем синхронно
+            const { needsConversion } = await import('../../../../lib/middleware/multer.js')
+            needsBackgroundVideoConversion = needsConversion(req.file.mimetype)
+            
+            if (needsBackgroundVideoConversion) {
+              // Видео требует конвертации - обработаем только базовую валидацию
+              processResult = { success: true, converted: false }
+              log('Video requires background conversion', { mimetype: req.file.mimetype })
+            } else {
+              // Видео уже в правильном формате (MP4)
+              processResult = { success: true, converted: false }
+              log('Video is already in MP4 format')
+            }
+          } else {
+            // Для фото конвертируем синхронно как обычно
+            log('Processing uploaded file', { path: req.file.path })
+            processResult = await processUploadedFile(req.file)
+            log('File processing result', { success: processResult.success, error: processResult.error })
+            if (!processResult.success) {
+              log('File processing failed', { error: processResult.error })
+              return res.status(400).json({ error: `File processing failed: ${processResult.error}` })
+            }
+            log('File processed successfully')
           }
-          log('File processed successfully')
 
           // Check limits
           log('Checking media limits', { profileId: id, type })
@@ -238,11 +271,12 @@ export default async function handler(req, res) {
 
           // Insert media record
           const mediaUrl = `/uploads/profiles/${req.file.filename}`
-          log('Inserting media record', { profileId: id, url: mediaUrl, type, order: nextOrder })
+          const isConverting = needsBackgroundVideoConversion ? 1 : 0
+          log('Inserting media record', { profileId: id, url: mediaUrl, type, order: nextOrder, isConverting })
           const insertResult = await new Promise((resolve, reject) => {
             uploadDb.run(
               'INSERT INTO media (profile_id, url, type, order_index, is_converting) VALUES (?, ?, ?, ?, ?)',
-              [id, mediaUrl, type, nextOrder, 0], // For now, no video conversion
+              [id, mediaUrl, type, nextOrder, isConverting],
               function(err) {
                 if (err) {
                   log('Database insert error', { error: err.message, stack: err.stack })
@@ -255,14 +289,72 @@ export default async function handler(req, res) {
             )
           })
 
-          log('Sending success response', { mediaId: insertResult.lastID })
+          // Если требуется фоновая конвертация видео, запускаем её
+          if (needsBackgroundVideoConversion && type === 'video') {
+            try {
+              const { convertVideoAsync } = await import('../../../../lib/utils/video.js')
+              const pathModule = await import('path')
+              
+              const inputPath = req.file.path
+              const outputPath = pathModule.join(
+                pathModule.dirname(inputPath),
+                pathModule.basename(inputPath, pathModule.extname(inputPath)) + '-converted.mp4'
+              )
+              
+              // Запускаем конвертацию в фоне (не ждём завершения)
+              convertVideoAsync(inputPath, outputPath, insertResult.lastID, parseInt(id))
+                .catch(err => {
+                  log('Background conversion error', { error: err.message, stack: err.stack })
+                  console.error('Background video conversion error:', err)
+                })
+              
+              log('Background video conversion started', { mediaId: insertResult.lastID, inputPath, outputPath })
+            } catch (conversionError) {
+              log('Failed to start background conversion', { error: conversionError.message, stack: conversionError.stack })
+              // Если не удалось запустить конвертацию, помечаем как ошибку
+              await new Promise((resolve) => {
+                uploadDb.run(
+                  'UPDATE media SET is_converting = 0, conversion_error = ? WHERE id = ?',
+                  [`Failed to start conversion: ${conversionError.message}`, insertResult.lastID],
+                  () => resolve()
+                )
+              })
+            }
+          }
+
+          log('Sending success response', { mediaId: insertResult.lastID, isConverting: needsBackgroundVideoConversion })
           logger.info('Media uploaded successfully', {
             mediaId: insertResult.lastID,
             profileId: parseInt(id),
             type,
             url: mediaUrl,
-            userId: user?.id
+            userId: user?.id,
+            isConverting: needsBackgroundVideoConversion
           })
+
+          // После успешной загрузки видео, ревалидируем страницу профиля только если конвертация не требуется
+          // Если видео конвертируется, ревалидация произойдёт после завершения конвертации
+          if (type === 'video' && !needsBackgroundVideoConversion) {
+            try {
+              const { revalidateProfileUpdates } = await import('../../../../lib/utils/revalidation.js')
+              // Получаем город профиля для ревалидации
+              const profileData = await new Promise((resolve, reject) => {
+                uploadDb.get('SELECT city FROM profiles WHERE id = ?', [id], (err, row) => {
+                  if (err) reject(err)
+                  else resolve(row)
+                })
+              })
+              
+              if (profileData && profileData.city) {
+                const citySlug = profileData.city.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+                await revalidateProfileUpdates(parseInt(id), citySlug)
+                log('Profile page revalidated after video upload', { profileId: id, city: citySlug })
+              }
+            } catch (revalidateError) {
+              log('Revalidation failed (non-critical)', { error: revalidateError.message })
+              // Не критично, продолжаем
+            }
+          }
 
           res.json({
             message: 'Media uploaded successfully',
@@ -272,8 +364,11 @@ export default async function handler(req, res) {
               url: mediaUrl,
               type,
               order_index: nextOrder,
-              is_converting: 0
-            }
+              is_converting: isConverting
+            },
+            // Добавляем флаги для фронтенда
+            isConverting: needsBackgroundVideoConversion,
+            mediaId: insertResult.lastID
           })
 
         } catch (error) {

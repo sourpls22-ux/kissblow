@@ -84,6 +84,27 @@ const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
     })
     
     console.log('Background video conversion completed:', finalUrl)
+    
+    // Ревалидируем страницу профиля после завершения конвертации
+    try {
+      const { revalidateProfileUpdates } = await import('./revalidation.js')
+      // Получаем город профиля для ревалидации
+      const profileData = await new Promise((resolve, reject) => {
+        db.get('SELECT city FROM profiles WHERE id = ?', [profileId], (err, row) => {
+          if (err) reject(err)
+          else resolve(row)
+        })
+      })
+      
+      if (profileData && profileData.city) {
+        const citySlug = profileData.city.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+        await revalidateProfileUpdates(profileId, citySlug)
+        console.log(`Profile page revalidated after video conversion: ${profileId} in ${citySlug}`)
+      }
+    } catch (revalidateError) {
+      console.error('Revalidation failed after video conversion (non-critical):', revalidateError.message)
+      // Не критично, продолжаем
+    }
   } catch (error) {
     console.error('Background conversion failed:', error)
     

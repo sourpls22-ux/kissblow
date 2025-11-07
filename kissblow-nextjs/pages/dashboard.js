@@ -776,8 +776,23 @@ export default function Dashboard() {
   // Функция загрузки медиа профиля
   const fetchProfileMedia = async (profileId) => {
     try {
-      const response = await axios.get(`${''}/api/profiles/${profileId}/media`)
+      // Включаем конвертирующиеся видео для страницы редактирования
+      const response = await axios.get(`${''}/api/profiles/${profileId}/media?include_converting=true`)
       setProfileMedia(response.data)
+      
+      // Обновляем convertingVideos на основе данных из базы
+      const convertingIds = response.data
+        .filter(m => m.type === 'video' && m.is_converting === 1)
+        .map(m => m.id)
+      
+      if (convertingIds.length > 0) {
+        setConvertingVideos(prev => new Set([...prev, ...convertingIds]))
+        
+        // Запускаем проверку статуса для каждого конвертирующегося видео
+        convertingIds.forEach(mediaId => {
+          checkConversionStatus(profileId, mediaId)
+        })
+      }
     } catch (err) {
       console.error('Error fetching profile media:', err)
       error('Error loading media')
@@ -923,8 +938,6 @@ export default function Dashboard() {
           }
         }
       )
-      
-      setProfileMedia(response.data)
       
       // Handle different response types
       if (response.data.isConverting) {
@@ -2519,8 +2532,8 @@ export default function Dashboard() {
                             isMainPhoto={index === 0 && media.type === 'photo'}
                             onMoveUp={movePhotoUp}
                             onMoveDown={movePhotoDown}
-                            isConverting={new Set(convertingVideos || []).has(media.id)}
-                            conversionError={conversionErrors[media.id]}
+                            isConverting={new Set(convertingVideos || []).has(media.id) || media.is_converting === 1}
+                            conversionError={conversionErrors[media.id] || media.conversion_error}
                             />
                           ))}
                         </div>
