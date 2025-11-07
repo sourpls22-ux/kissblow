@@ -10,20 +10,18 @@ export default async function handler(req, res) {
     const sqlite3 = await import('sqlite3')
     const path = await import('path')
     
-    // Для CommonJS модулей используем динамический import
-    const decoratorsModule = await import('../../../lib/cache/decorators.js')
+    // Импортируем cacheManager напрямую из manager.js, минуя decorators.js
+    // Это избегает проблем с порядком инициализации в production сборке Next.js
+    const cacheManagerModule = await import('../../../lib/cache/manager.js')
     
     // Извлекаем cacheManager из модуля
-    // В Next.js production сборке CommonJS модули могут быть обернуты в default
-    let cacheManager = decoratorsModule.cacheManager || 
-                       decoratorsModule.default?.cacheManager ||
-                       (decoratorsModule.default && typeof decoratorsModule.default.getProfileList === 'function' ? decoratorsModule.default : null)
+    // manager.js экспортирует singleton через module.exports = cacheManager
+    const cacheManager = cacheManagerModule.default || cacheManagerModule
     
     if (!cacheManager || typeof cacheManager.getProfileList !== 'function') {
       console.error('cacheManager is invalid', { 
-        moduleKeys: Object.keys(decoratorsModule),
-        hasDefault: !!decoratorsModule.default,
-        defaultKeys: decoratorsModule.default ? Object.keys(decoratorsModule.default) : [],
+        moduleKeys: Object.keys(cacheManagerModule),
+        hasDefault: !!cacheManagerModule.default,
         cacheManagerType: typeof cacheManager
       })
       throw new Error('cacheManager not found or invalid in module')
