@@ -10,35 +10,31 @@ export default async function handler(req, res) {
     const sqlite3 = await import('sqlite3')
     const path = await import('path')
     
-    // Импортируем cacheManager напрямую из manager.js, минуя decorators.js
-    // Это избегает проблем с порядком инициализации в production сборке Next.js
-    const cacheManagerModule = await import('../../../lib/cache/manager.js')
+    // ВРЕМЕННО: отключаем кэш для проверки работы базы данных
+    // Проблема с импортом manager.js в production сборке Next.js
+    // const cacheManagerModule = await import('../../../lib/cache/manager.js')
+    // const cacheManager = cacheManagerModule.default || cacheManagerModule
     
-    // Извлекаем cacheManager из модуля
-    // manager.js экспортирует singleton через module.exports = cacheManager
-    const cacheManager = cacheManagerModule.default || cacheManagerModule
-    
-    if (!cacheManager || typeof cacheManager.getProfileList !== 'function') {
-      console.error('cacheManager is invalid', { 
-        moduleKeys: Object.keys(cacheManagerModule),
-        hasDefault: !!cacheManagerModule.default,
-        cacheManagerType: typeof cacheManager
-      })
-      throw new Error('cacheManager not found or invalid in module')
-    }
+    // if (!cacheManager || typeof cacheManager.getProfileList !== 'function') {
+    //   console.error('cacheManager is invalid', { 
+    //     moduleKeys: Object.keys(cacheManagerModule),
+    //     hasDefault: !!cacheManagerModule.default,
+    //     cacheManagerType: typeof cacheManager
+    //   })
+    //   throw new Error('cacheManager not found or invalid in module')
+    // }
 
     const { city, page = 1, limit = 24 } = req.query
     const offset = (parseInt(page) - 1) * parseInt(limit)
     
-    // Try to get from cache first
-    let cachedResult = cacheManager.getProfileList(city, page, limit)
-    
-    if (cachedResult) {
-      return res.json({
-        ...cachedResult,
-        cached: true
-      })
-    }
+    // ВРЕМЕННО: отключаем проверку кэша
+    // let cachedResult = cacheManager.getProfileList(city, page, limit)
+    // if (cachedResult) {
+    //   return res.json({
+    //     ...cachedResult,
+    //     cached: true
+    //   })
+    // }
     
     const dbPath = path.join(process.cwd(), 'database.sqlite')
     db = new sqlite3.Database(dbPath)
@@ -129,8 +125,8 @@ export default async function handler(req, res) {
       }
     }
 
-    // Cache the result for 5 minutes
-    cacheManager.setProfileList(city, page, limit, result, 300)
+    // ВРЕМЕННО: отключаем сохранение в кэш
+    // cacheManager.setProfileList(city, page, limit, result, 300)
 
     res.json({
       ...result,
