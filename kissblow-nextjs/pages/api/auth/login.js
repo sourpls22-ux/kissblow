@@ -24,13 +24,14 @@ export default async function handler(req, res) {
 
   let logger, logDatabaseError
   let email, password, turnstileToken
+  let db = null
   try {
     log('Starting imports')
     // Dynamic import to avoid webpack issues
     const bcrypt = await import('bcryptjs')
     const jwt = await import('jsonwebtoken')
-    const DatabaseQueryModule = await import('../../../lib/database/query.js')
-    const DatabaseQuery = DatabaseQueryModule.default || DatabaseQueryModule
+    const sqlite3 = await import('sqlite3')
+    const path = await import('path')
     const { validateEmail, validatePassword, validateTurnstileToken, sanitizeString } = await import('../../../lib/validation/schemas.js')
     
     // Get logger with fallback
@@ -121,10 +122,23 @@ export default async function handler(req, res) {
 
     // Find user
     log('Searching for user in database', { email: sanitizedEmail.substring(0, 20) })
-    const user = await DatabaseQuery.get(
-      'SELECT * FROM users WHERE email = ?',
-      [sanitizedEmail]
-    )
+    const dbPath = path.join(process.cwd(), 'database.sqlite')
+    db = new sqlite3.Database(dbPath)
+    
+    const user = await new Promise((resolve, reject) => {
+      db.get(
+        'SELECT * FROM users WHERE email = ?',
+        [sanitizedEmail],
+        (err, user) => {
+          if (err) {
+            log('Database query error', { error: err.message })
+            reject(err)
+          } else {
+            resolve(user)
+          }
+        }
+      )
+    })
 
     if (!user) {
       log('User not found', { email: sanitizedEmail.substring(0, 20) })
@@ -225,5 +239,10 @@ export default async function handler(req, res) {
       error: 'Internal server error',
       errorId: process.env.NODE_ENV === 'production' ? errorId : undefined
     })
+  } finally {
+    if (db) {
+      log('Closing database connection')
+      db.close()
+    }
   }
 }
