@@ -48,11 +48,8 @@ const validateImageFile = (file) => {
     return { valid: false, error: 'Unsupported image format. Supported: JPEG, PNG, WebP, GIF, BMP, TIFF, SVG' }
   }
   
-  // Check file size (20MB for images - larger to account for conversion)
-  if (!validateFileSize(file, 20 * 1024 * 1024)) {
-    return { valid: false, error: 'Image file size must be less than 20MB' }
-  }
-  
+  // Size check is handled by multer limits (200MB), no need to check here
+  // file.size may not be available or accurate in fileFilter callback
   return { valid: true }
 }
 
@@ -75,11 +72,8 @@ const validateVideoFile = (file) => {
     return { valid: false, error: 'Unsupported video format. Supported: MP4, WebM, QuickTime, AVI, MOV, WMV, FLV, MKV, 3GP, OGV' }
   }
   
-  // Check file size (200MB for videos - larger to account for conversion)
-  if (!validateFileSize(file, 200 * 1024 * 1024)) {
-    return { valid: false, error: 'Video file size must be less than 200MB' }
-  }
-  
+  // Size check is handled by multer limits (200MB), no need to check here
+  // file.size may not be available or accurate in fileFilter callback
   return { valid: true }
 }
 
@@ -99,11 +93,8 @@ const validateVerificationFile = (file) => {
     return { valid: false, error: 'Unsupported image format for verification. Supported: JPEG, PNG, WebP, GIF, BMP, TIFF' }
   }
   
-  // Check file size (10MB for verification photos - larger to account for conversion)
-  if (!validateFileSize(file, 10 * 1024 * 1024)) {
-    return { valid: false, error: 'Verification photo must be less than 10MB' }
-  }
-  
+  // Size check is handled by multer limits (10MB), no need to check here
+  // file.size may not be available or accurate in fileFilter callback
   return { valid: true }
 }
 
