@@ -21,7 +21,12 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Access token required' })
     }
 
-    const user = jwt.verify(token, process.env.JWT_SECRET)
+    let user
+    try {
+      user = jwt.verify(token, process.env.JWT_SECRET)
+    } catch (err) {
+      return res.status(401).json({ error: 'Invalid token' })
+    }
 
     // Get all user's profiles
     const profiles = await new Promise((resolve, reject) => {

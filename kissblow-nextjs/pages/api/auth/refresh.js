@@ -3,6 +3,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
+  let db = null
   try {
     // Dynamic import to avoid webpack issues
     const jwt = await import('jsonwebtoken')
@@ -10,7 +11,7 @@ export default async function handler(req, res) {
     const path = await import('path')
     
     const dbPath = path.join(process.cwd(), 'database.sqlite')
-    const db = new sqlite3.Database(dbPath)
+    db = new sqlite3.Database(dbPath)
 
     const { refreshToken } = req.body
 
@@ -19,7 +20,12 @@ export default async function handler(req, res) {
     }
 
     // Verify refresh token
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET)
+    let decoded
+    try {
+      decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET)
+    } catch (err) {
+      return res.status(401).json({ error: 'Invalid refresh token' })
+    }
 
     // Get user from database
     const user = await new Promise((resolve, reject) => {
@@ -46,8 +52,6 @@ export default async function handler(req, res) {
       { expiresIn: '7d' }
     )
 
-    db.close()
-
     res.json({
       accessToken: newAccessToken,
       refreshToken: newRefreshToken,
@@ -62,5 +66,9 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('Token refresh error:', error)
     res.status(401).json({ error: 'Invalid refresh token' })
+  } finally {
+    if (db) {
+      db.close()
+    }
   }
 }

@@ -8,13 +8,14 @@ export default async function handler(req, res) {
   const { id } = req.query
 
   if (req.method === 'GET') {
+    let db = null
     try {
       // Dynamic import to avoid webpack issues
       const sqlite3 = await import('sqlite3')
       const path = await import('path')
       
       const dbPath = path.join(process.cwd(), 'database.sqlite')
-      const db = new sqlite3.Database(dbPath)
+      db = new sqlite3.Database(dbPath)
 
       const media = await new Promise((resolve, reject) => {
         db.all(
@@ -27,15 +28,19 @@ export default async function handler(req, res) {
         )
       })
 
-      db.close()
-
       res.json(media)
 
     } catch (error) {
       console.error('Database error:', error)
       res.status(500).json({ error: 'Database error' })
+    } finally {
+      if (db) {
+        db.close()
+      }
     }
   } else if (req.method === 'POST') {
+    let db = null
+    let user = null
     try {
       // Dynamic import to avoid webpack issues
       const jwt = await import('jsonwebtoken')
@@ -43,10 +48,25 @@ export default async function handler(req, res) {
       const path = await import('path')
       const fs = await import('fs')
       const { upload, handleMulterError, processUploadedFile } = await import('../../../../lib/middleware/multer.js')
-      const { logger, logDatabaseError } = await import('../../../../lib/logger.js')
+      
+      // Get logger with fallback
+      let logger
+      let logDatabaseError
+      try {
+        const loggerModule = await import('../../../../lib/logger.js')
+        logger = loggerModule.logger
+        logDatabaseError = loggerModule.logDatabaseError || (() => {})
+      } catch (err) {
+        logger = {
+          info: (...args) => console.log('[INFO]', ...args),
+          error: (...args) => console.error('[ERROR]', ...args),
+          warn: (...args) => console.warn('[WARN]', ...args)
+        }
+        logDatabaseError = () => {}
+      }
       
       const dbPath = path.join(process.cwd(), 'database.sqlite')
-      const db = new sqlite3.Database(dbPath)
+      db = new sqlite3.Database(dbPath)
 
       // Auth middleware
       const authHeader = req.headers['authorization']
@@ -56,7 +76,13 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: 'Access token required' })
       }
 
-      const user = jwt.verify(token, process.env.JWT_SECRET)
+      // Wrap JWT verify in try-catch
+      try {
+        user = jwt.verify(token, process.env.JWT_SECRET)
+      } catch (err) {
+        logger.error('JWT verification failed', { error: err.message })
+        return res.status(401).json({ error: 'Invalid token' })
+      }
 
       // Check if profile belongs to user
       const profile = await new Promise((resolve, reject) => {
@@ -151,8 +177,6 @@ export default async function handler(req, res) {
             )
           })
 
-          db.close()
-
           logger.info('Media uploaded successfully', {
             mediaId: insertResult.lastID,
             profileId: parseInt(id),
@@ -181,8 +205,18 @@ export default async function handler(req, res) {
       })
 
     } catch (error) {
-      logger.error('Media upload error:', { error: error.message, profileId: id })
+      // Use fallback logger if main logger failed to import
+      try {
+        const loggerModule = await import('../../../../lib/logger.js')
+        loggerModule.logger.error('Media upload error:', { error: error.message, profileId: id })
+      } catch (logErr) {
+        console.error('[ERROR] Media upload error:', error.message, { profileId: id })
+      }
       res.status(500).json({ error: 'Internal server error' })
+    } finally {
+      if (db) {
+        db.close()
+      }
     }
   } else {
     res.status(405).json({ error: 'Method not allowed' })

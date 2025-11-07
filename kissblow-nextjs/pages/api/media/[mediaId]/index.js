@@ -3,6 +3,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
+  let db = null
   try {
     // Dynamic import to avoid webpack issues
     const jwt = await import('jsonwebtoken')
@@ -10,7 +11,7 @@ export default async function handler(req, res) {
     const path = await import('path')
     
     const dbPath = path.join(process.cwd(), 'database.sqlite')
-    const db = new sqlite3.Database(dbPath)
+    db = new sqlite3.Database(dbPath)
 
     // Auth middleware
     const authHeader = req.headers['authorization']
@@ -20,7 +21,13 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Access token required' })
     }
 
-    const user = jwt.verify(token, process.env.JWT_SECRET)
+    let user
+    try {
+      user = jwt.verify(token, process.env.JWT_SECRET)
+    } catch (err) {
+      return res.status(401).json({ error: 'Invalid token' })
+    }
+
     const { mediaId } = req.query
 
     // Check if media belongs to user's profile
@@ -53,13 +60,15 @@ export default async function handler(req, res) {
       )
     })
 
-    db.close()
-
     console.log('Media deleted successfully:', mediaId)
     res.json({ message: 'Media deleted successfully' })
 
   } catch (error) {
     console.error('Media deletion error:', error)
     res.status(500).json({ error: 'Internal server error' })
+  } finally {
+    if (db) {
+      db.close()
+    }
   }
 }
