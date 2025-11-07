@@ -3,6 +3,22 @@ const fs = require('fs')
 const path = require('path')
 const db = require('../database.js')
 
+// Функция для логирования в файл
+const logToFile = (message, data = {}) => {
+  try {
+    const logDir = path.join(process.cwd(), 'logs')
+    if (!fs.existsSync(logDir)) {
+      fs.mkdirSync(logDir, { recursive: true })
+    }
+    const logFile = path.join(logDir, 'video-conversion.log')
+    const timestamp = new Date().toISOString()
+    const logMsg = `[${timestamp}] ${message} ${JSON.stringify(data)}\n`
+    fs.appendFileSync(logFile, logMsg)
+  } catch (e) {
+    // Ignore file write errors
+  }
+}
+
 // Video conversion function with progress callback
 const convertVideo = (inputPath, outputPath, onProgress = null) => {
   return new Promise((resolve, reject) => {
@@ -26,6 +42,7 @@ const convertVideo = (inputPath, outputPath, onProgress = null) => {
       .videoFilter('scale=1280:720:force_original_aspect_ratio=decrease:force_divisible_by=2')
       .on('start', (commandLine) => {
         console.log('[FFmpeg] Process started:', commandLine)
+        logToFile('FFmpeg process started', { commandLine, inputPath, outputPath })
       })
       .on('progress', (progress) => {
         // Логируем весь объект progress для отладки (только первые несколько раз)
@@ -67,6 +84,7 @@ const convertVideo = (inputPath, outputPath, onProgress = null) => {
       })
       .on('end', () => {
         console.log('Video conversion completed')
+        logToFile('FFmpeg conversion completed', { inputPath, outputPath })
         if (onProgress && typeof onProgress === 'function') {
           onProgress(100)
         }
@@ -74,6 +92,12 @@ const convertVideo = (inputPath, outputPath, onProgress = null) => {
       })
       .on('error', (err) => {
         console.error('Video conversion error:', err)
+        logToFile('FFmpeg conversion error', { 
+          error: err.message, 
+          stack: err.stack,
+          inputPath,
+          outputPath
+        })
         reject(err)
       })
       .run()
@@ -82,12 +106,28 @@ const convertVideo = (inputPath, outputPath, onProgress = null) => {
 
 // Async video conversion function for background processing
 const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
+  logToFile('convertVideoAsync START', { inputPath, outputPath, mediaId, profileId })
+  
   try {
+    // Check if input file exists
+    if (!fs.existsSync(inputPath)) {
+      const error = new Error(`Input file does not exist: ${inputPath}`)
+      logToFile('convertVideoAsync ERROR - File not found', { inputPath, mediaId })
+      throw error
+    }
+    
+    logToFile('convertVideoAsync - File exists, checking conversion attempts', { mediaId })
+    
     // Check conversion attempts
     const media = await new Promise((resolve, reject) => {
       db.get('SELECT conversion_attempts FROM media WHERE id = ?', [mediaId], (err, media) => {
-        if (err) reject(err)
-        else resolve(media)
+        if (err) {
+          logToFile('convertVideoAsync - Database error getting media', { error: err.message, mediaId })
+          reject(err)
+        } else {
+          logToFile('convertVideoAsync - Media record found', { mediaId, conversion_attempts: media?.conversion_attempts })
+          resolve(media)
+        }
       })
     })
     
@@ -114,6 +154,13 @@ const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
     })
     
     const currentAttempt = (media?.conversion_attempts || 0) + 1
+    logToFile('convertVideoAsync - Starting conversion', { 
+      mediaId, 
+      attempt: currentAttempt, 
+      maxAttempts: MAX_ATTEMPTS,
+      inputPath,
+      outputPath
+    })
     console.log(`Starting background video conversion for media ID: ${mediaId} (attempt ${currentAttempt}/${MAX_ATTEMPTS})`)
     
     // Функция для обновления прогресса в базе данных
@@ -146,23 +193,37 @@ const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
     
     // Сбрасываем прогресс в 0 при начале конвертации
     await updateProgress(0)
+    logToFile('convertVideoAsync - Calling convertVideo', { mediaId, inputPath, outputPath })
     
     await convertVideo(inputPath, outputPath, updateProgress)
     
+    logToFile('convertVideoAsync - convertVideo completed', { mediaId })
+    
+    logToFile('convertVideoAsync - Conversion completed, deleting original', { mediaId, inputPath })
     // Delete original file
     fs.unlinkSync(inputPath)
     
     // Update URL in database and mark as completed
     const finalUrl = `/uploads/profiles/${path.basename(outputPath)}`
+    logToFile('convertVideoAsync - Updating database with final URL', { mediaId, finalUrl })
     await new Promise((resolve, reject) => {
       db.run(
         'UPDATE media SET url = ?, is_converting = 0, conversion_error = NULL, conversion_progress = 100 WHERE id = ?',
         [finalUrl, mediaId],
-        (err) => err ? reject(err) : resolve()
+        (err) => {
+          if (err) {
+            logToFile('convertVideoAsync - Database update error', { mediaId, error: err.message })
+            reject(err)
+          } else {
+            logToFile('convertVideoAsync - Database updated successfully', { mediaId, finalUrl })
+            resolve()
+          }
+        }
       )
     })
     
     console.log('Background video conversion completed:', finalUrl)
+    logToFile('convertVideoAsync - SUCCESS', { mediaId, finalUrl })
     
     // Ревалидируем страницу профиля после завершения конвертации
     try {
@@ -185,6 +246,13 @@ const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
       // Не критично, продолжаем
     }
   } catch (error) {
+    logToFile('convertVideoAsync - ERROR', { 
+      error: error.message, 
+      stack: error.stack,
+      mediaId,
+      inputPath,
+      outputPath
+    })
     console.error('Background conversion failed:', error)
     
     // Get current attempts count
