@@ -190,9 +190,10 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Invalid Telegram handle' })
       }
 
-      if (!validateSocialHandle(whatsapp)) {
+      // WhatsApp is a phone number, not a social handle - it can start with +
+      if (!validatePhone(whatsapp)) {
         log('WhatsApp validation failed', { whatsapp, type: typeof whatsapp })
-        return res.status(400).json({ error: 'Invalid WhatsApp handle' })
+        return res.status(400).json({ error: 'Invalid WhatsApp number format' })
       }
 
       if (!validateWebsite(website)) {
