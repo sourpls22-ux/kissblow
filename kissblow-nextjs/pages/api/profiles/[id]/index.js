@@ -49,34 +49,88 @@ export default async function handler(req, res) {
       }
     }
   } else if (req.method === 'PUT') {
+    // Direct file logging
+    const fs = await import('fs')
+    const pathModule = await import('path')
+    const logFile = pathModule.join(process.cwd(), 'logs', 'profile-update-debug.log')
+    const log = (msg, data = {}) => {
+      const timestamp = new Date().toISOString()
+      const logMsg = `[${timestamp}] ${msg} ${JSON.stringify(data)}\n`
+      try {
+        fs.appendFileSync(logFile, logMsg)
+      } catch (e) {
+        // Ignore file write errors
+      }
+    }
+
     try {
+      log('PROFILE UPDATE API CALLED', { method: req.method, profileId: req.query.id })
+      
       // Dynamic import to avoid webpack issues
       const jwt = await import('jsonwebtoken')
       const sqlite3 = await import('sqlite3')
       const path = await import('path')
       
+      // Get logger with fallback
+      let logger
+      let logDatabaseError
+      try {
+        const loggerModule = await import('../../../../lib/logger.js')
+        logger = loggerModule.logger
+        logDatabaseError = loggerModule.logDatabaseError || (() => {})
+        log('Logger imported successfully')
+      } catch (err) {
+        log('Logger import failed, using fallback', { error: err.message })
+        logger = {
+          info: (msg, data) => {
+            log(`[INFO] ${msg}`, data)
+            console.log('[INFO]', msg, data)
+          },
+          error: (msg, data) => {
+            log(`[ERROR] ${msg}`, data)
+            console.error('[ERROR]', msg, data)
+          },
+          warn: (msg, data) => {
+            log(`[WARN] ${msg}`, data)
+            console.warn('[WARN]', msg, data)
+          }
+        }
+        logDatabaseError = () => {}
+      }
+      
       const dbPath = path.join(process.cwd(), 'database.sqlite')
       db = new sqlite3.Database(dbPath)
+      log('Database opened', { dbPath })
 
       // Auth middleware
       const authHeader = req.headers['authorization']
       const token = authHeader && authHeader.split(' ')[1]
 
       if (!token) {
+        log('No token provided')
         return res.status(401).json({ error: 'Access token required' })
       }
 
-      const user = jwt.verify(token, process.env.JWT_SECRET)
+      let user
+      try {
+        user = jwt.verify(token, process.env.JWT_SECRET)
+        log('JWT verified', { userId: user.id })
+      } catch (err) {
+        log('JWT verification failed', { error: err.message })
+        return res.status(401).json({ error: 'Invalid token' })
+      }
 
       const { 
         name, age, city, height, weight, bust, phone, telegram, whatsapp, website,
         currency, price_30min, price_1hour, price_2hours, price_night, description, services, main_photo_id
       } = req.body
 
-      // Debug logging
-      console.log('Profile update data:', {
+      log('Request body received', { 
         name, age, city, height, weight, bust, phone, telegram, whatsapp, website,
-        currency, price_30min, price_1hour, price_2hours, price_night, description, services, main_photo_id
+        currency, price_30min, price_1hour, price_2hours, price_night, 
+        description: description?.substring(0, 50), 
+        services: typeof services, 
+        main_photo_id 
       })
 
       // Validate input data
@@ -85,87 +139,86 @@ export default async function handler(req, res) {
         validateWebsite, validateCurrency, validateMeasurement, validateBust, validateDescription,
         validateServices, sanitizeString 
       } = await import('../../../../lib/validation/schemas.js')
-      const { logger, logDatabaseError } = await import('../../../../lib/logger.js')
 
       if (!validateName(name)) {
-        console.log('Name validation failed:', { name, type: typeof name, length: name?.length })
+        log('Name validation failed', { name, type: typeof name, length: name?.length })
         return res.status(400).json({ error: 'Name must be between 2 and 50 characters' })
       }
 
       if (!validateAge(age)) {
-        console.log('Age validation failed:', { age, type: typeof age })
+        log('Age validation failed', { age, type: typeof age })
         return res.status(400).json({ error: 'Age must be between 18 and 99' })
       }
 
       if (!validateCity(city)) {
-        console.log('City validation failed:', { city, type: typeof city, length: city?.length })
+        log('City validation failed', { city, type: typeof city, length: city?.length })
         return res.status(400).json({ error: 'City must be between 2 and 100 characters' })
       }
 
       // Required fields validation
       if (!phone || phone.trim() === '') {
-        console.log('Phone validation failed: phone is required')
+        log('Phone validation failed: phone is required')
         return res.status(400).json({ error: 'Phone is required' })
       }
 
       if (!validatePhone(phone)) {
-        console.log('Phone validation failed:', { phone, type: typeof phone })
+        log('Phone validation failed', { phone, type: typeof phone })
         return res.status(400).json({ error: 'Invalid phone number format' })
       }
 
       if (!validateSocialHandle(telegram)) {
-        console.log('Telegram validation failed:', { telegram, type: typeof telegram })
+        log('Telegram validation failed', { telegram, type: typeof telegram })
         return res.status(400).json({ error: 'Invalid Telegram handle' })
       }
 
       if (!validateSocialHandle(whatsapp)) {
-        console.log('WhatsApp validation failed:', { whatsapp, type: typeof whatsapp })
+        log('WhatsApp validation failed', { whatsapp, type: typeof whatsapp })
         return res.status(400).json({ error: 'Invalid WhatsApp handle' })
       }
 
       if (!validateWebsite(website)) {
-        console.log('Website validation failed:', { website, type: typeof website })
+        log('Website validation failed', { website, type: typeof website })
         return res.status(400).json({ error: 'Invalid website URL' })
       }
 
       if (!validateCurrency(currency)) {
-        console.log('Currency validation failed:', { currency, type: typeof currency })
+        log('Currency validation failed', { currency, type: typeof currency })
         return res.status(400).json({ error: 'Invalid currency code' })
       }
 
       // Required fields validation
       if (!height || height === '') {
-        console.log('Height validation failed: height is required')
+        log('Height validation failed: height is required')
         return res.status(400).json({ error: 'Height is required' })
       }
 
       if (!validateMeasurement(height)) {
-        console.log('Height validation failed:', { height, type: typeof height })
+        log('Height validation failed', { height, type: typeof height })
         return res.status(400).json({ error: 'Invalid height value' })
       }
 
       if (!weight || weight === '') {
-        console.log('Weight validation failed: weight is required')
+        log('Weight validation failed: weight is required')
         return res.status(400).json({ error: 'Weight is required' })
       }
 
       if (!validateMeasurement(weight)) {
-        console.log('Weight validation failed:', { weight, type: typeof weight })
+        log('Weight validation failed', { weight, type: typeof weight })
         return res.status(400).json({ error: 'Invalid weight value' })
       }
 
       if (!bust || bust === '') {
-        console.log('Bust validation failed: bust is required')
+        log('Bust validation failed: bust is required')
         return res.status(400).json({ error: 'Bust is required' })
       }
 
       if (!validateBust(bust)) {
-        console.log('Bust validation failed:', { bust, type: typeof bust })
+        log('Bust validation failed', { bust, type: typeof bust })
         return res.status(400).json({ error: 'Invalid bust value' })
       }
 
       if (!validateDescription(description)) {
-        console.log('Description validation failed:', { description, type: typeof description, length: description?.length })
+        log('Description validation failed', { description, type: typeof description, length: description?.length })
         return res.status(400).json({ error: 'Description must be between 10 and 5000 characters or empty' })
       }
 
@@ -180,67 +233,86 @@ export default async function handler(req, res) {
       const validatedServices = validateServices(services)
 
       // Check if profile belongs to user
+      log('Checking profile ownership', { profileId: id, userId: user.id })
       const profile = await new Promise((resolve, reject) => {
         db.get(
           'SELECT * FROM profiles WHERE id = ? AND user_id = ?',
           [id, user.id],
           (err, profile) => {
-            if (err) reject(err)
-            else resolve(profile)
+            if (err) {
+              log('Database query error (profile check)', { error: err.message })
+              reject(err)
+            } else {
+              resolve(profile)
+            }
           }
         )
       })
 
       if (!profile) {
+        log('Profile not found or access denied', { profileId: id, userId: user.id })
         return res.status(404).json({ error: 'Profile not found' })
       }
 
+      log('Profile ownership verified')
+
       // Media validation - check if profile has at least 1 photo
-      const photoCount = await new Promise((resolve, reject) => {
+      const photoCountResult = await new Promise((resolve, reject) => {
         db.get(
           'SELECT COUNT(*) as count FROM media WHERE profile_id = ? AND type = "photo"',
           [id],
           (err, result) => {
-            if (err) reject(err)
-            else resolve(result.count)
+            if (err) {
+              log('Database query error (photo count)', { error: err.message })
+              reject(err)
+            } else {
+              resolve(result)
+            }
           }
         )
       })
 
-      console.log('Photo count:', photoCount)
+      const photoCount = photoCountResult?.count || 0
+      log('Photo count check', { photoCount })
 
       if (photoCount === 0) {
-        console.log('Photo validation failed: no photos found')
+        log('Photo validation failed: no photos found')
         return res.status(400).json({ error: 'At least 1 photo is required' })
       }
 
       // Check media counts
+      log('Checking media counts', { profileId: id })
       const mediaCount = await new Promise((resolve, reject) => {
         db.all(
           'SELECT type, COUNT(*) as count FROM media WHERE profile_id = ? GROUP BY type',
           [id],
           (err, results) => {
-            if (err) reject(err)
-            else resolve(results)
+            if (err) {
+              log('Database query error (media counts)', { error: err.message })
+              reject(err)
+            } else {
+              resolve(results)
+            }
           }
         )
       })
 
       const videoCount = mediaCount.find(m => m.type === 'video')?.count || 0
 
-      console.log('Media counts:', { photoCount, videoCount })
+      log('Media counts check', { photoCount, videoCount })
 
       if (photoCount > 10) {
-        console.log('Photo count validation failed: too many photos')
+        log('Photo count validation failed: too many photos')
         return res.status(400).json({ error: 'Maximum 10 photos allowed' })
       }
 
       if (videoCount > 1) {
-        console.log('Video count validation failed: too many videos')
+        log('Video count validation failed: too many videos')
         return res.status(400).json({ error: 'Maximum 1 video allowed' })
       }
 
       // Update profile
+      log('Updating profile in database', { profileId: id, userId: user.id })
       await new Promise((resolve, reject) => {
         db.run(
           `UPDATE profiles SET 
@@ -254,13 +326,19 @@ export default async function handler(req, res) {
             price_30min, price_1hour, price_2hours, price_night, sanitizedDescription, 
             JSON.stringify(validatedServices), main_photo_id, id, user.id
           ],
-          (err) => {
-            if (err) reject(err)
-            else resolve()
+          function(err) {
+            if (err) {
+              log('Database update error', { error: err.message, stack: err.stack })
+              reject(err)
+            } else {
+              log('Profile updated successfully in database', { changes: this.changes })
+              resolve()
+            }
           }
         )
       })
 
+      log('Profile update successful, sending response')
       logger.info('Profile updated successfully', { 
         profileId: parseInt(id), 
         userId: user.id,
@@ -280,11 +358,31 @@ export default async function handler(req, res) {
       })
 
     } catch (error) {
-      logDatabaseError('profile_update', error)
-      logger.error('Profile update error:', { error: error.message, profileId: id, userId: user?.id })
+      log('ERROR in profile update', { 
+        error: error.message, 
+        stack: error.stack,
+        name: error.name 
+      })
+      
+      try {
+        if (typeof logDatabaseError === 'function') {
+          logDatabaseError('profile_update', error)
+        }
+        if (logger && typeof logger.error === 'function') {
+          logger.error('Profile update error:', { 
+            error: error.message, 
+            profileId: id, 
+            userId: user?.id 
+          })
+        }
+      } catch (logErr) {
+        log('Failed to log error', { logError: logErr.message })
+      }
+      
       res.status(500).json({ error: 'Internal server error' })
     } finally {
       if (db) {
+        log('Closing database connection')
         db.close()
       }
     }
