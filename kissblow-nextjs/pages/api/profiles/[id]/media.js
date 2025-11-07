@@ -54,7 +54,6 @@ export default async function handler(req, res) {
       }
     }
   } else if (req.method === 'POST') {
-    let db = null
     let user = null
     try {
       // Dynamic import to avoid webpack issues
@@ -81,9 +80,6 @@ export default async function handler(req, res) {
       }
       
       log('POST request - starting imports')
-      const dbPath = path.join(process.cwd(), 'database.sqlite')
-      db = new sqlite3.Database(dbPath)
-      log('Database opened', { dbPath })
 
       // Auth middleware
       const authHeader = req.headers['authorization']
@@ -105,22 +101,32 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: 'Invalid token' })
       }
 
-      // Check if profile belongs to user
+      // Check if profile belongs to user (open/close db for this check)
       log('Checking profile ownership', { profileId: id, userId: user.id })
-      const profile = await new Promise((resolve, reject) => {
-        db.get(
-          'SELECT * FROM profiles WHERE id = ? AND user_id = ?',
-          [id, user.id],
-          (err, profile) => {
-            if (err) {
-              log('Database query error', { error: err.message })
-              reject(err)
-            } else {
-              resolve(profile)
+      let profile
+      let checkDb = null
+      try {
+        const dbPath = path.join(process.cwd(), 'database.sqlite')
+        checkDb = new sqlite3.Database(dbPath)
+        profile = await new Promise((resolve, reject) => {
+          checkDb.get(
+            'SELECT * FROM profiles WHERE id = ? AND user_id = ?',
+            [id, user.id],
+            (err, profile) => {
+              if (err) {
+                log('Database query error', { error: err.message })
+                reject(err)
+              } else {
+                resolve(profile)
+              }
             }
-          }
-        )
-      })
+          )
+        })
+      } finally {
+        if (checkDb) {
+          checkDb.close()
+        }
+      }
 
       if (!profile) {
         log('Profile not found or access denied', { profileId: id, userId: user.id })
@@ -143,6 +149,13 @@ export default async function handler(req, res) {
           log('No file uploaded')
           return res.status(400).json({ error: 'No file uploaded' })
         }
+
+        // Open database inside callback for file operations
+        let uploadDb = null
+        try {
+          const dbPath = path.join(process.cwd(), 'database.sqlite')
+          uploadDb = new sqlite3.Database(dbPath)
+          log('Database opened in upload callback', { dbPath })
 
         log('File received', { 
           filename: req.file.filename, 
@@ -174,7 +187,7 @@ export default async function handler(req, res) {
           // Check limits
           log('Checking media limits', { profileId: id, type })
           const result = await new Promise((resolve, reject) => {
-            db.get(
+            uploadDb.get(
               'SELECT COUNT(*) as count FROM media WHERE profile_id = ? AND type = ?',
               [id, type],
               (err, result) => {
@@ -207,7 +220,7 @@ export default async function handler(req, res) {
           // Get next order index
           log('Getting next order index', { profileId: id, type })
           const orderResult = await new Promise((resolve, reject) => {
-            db.get(
+            uploadDb.get(
               'SELECT MAX(order_index) as max_order FROM media WHERE profile_id = ? AND type = ?',
               [id, type],
               (err, orderResult) => {
@@ -228,7 +241,7 @@ export default async function handler(req, res) {
           const mediaUrl = `/uploads/profiles/${req.file.filename}`
           log('Inserting media record', { profileId: id, url: mediaUrl, type, order: nextOrder })
           const insertResult = await new Promise((resolve, reject) => {
-            db.run(
+            uploadDb.run(
               'INSERT INTO media (profile_id, url, type, order_index, is_converting) VALUES (?, ?, ?, ?, ?)',
               [id, mediaUrl, type, nextOrder, 0], // For now, no video conversion
               function(err) {
@@ -284,6 +297,11 @@ export default async function handler(req, res) {
           }
           
           res.status(500).json({ error: 'Internal server error' })
+        } finally {
+          if (uploadDb) {
+            log('Closing database connection in upload callback')
+            uploadDb.close()
+          }
         }
       })
 
@@ -303,11 +321,6 @@ export default async function handler(req, res) {
         console.error('[ERROR] Media upload error:', error.message, { profileId: id })
       }
       res.status(500).json({ error: 'Internal server error' })
-    } finally {
-      if (db) {
-        log('Closing database connection')
-        db.close()
-      }
     }
   } else {
     log('Method not allowed', { method: req.method })
