@@ -157,23 +157,22 @@ export default async function handler(req, res) {
           uploadDb = new sqlite3.Database(dbPath)
           log('Database opened in upload callback', { dbPath })
 
-        log('File received', { 
-          filename: req.file.filename, 
-          size: req.file.size, 
-          mimetype: req.file.mimetype,
-          path: req.file.path
-        })
+          log('File received', { 
+            filename: req.file.filename, 
+            size: req.file.size, 
+            mimetype: req.file.mimetype,
+            path: req.file.path
+          })
 
-        const { type } = req.body // 'photo' or 'video'
-        log('Media type from body', { type })
+          const { type } = req.body // 'photo' or 'video'
+          log('Media type from body', { type })
 
-        // Validate type
-        if (!type || !['photo', 'video'].includes(type)) {
-          log('Invalid media type', { type })
-          return res.status(400).json({ error: 'Invalid media type. Must be "photo" or "video"' })
-        }
+          // Validate type
+          if (!type || !['photo', 'video'].includes(type)) {
+            log('Invalid media type', { type })
+            return res.status(400).json({ error: 'Invalid media type. Must be "photo" or "video"' })
+          }
 
-        try {
           // Process uploaded file (convert if needed)
           log('Processing uploaded file', { path: req.file.path })
           const processResult = await processUploadedFile(req.file)
