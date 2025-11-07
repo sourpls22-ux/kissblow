@@ -195,6 +195,13 @@ export default async function handler(req, res) {
             const { needsConversion } = await import('../../../../lib/middleware/multer.js')
             needsBackgroundVideoConversion = needsConversion(req.file.mimetype)
             
+            log('Video conversion check', {
+              mimetype: req.file.mimetype,
+              originalname: req.file.originalname,
+              filename: req.file.filename,
+              needsConversion: needsBackgroundVideoConversion
+            })
+            
             if (needsBackgroundVideoConversion) {
               // Видео требует конвертации - обработаем только базовую валидацию
               processResult = { success: true, converted: false }
@@ -202,7 +209,7 @@ export default async function handler(req, res) {
             } else {
               // Видео уже в правильном формате (MP4)
               processResult = { success: true, converted: false }
-              log('Video is already in MP4 format')
+              log('Video is already in MP4 format', { mimetype: req.file.mimetype })
             }
           } else {
             // Для фото конвертируем синхронно как обычно
@@ -291,6 +298,14 @@ export default async function handler(req, res) {
 
           // Если требуется фоновая конвертация видео, запускаем её
           if (needsBackgroundVideoConversion && type === 'video') {
+            log('Attempting to start background conversion', {
+              mediaId: insertResult.lastID,
+              profileId: parseInt(id),
+              inputPath: req.file.path,
+              mimetype: req.file.mimetype,
+              needsBackgroundVideoConversion
+            })
+            
             try {
               const { convertVideoAsync } = await import('../../../../lib/utils/video.js')
               const pathModule = await import('path')
@@ -301,16 +316,41 @@ export default async function handler(req, res) {
                 pathModule.basename(inputPath, pathModule.extname(inputPath)) + '-converted.mp4'
               )
               
+              log('About to call convertVideoAsync', {
+                inputPath,
+                outputPath,
+                mediaId: insertResult.lastID,
+                profileId: parseInt(id),
+                fileExists: require('fs').existsSync(inputPath)
+              })
+              
               // Запускаем конвертацию в фоне (не ждём завершения)
               convertVideoAsync(inputPath, outputPath, insertResult.lastID, parseInt(id))
+                .then(() => {
+                  log('Background conversion promise resolved', { mediaId: insertResult.lastID })
+                })
                 .catch(err => {
-                  log('Background conversion error', { error: err.message, stack: err.stack })
+                  log('Background conversion error (in catch)', { 
+                    error: err.message, 
+                    stack: err.stack,
+                    mediaId: insertResult.lastID
+                  })
                   console.error('Background video conversion error:', err)
                 })
               
-              log('Background video conversion started', { mediaId: insertResult.lastID, inputPath, outputPath })
+              log('Background video conversion started (function called)', { 
+                mediaId: insertResult.lastID, 
+                inputPath, 
+                outputPath 
+              })
             } catch (conversionError) {
-              log('Failed to start background conversion', { error: conversionError.message, stack: conversionError.stack })
+              log('Failed to start background conversion (exception)', { 
+                error: conversionError.message, 
+                stack: conversionError.stack,
+                mediaId: insertResult.lastID,
+                name: conversionError.name
+              })
+              console.error('Failed to start background conversion:', conversionError)
               // Если не удалось запустить конвертацию, помечаем как ошибку
               await new Promise((resolve) => {
                 uploadDb.run(
@@ -320,6 +360,13 @@ export default async function handler(req, res) {
                 )
               })
             }
+          } else {
+            log('Background conversion NOT started', {
+              needsBackgroundVideoConversion,
+              type,
+              mediaId: insertResult.lastID,
+              reason: !needsBackgroundVideoConversion ? 'needsBackgroundVideoConversion is false' : 'type is not video'
+            })
           }
 
           log('Sending success response', { mediaId: insertResult.lastID, isConverting: needsBackgroundVideoConversion })
