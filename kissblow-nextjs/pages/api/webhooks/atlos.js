@@ -33,13 +33,40 @@ export default async function handler(req, res) {
     const dbPath = path.join(process.cwd(), 'database.sqlite')
     db = new sqlite3.Database(dbPath)
     
-    const { orderId, status, amount } = req.body
+    // Atlas sends OrderId (PascalCase) and Status as number
+    const orderId = req.body.OrderId || req.body.orderId
+    const statusCode = req.body.Status || req.body.status
+    const amount = req.body.Amount || req.body.amount || req.body.PaidAmount
     
-    log('Webhook data parsed', { orderId, status, amount })
-    console.log(`Received webhook for order: ${orderId}, status: ${status}`)
+    // Convert status code to string (100 = completed/paid in Atlas)
+    // Atlas status codes: 100 = completed/paid, 200 = confirmed, etc.
+    let status = 'pending'
+    if (statusCode === 100 || statusCode === '100') {
+      status = 'completed'
+    } else if (statusCode === 200 || statusCode === '200') {
+      status = 'confirmed'
+    } else if (statusCode === 300 || statusCode === '300') {
+      status = 'success'
+    } else if (typeof statusCode === 'string') {
+      status = statusCode.toLowerCase()
+    } else if (statusCode) {
+      // If it's a number, try to map it
+      status = String(statusCode)
+    }
+    
+    log('Webhook data parsed', { 
+      orderId, 
+      statusCode, 
+      status, 
+      amount,
+      transactionId: req.body.TransactionId,
+      invoiceId: req.body.InvoiceId,
+      rawBodyKeys: Object.keys(req.body)
+    })
+    console.log(`Received webhook for order: ${orderId}, status: ${status} (code: ${statusCode})`)
     
     if (!orderId) {
-      log('Order ID missing')
+      log('Order ID missing', { bodyKeys: Object.keys(req.body) })
       return res.status(400).json({ error: 'Order ID is required' })
     }
 
