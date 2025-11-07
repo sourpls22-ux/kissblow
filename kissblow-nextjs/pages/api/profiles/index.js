@@ -1,3 +1,19 @@
+// Простой in-memory кэш для профилей
+// Используем глобальный объект, который сохраняется между запросами в Next.js
+if (typeof global.profileCache === 'undefined') {
+  global.profileCache = new Map()
+}
+
+// Функция для очистки устаревших записей (TTL 5 минут)
+function cleanupCache() {
+  const now = Date.now()
+  for (const [key, value] of global.profileCache.entries()) {
+    if (now > value.expiresAt) {
+      global.profileCache.delete(key)
+    }
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -9,32 +25,21 @@ export default async function handler(req, res) {
     // Используем только динамический import для всех модулей
     const sqlite3 = await import('sqlite3')
     const path = await import('path')
-    
-    // ВРЕМЕННО: отключаем кэш для проверки работы базы данных
-    // Проблема с импортом manager.js в production сборке Next.js
-    // const cacheManagerModule = await import('../../../lib/cache/manager.js')
-    // const cacheManager = cacheManagerModule.default || cacheManagerModule
-    
-    // if (!cacheManager || typeof cacheManager.getProfileList !== 'function') {
-    //   console.error('cacheManager is invalid', { 
-    //     moduleKeys: Object.keys(cacheManagerModule),
-    //     hasDefault: !!cacheManagerModule.default,
-    //     cacheManagerType: typeof cacheManager
-    //   })
-    //   throw new Error('cacheManager not found or invalid in module')
-    // }
 
     const { city, page = 1, limit = 24 } = req.query
     const offset = (parseInt(page) - 1) * parseInt(limit)
     
-    // ВРЕМЕННО: отключаем проверку кэша
-    // let cachedResult = cacheManager.getProfileList(city, page, limit)
-    // if (cachedResult) {
-    //   return res.json({
-    //     ...cachedResult,
-    //     cached: true
-    //   })
-    // }
+    // Проверяем кэш
+    const cacheKey = `profiles_${city || 'all'}_${page}_${limit}`
+    cleanupCache() // Очищаем устаревшие записи
+    
+    const cached = global.profileCache.get(cacheKey)
+    if (cached && Date.now() < cached.expiresAt) {
+      return res.json({
+        ...cached.data,
+        cached: true
+      })
+    }
     
     const dbPath = path.join(process.cwd(), 'database.sqlite')
     db = new sqlite3.Database(dbPath)
@@ -125,8 +130,11 @@ export default async function handler(req, res) {
       }
     }
 
-    // ВРЕМЕННО: отключаем сохранение в кэш
-    // cacheManager.setProfileList(city, page, limit, result, 300)
+    // Сохраняем в кэш на 5 минут (300000 мс)
+    global.profileCache.set(cacheKey, {
+      data: result,
+      expiresAt: Date.now() + 300000 // 5 минут
+    })
 
     res.json({
       ...result,
