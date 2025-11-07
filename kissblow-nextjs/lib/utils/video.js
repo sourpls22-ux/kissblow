@@ -6,6 +6,16 @@ const db = require('../database.js')
 // Video conversion function with progress callback
 const convertVideo = (inputPath, outputPath, onProgress = null) => {
   return new Promise((resolve, reject) => {
+    let videoDuration = null
+    
+    // Сначала получаем длительность видео для расчета прогресса
+    ffmpeg.ffprobe(inputPath, (err, metadata) => {
+      if (!err && metadata && metadata.format && metadata.format.duration) {
+        videoDuration = metadata.format.duration
+        console.log(`[FFmpeg] Video duration: ${videoDuration} seconds`)
+      }
+    })
+    
     ffmpeg(inputPath)
       .output(outputPath)
       .videoCodec('libx264')
@@ -15,12 +25,43 @@ const convertVideo = (inputPath, outputPath, onProgress = null) => {
       .audioBitrate('128k')
       .videoFilter('scale=1280:720:force_original_aspect_ratio=decrease:force_divisible_by=2')
       .on('start', (commandLine) => {
-        console.log('FFmpeg process started:', commandLine)
+        console.log('[FFmpeg] Process started:', commandLine)
       })
       .on('progress', (progress) => {
-        const percent = progress.percent || 0
-        console.log('Processing: ' + percent + '% done')
-        if (onProgress && typeof onProgress === 'function') {
+        // Логируем весь объект progress для отладки (только первые несколько раз)
+        if (!convertVideo._progressLogged) {
+          console.log('[FFmpeg] Progress object structure:', JSON.stringify(progress, null, 2))
+          convertVideo._progressLogged = true
+        }
+        
+        let percent = 0
+        
+        // Пробуем разные способы получить прогресс
+        if (progress.percent && !isNaN(progress.percent)) {
+          percent = parseFloat(progress.percent)
+          console.log('[FFmpeg] Processing: ' + percent + '% done (from progress.percent)')
+        } else if (videoDuration && progress.timemark) {
+          // Рассчитываем прогресс на основе timemark и длительности
+          const timeParts = progress.timemark.split(':')
+          if (timeParts.length === 3) {
+            const currentTime = parseFloat(timeParts[0]) * 3600 + 
+                               parseFloat(timeParts[1]) * 60 + 
+                               parseFloat(timeParts[2])
+            if (currentTime > 0 && videoDuration > 0) {
+              percent = Math.min(100, (currentTime / videoDuration) * 100)
+              console.log('[FFmpeg] Processing: ' + percent.toFixed(1) + '% done (calculated from timemark: ' + progress.timemark + ' / ' + videoDuration.toFixed(1) + 's)')
+            }
+          }
+        } else {
+          console.log('[FFmpeg] Progress event received but percent unavailable:', {
+            hasPercent: !!progress.percent,
+            timemark: progress.timemark,
+            frames: progress.frames,
+            currentKbps: progress.currentKbps
+          })
+        }
+        
+        if (onProgress && typeof onProgress === 'function' && percent > 0) {
           onProgress(percent)
         }
       })
@@ -78,15 +119,27 @@ const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
     // Функция для обновления прогресса в базе данных
     const updateProgress = async (percent) => {
       try {
+        const progressValue = Math.min(100, Math.max(0, percent))
+        console.log(`[Progress Update] Media ${mediaId}: ${progressValue.toFixed(1)}%`)
+        
         await new Promise((resolve) => {
           db.run(
             'UPDATE media SET conversion_progress = ? WHERE id = ?',
-            [Math.min(100, Math.max(0, percent)), mediaId],
-            () => resolve()
+            [progressValue, mediaId],
+            function(err) {
+              if (err) {
+                console.error(`[Progress Update Error] Media ${mediaId}:`, err)
+              } else {
+                if (this.changes > 0) {
+                  console.log(`[Progress Updated] Media ${mediaId}: ${progressValue.toFixed(1)}% (rows changed: ${this.changes})`)
+                }
+              }
+              resolve()
+            }
           )
         })
       } catch (err) {
-        console.error('Error updating conversion progress:', err)
+        console.error('[Progress Update Exception] Media ' + mediaId + ':', err)
         // Не критично, продолжаем конвертацию
       }
     }
