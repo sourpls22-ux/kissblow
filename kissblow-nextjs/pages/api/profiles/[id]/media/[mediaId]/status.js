@@ -1,7 +1,11 @@
 export default async function handler(req, res) {
   let db = null
   
-  const { profileId, mediaId } = req.query
+  // В Next.js динамические параметры маршрута доступны через req.query
+  // Для файла [id]/media/[mediaId]/status.js:
+  // [id] -> req.query.id, [mediaId] -> req.query.mediaId
+  const profileId = req.query.id
+  const mediaId = req.query.mediaId
 
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' })

@@ -857,7 +857,7 @@ export default function Dashboard() {
         try {
           const response = await axios.get(`${''}/api/profiles/${profileId}/media/${mediaId}/status`)
           
-          if (!response.data.is_converting) {
+          if (!response.data.isConverting) {
             // Conversion completed or failed
             setConvertingVideos(prev => {
               const newSet = new Set(prev)
@@ -865,13 +865,13 @@ export default function Dashboard() {
               return newSet
             })
             
-            if (response.data.conversion_error) {
+            if (response.data.conversionError) {
               // Conversion failed
               setConversionErrors(prev => ({
                 ...prev,
-                [mediaId]: response.data.conversion_error
+                [mediaId]: response.data.conversionError
               }))
-              error(t('dashboard.videoConversionFailed') + ': ' + response.data.conversion_error)
+              error(t('dashboard.videoConversionFailed') + ': ' + response.data.conversionError)
             } else {
               // Conversion succeeded
               setConversionErrors(prev => {
