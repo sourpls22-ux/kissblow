@@ -63,10 +63,13 @@ export default async function handler(req, res) {
 
     const profileId = result.lastID
 
-    db.close()
-
     // 5. Trigger revalidation for homepage (city page will be updated when profile is edited)
     await revalidateHomepage()
+
+    logger.info('Profile created successfully', { 
+      profileId: profileId, 
+      userId: user.id
+    })
 
     res.status(201).json({
       message: 'Profile created successfully',
@@ -93,13 +96,6 @@ export default async function handler(req, res) {
         is_active: 0,
         created_at: new Date().toISOString()
       }
-    })
-
-    logger.info('Profile created successfully', { 
-      profileId: result.lastID, 
-      userId: user.id,
-      name: profileData.name,
-      city: profileData.city
     })
 
   } catch (error) {
