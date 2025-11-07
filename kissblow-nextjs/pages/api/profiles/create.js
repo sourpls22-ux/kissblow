@@ -1,20 +1,75 @@
 import { validateTurnstile } from '../../../lib/utils/turnstile.js'
 
 export default async function handler(req, res) {
+  // Direct file logging to ensure we see what's happening
+  const fs = await import('fs')
+  const path = await import('path')
+  const logFile = path.join(process.cwd(), 'logs', 'create-profile-debug.log')
+  const log = (msg, data = {}) => {
+    const timestamp = new Date().toISOString()
+    const logMsg = `[${timestamp}] ${msg} ${JSON.stringify(data)}\n`
+    try {
+      fs.appendFileSync(logFile, logMsg)
+    } catch (e) {
+      // Ignore file write errors
+    }
+  }
+
+  log('CREATE PROFILE API CALLED', { method: req.method, url: req.url })
+
   if (req.method !== 'POST') {
+    log('Method not allowed', { method: req.method })
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
   let db = null
+  let user = null
   try {
+    log('Starting imports')
     // Dynamic import to avoid webpack issues
     const jwt = await import('jsonwebtoken')
     const sqlite3 = await import('sqlite3')
-    const path = await import('path')
-    const { revalidateHomepage, revalidateCity } = await import('../../../lib/utils/revalidation.js')
-    const { logger, logDatabaseError } = await import('../../../lib/logger.js')
+    const pathModule = await import('path')
+    const { revalidateHomepage } = await import('../../../lib/utils/revalidation.js')
     
-    const dbPath = path.join(process.cwd(), 'database.sqlite')
+    log('Imports completed')
+    
+    // Get logger with fallback
+    let logger
+    try {
+      const loggerModule = await import('../../../lib/logger.js')
+      logger = loggerModule.logger
+      log('Logger imported successfully')
+    } catch (err) {
+      log('Logger import failed, using fallback', { error: err.message })
+      logger = {
+        info: (msg, data) => {
+          log(`[INFO] ${msg}`, data)
+          console.log('[INFO]', msg, data)
+        },
+        error: (msg, data) => {
+          log(`[ERROR] ${msg}`, data)
+          console.error('[ERROR]', msg, data)
+        },
+        warn: (msg, data) => {
+          log(`[WARN] ${msg}`, data)
+          console.warn('[WARN]', msg, data)
+        }
+      }
+    }
+    
+    let logDatabaseError
+    try {
+      const loggerModule = await import('../../../lib/logger.js')
+      logDatabaseError = loggerModule.logDatabaseError || (() => {})
+    } catch (err) {
+      logDatabaseError = () => {}
+    }
+    
+    log('All imports completed')
+    
+    const dbPath = pathModule.join(process.cwd(), 'database.sqlite')
+    log('Opening database', { dbPath })
     db = new sqlite3.Database(dbPath)
 
     // Auth middleware
@@ -22,28 +77,41 @@ export default async function handler(req, res) {
     const token = authHeader && authHeader.split(' ')[1]
 
     if (!token) {
+      log('No token provided')
       return res.status(401).json({ error: 'Access token required' })
     }
 
-    const user = jwt.verify(token, process.env.JWT_SECRET)
+    log('Verifying JWT token')
+    try {
+      user = jwt.verify(token, process.env.JWT_SECRET)
+      log('JWT verified', { userId: user.id })
+    } catch (err) {
+      log('JWT verification failed', { error: err.message })
+      return res.status(401).json({ error: 'Invalid token' })
+    }
 
     const { turnstileToken } = req.body
 
     // 1. Validate input
     if (!turnstileToken) {
+      log('No turnstile token provided')
       return res.status(400).json({ error: 'Security verification is required' })
     }
 
     // 2. Verify Cloudflare Turnstile
+    log('Verifying Turnstile token')
     const turnstileResult = await validateTurnstile(turnstileToken)
     if (!turnstileResult.success) {
+      log('Turnstile verification failed', { errors: turnstileResult.errors })
       return res.status(400).json({
         error: 'Security verification failed',
         details: turnstileResult.errors
       })
     }
+    log('Turnstile verified successfully')
 
     // 3. Create inactive profile with default values
+    log('Creating profile in database', { userId: user.id })
     const result = await new Promise((resolve, reject) => {
       db.run(
         `INSERT INTO profiles (
@@ -55,22 +123,42 @@ export default async function handler(req, res) {
           null, null, null, null, '', null, 0, new Date().toISOString()
         ],
         function(err) {
-          if (err) reject(err)
-          else resolve({ lastID: this.lastID })
+          if (err) {
+            log('Database insert error', { error: err.message, stack: err.stack })
+            reject(err)
+          } else {
+            log('Profile inserted successfully', { lastID: this.lastID })
+            resolve({ lastID: this.lastID })
+          }
         }
       )
     })
 
     const profileId = result.lastID
+    log('Profile created', { profileId, userId: user.id })
 
     // 5. Trigger revalidation for homepage (city page will be updated when profile is edited)
-    await revalidateHomepage()
+    log('Starting revalidation')
+    try {
+      await revalidateHomepage()
+      log('Revalidation completed successfully')
+    } catch (revalidateError) {
+      log('Revalidation failed (non-critical)', { 
+        error: revalidateError.message,
+        stack: revalidateError.stack 
+      })
+      logger.warn('Revalidation failed but profile was created', { 
+        error: revalidateError.message 
+      })
+      // Don't fail the request if revalidation fails
+    }
 
     logger.info('Profile created successfully', { 
       profileId: profileId, 
       userId: user.id
     })
 
+    log('Sending success response', { profileId })
     res.status(201).json({
       message: 'Profile created successfully',
       profile: {
@@ -99,11 +187,33 @@ export default async function handler(req, res) {
     })
 
   } catch (error) {
-    logDatabaseError('profile_creation', error)
-    logger.error('Create profile error:', { error: error.message, userId: user?.id })
+    log('ERROR in create profile', { 
+      error: error.message, 
+      stack: error.stack,
+      name: error.name 
+    })
+    
+    try {
+      logDatabaseError('profile_creation', error)
+      const logger = await import('../../../lib/logger.js').then(m => m.logger).catch(() => ({
+        error: (msg, data) => {
+          log(`[ERROR] ${msg}`, data)
+          console.error('[ERROR]', msg, data)
+        }
+      }))
+      logger.error('Create profile error:', { 
+        error: error.message, 
+        stack: error.stack,
+        userId: user?.id 
+      })
+    } catch (logErr) {
+      log('Failed to log error', { logError: logErr.message })
+    }
+    
     res.status(500).json({ error: 'Internal server error' })
   } finally {
     if (db) {
+      log('Closing database connection')
       db.close()
     }
   }
