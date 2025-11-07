@@ -4,7 +4,11 @@ const fs = require('fs')
 const sharp = require('sharp')
 const ffmpeg = require('fluent-ffmpeg')
 const { logFileOperation } = require('../logger')
-const __dirname = path.dirname(__filename)
+
+// Use process.cwd() for Next.js compatibility (works in both dev and production)
+const getUploadPath = (subfolder) => {
+  return path.join(process.cwd(), 'public', 'uploads', subfolder)
+}
 
 // File validation utilities
 const validateFileType = (file, allowedTypes) => {
@@ -151,7 +155,7 @@ const needsConversion = (mimetype) => {
 // Main upload storage for profiles
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, '..', '..', 'public', 'uploads', 'profiles')
+    const uploadPath = getUploadPath('profiles')
     // Ensure directory exists
     if (!fs.existsSync(uploadPath)) {
       fs.mkdirSync(uploadPath, { recursive: true })
@@ -169,7 +173,7 @@ const storage = multer.diskStorage({
 // Verification upload storage
 const verificationStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, '..', '..', 'public', 'uploads', 'verifications')
+    const uploadPath = getUploadPath('verifications')
     // Ensure directory exists
     if (!fs.existsSync(uploadPath)) {
       fs.mkdirSync(uploadPath, { recursive: true })
