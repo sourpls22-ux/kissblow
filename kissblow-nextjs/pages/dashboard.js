@@ -34,7 +34,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 
 // SortableMediaItem Component
-function SortableMediaItem({ media, onDeleteMedia, isMainPhoto, onMoveUp, onMoveDown, isConverting, conversionError }) {
+function SortableMediaItem({ media, onDeleteMedia, isMainPhoto, onMoveUp, onMoveDown, isConverting, conversionError, conversionProgress }) {
   const { t } = useTranslation()
   const [videoLoaded, setVideoLoaded] = useState(false)
   const {
@@ -188,6 +188,19 @@ function SortableMediaItem({ media, onDeleteMedia, isMainPhoto, onMoveUp, onMove
           <p className="text-white text-sm font-medium text-center px-2">
             {t('dashboard.videoConverting')}
           </p>
+          {conversionProgress !== undefined && conversionProgress !== null && (
+            <div className="w-3/4 max-w-xs mt-3">
+              <div className="bg-white/20 rounded-full h-2 overflow-hidden">
+                <div 
+                  className="bg-white h-full transition-all duration-300 ease-out rounded-full"
+                  style={{ width: `${Math.min(100, Math.max(0, conversionProgress))}%` }}
+                />
+              </div>
+              <p className="text-white/80 text-xs text-center mt-2">
+                {Math.round(conversionProgress)}%
+              </p>
+            </div>
+          )}
           <p className="text-white/80 text-xs text-center px-2 mt-2">
             {t('dashboard.videoConvertingHint')}
         </p>
@@ -237,6 +250,9 @@ export default function Dashboard() {
   const [turnstileError, setTurnstileError] = useState('')
   const [showTurnstile, setShowTurnstile] = useState(false)
   const turnstileRef = useRef(null)
+  
+  // Refs для хранения функций отмены проверки статуса конвертации
+  const conversionStatusCancellers = useRef(new Map())
   
   // State для редактирования профиля
   const [editFormData, setEditFormData] = useState({
@@ -299,6 +315,7 @@ export default function Dashboard() {
   const [uploadProgress, setUploadProgress] = useState(0)
   const [convertingVideos, setConvertingVideos] = useState([])
   const [conversionErrors, setConversionErrors] = useState([])
+  const [conversionProgress, setConversionProgress] = useState({}) // { mediaId: progress }
   
   // Drag and Drop sensors
   const sensors = useSensors(
@@ -324,6 +341,23 @@ export default function Dashboard() {
     
     setShowEditModal(false)
   })
+  
+  // Очистка всех проверок статуса при размонтировании
+  useEffect(() => {
+    return () => {
+      // Очищаем все активные проверки при размонтировании
+      conversionStatusCancellers.current.forEach(cancel => cancel())
+      conversionStatusCancellers.current.clear()
+    }
+  }, [])
+  
+  // Очистка при выходе пользователя
+  useEffect(() => {
+    if (!user) {
+      conversionStatusCancellers.current.forEach(cancel => cancel())
+      conversionStatusCancellers.current.clear()
+    }
+  }, [user])
   
   // Проверка авторизации на клиенте
   useEffect(() => {
@@ -785,12 +819,25 @@ export default function Dashboard() {
         .filter(m => m.type === 'video' && m.is_converting === 1)
         .map(m => m.id)
       
+      // Инициализируем прогресс для конвертирующихся видео
+      const initialProgress = {}
+      response.data
+        .filter(m => m.type === 'video' && m.is_converting === 1 && m.conversion_progress !== undefined)
+        .forEach(m => {
+          initialProgress[m.id] = m.conversion_progress || 0
+        })
+      
+      if (Object.keys(initialProgress).length > 0) {
+        setConversionProgress(prev => ({ ...prev, ...initialProgress }))
+      }
+      
       if (convertingIds.length > 0) {
         setConvertingVideos(prev => new Set([...prev, ...convertingIds]))
         
         // Запускаем проверку статуса для каждого конвертирующегося видео
         convertingIds.forEach(mediaId => {
-          checkConversionStatus(profileId, mediaId)
+          const cancel = checkConversionStatus(profileId, mediaId)
+          conversionStatusCancellers.current.set(mediaId, cancel)
         })
       }
     } catch (err) {
@@ -851,11 +898,51 @@ export default function Dashboard() {
   const checkConversionStatus = (profileId, mediaId) => {
     let checkCount = 0
     let currentInterval = 2000 // Start with 2 seconds
+    let timeoutId = null
+    let isCancelled = false
+    
+    // Функция для отмены проверки
+    const cancel = () => {
+      isCancelled = true
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+        timeoutId = null
+      }
+    }
     
     const scheduleNextCheck = () => {
-      setTimeout(async () => {
+      // Проверяем, не отменена ли проверка
+      if (isCancelled) {
+        return
+      }
+      
+      // Проверяем наличие пользователя перед запросом
+      if (!user) {
+        cancel()
+        return
+      }
+      
+      timeoutId = setTimeout(async () => {
+        // Проверяем еще раз перед запросом
+        if (isCancelled || !user) {
+          return
+        }
+        
         try {
           const response = await axios.get(`${''}/api/profiles/${profileId}/media/${mediaId}/status`)
+          
+          // Проверяем еще раз после запроса (компонент мог размонтироваться)
+          if (isCancelled || !user) {
+            return
+          }
+          
+          // Обновляем прогресс конвертации
+          if (response.data.conversionProgress !== undefined) {
+            setConversionProgress(prev => ({
+              ...prev,
+              [mediaId]: response.data.conversionProgress
+            }))
+          }
           
           if (!response.data.isConverting) {
             // Conversion completed or failed
@@ -863,6 +950,13 @@ export default function Dashboard() {
               const newSet = new Set(prev)
               newSet.delete(mediaId)
               return newSet
+            })
+            
+            // Удаляем прогресс после завершения
+            setConversionProgress(prev => {
+              const newProgress = { ...prev }
+              delete newProgress[mediaId]
+              return newProgress
             })
             
             if (response.data.conversionError) {
@@ -887,7 +981,9 @@ export default function Dashboard() {
               await fetchProfileMedia(profileId)
             }
             
-            return // Stop polling
+            cancel() // Stop polling
+            conversionStatusCancellers.current.delete(mediaId)
+            return
           }
           
           // Still converting - schedule next check with progressive interval
@@ -903,15 +999,33 @@ export default function Dashboard() {
           scheduleNextCheck()
           
         } catch (err) {
-          console.error('Error checking conversion status:', err)
-          // Retry with longer interval
-          currentInterval = 10000
-          scheduleNextCheck()
+          // Проверяем, не отменена ли проверка перед обработкой ошибки
+          if (isCancelled || !user) {
+            return
+          }
+          
+          // Если ошибка 401 (unauthorized) - пользователь вышел, прекращаем проверку
+          if (err.response?.status === 401) {
+            cancel()
+            conversionStatusCancellers.current.delete(mediaId)
+            return
+          }
+          
+          // Для других ошибок логируем только если компонент еще активен и пользователь авторизован
+          if (!isCancelled && user) {
+            console.error('Error checking conversion status:', err)
+            // Retry with longer interval
+            currentInterval = 10000
+            scheduleNextCheck()
+          }
         }
       }, currentInterval)
     }
     
     scheduleNextCheck() // Start the polling
+    
+    // Возвращаем функцию отмены для очистки при размонтировании
+    return cancel
   }
   
   // Функция загрузки медиа
@@ -946,7 +1060,8 @@ export default function Dashboard() {
         success(t('dashboard.videoUploaded'))
         
         // Start checking conversion status
-        checkConversionStatus(profileId, response.data.mediaId)
+        const cancel = checkConversionStatus(profileId, response.data.mediaId)
+        conversionStatusCancellers.current.set(response.data.mediaId, cancel)
       } else {
         // Regular upload completed
         success(type === 'photo' ? t('dashboard.photoUploaded') : t('dashboard.videoUploaded'))
@@ -1029,7 +1144,8 @@ export default function Dashboard() {
         // Start checking conversion status for videos
         const convertingVideos = successfulUploads.filter(result => result.data?.isConverting)
         convertingVideos.forEach(video => {
-          checkConversionStatus(profileId, video.data.mediaId)
+          const cancel = checkConversionStatus(profileId, video.data.mediaId)
+          conversionStatusCancellers.current.set(video.data.mediaId, cancel)
         })
 
         const hasPhotos = successfulUploads.some(result => result.type === 'photo')
@@ -1075,6 +1191,20 @@ export default function Dashboard() {
     // Сохраняем позицию скролла модального окна
     const modalContainer = document.querySelector('.modal-content')
     const scrollPosition = modalContainer ? modalContainer.scrollTop : 0
+    
+    // Отменяем проверку статуса конвертации для удаляемого медиа
+    const cancel = conversionStatusCancellers.current.get(mediaId)
+    if (cancel) {
+      cancel()
+      conversionStatusCancellers.current.delete(mediaId)
+    }
+    
+    // Удаляем прогресс конвертации
+    setConversionProgress(prev => {
+      const newProgress = { ...prev }
+      delete newProgress[mediaId]
+      return newProgress
+    })
     
     try {
       await axios.delete(`${''}/api/media/${mediaId}`)
@@ -2534,6 +2664,7 @@ export default function Dashboard() {
                             onMoveDown={movePhotoDown}
                             isConverting={new Set(convertingVideos || []).has(media.id) || media.is_converting === 1}
                             conversionError={conversionErrors[media.id] || media.conversion_error}
+                            conversionProgress={conversionProgress[media.id]}
                             />
                           ))}
                         </div>

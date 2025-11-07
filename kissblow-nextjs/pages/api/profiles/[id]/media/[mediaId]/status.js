@@ -51,7 +51,7 @@ export default async function handler(req, res) {
     // Get media status
     const media = await new Promise((resolve, reject) => {
       db.get(
-        'SELECT id, type, is_converting, conversion_error, conversion_attempts FROM media WHERE id = ? AND profile_id = ?',
+        'SELECT id, type, is_converting, conversion_error, conversion_attempts, conversion_progress FROM media WHERE id = ? AND profile_id = ?',
         [mediaId, profileId],
         (err, media) => {
           if (err) reject(err)
@@ -69,7 +69,8 @@ export default async function handler(req, res) {
       type: media.type,
       isConverting: media.is_converting === 1,
       conversionError: media.conversion_error,
-      conversionAttempts: media.conversion_attempts
+      conversionAttempts: media.conversion_attempts,
+      conversionProgress: media.conversion_progress || 0
     })
 
   } catch (error) {

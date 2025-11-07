@@ -3,8 +3,8 @@ const fs = require('fs')
 const path = require('path')
 const db = require('../database.js')
 
-// Video conversion function
-const convertVideo = (inputPath, outputPath) => {
+// Video conversion function with progress callback
+const convertVideo = (inputPath, outputPath, onProgress = null) => {
   return new Promise((resolve, reject) => {
     ffmpeg(inputPath)
       .output(outputPath)
@@ -18,10 +18,17 @@ const convertVideo = (inputPath, outputPath) => {
         console.log('FFmpeg process started:', commandLine)
       })
       .on('progress', (progress) => {
-        console.log('Processing: ' + progress.percent + '% done')
+        const percent = progress.percent || 0
+        console.log('Processing: ' + percent + '% done')
+        if (onProgress && typeof onProgress === 'function') {
+          onProgress(percent)
+        }
       })
       .on('end', () => {
         console.log('Video conversion completed')
+        if (onProgress && typeof onProgress === 'function') {
+          onProgress(100)
+        }
         resolve()
       })
       .on('error', (err) => {
@@ -68,7 +75,26 @@ const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
     const currentAttempt = (media?.conversion_attempts || 0) + 1
     console.log(`Starting background video conversion for media ID: ${mediaId} (attempt ${currentAttempt}/${MAX_ATTEMPTS})`)
     
-    await convertVideo(inputPath, outputPath)
+    // Функция для обновления прогресса в базе данных
+    const updateProgress = async (percent) => {
+      try {
+        await new Promise((resolve) => {
+          db.run(
+            'UPDATE media SET conversion_progress = ? WHERE id = ?',
+            [Math.min(100, Math.max(0, percent)), mediaId],
+            () => resolve()
+          )
+        })
+      } catch (err) {
+        console.error('Error updating conversion progress:', err)
+        // Не критично, продолжаем конвертацию
+      }
+    }
+    
+    // Сбрасываем прогресс в 0 при начале конвертации
+    await updateProgress(0)
+    
+    await convertVideo(inputPath, outputPath, updateProgress)
     
     // Delete original file
     fs.unlinkSync(inputPath)
@@ -77,7 +103,7 @@ const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
     const finalUrl = `/uploads/profiles/${path.basename(outputPath)}`
     await new Promise((resolve, reject) => {
       db.run(
-        'UPDATE media SET url = ?, is_converting = 0, conversion_error = NULL WHERE id = ?',
+        'UPDATE media SET url = ?, is_converting = 0, conversion_error = NULL, conversion_progress = 100 WHERE id = ?',
         [finalUrl, mediaId],
         (err) => err ? reject(err) : resolve()
       )
@@ -123,7 +149,7 @@ const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
     // Mark as conversion error
     await new Promise((resolve) => {
       db.run(
-        'UPDATE media SET is_converting = 0, conversion_error = ? WHERE id = ?',
+        'UPDATE media SET is_converting = 0, conversion_error = ?, conversion_progress = 0 WHERE id = ?',
         [errorMessage, mediaId],
         () => resolve()
       )

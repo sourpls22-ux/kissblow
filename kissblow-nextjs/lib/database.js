@@ -198,6 +198,12 @@ db.serialize(() => {
     }
   })
 
+  db.run(`ALTER TABLE media ADD COLUMN conversion_progress REAL DEFAULT 0`, (err) => {
+    if (err && !err.message.includes('duplicate column name')) {
+      console.error('Error adding conversion_progress column:', err)
+    }
+  })
+
   // Insert test payment data
   db.run(`
     INSERT OR IGNORE INTO payments (user_id, amount_to_pay, credit_amount, payment_id, method, status, created_at)
