@@ -3,6 +3,10 @@ const fs = require('fs')
 const path = require('path')
 const db = require('../database.js')
 
+// Указать путь к FFmpeg явно
+ffmpeg.setFfmpegPath('/usr/bin/ffmpeg')
+console.log('[FFmpeg] Using ffmpeg at: /usr/bin/ffmpeg')
+
 // Функция для логирования в файл
 const logToFile = (message, data = {}) => {
   try {
