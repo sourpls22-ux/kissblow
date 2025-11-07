@@ -25,7 +25,7 @@ export default async function handler(req, res) {
     try {
       user = jwt.verify(token, process.env.JWT_SECRET)
     } catch (error) {
-      return res.status(403).json({ error: 'Invalid token' })
+      return res.status(401).json({ error: 'Invalid token' })
     }
 
     if (req.method === 'GET') {

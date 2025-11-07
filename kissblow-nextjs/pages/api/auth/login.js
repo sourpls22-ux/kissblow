@@ -44,8 +44,11 @@ export default async function handler(req, res) {
     // Verify Turnstile token
     if (turnstileToken) {
       const turnstileResult = await verifyTurnstileToken(turnstileToken)
-      if (!turnstileResult) {
-        return res.status(400).json({ error: 'Security verification failed' })
+      if (!turnstileResult.success) {
+        return res.status(400).json({ 
+          error: 'Security verification failed',
+          details: turnstileResult.errorCodes || turnstileResult.error
+        })
       }
     }
 
