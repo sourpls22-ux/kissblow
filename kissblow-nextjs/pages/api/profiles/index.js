@@ -6,30 +6,27 @@ export default async function handler(req, res) {
   let db = null
 
   try {
+    // Используем только динамический import для всех модулей
     const sqlite3 = await import('sqlite3')
     const path = await import('path')
     
-    // Используем require для CommonJS модулей
-    let cacheManagerModule
-    try {
-      cacheManagerModule = require('../../../lib/cache/decorators.js')
-    } catch (requireError) {
-      // Fallback на динамический import если require не работает
-      cacheManagerModule = await import('../../../lib/cache/decorators.js')
-      // Обрабатываем случай, когда динамический import возвращает default
-      if (cacheManagerModule.default && cacheManagerModule.default.cacheManager) {
-        cacheManagerModule = cacheManagerModule.default
-      }
-    }
+    // Для CommonJS модулей используем динамический import
+    const decoratorsModule = await import('../../../lib/cache/decorators.js')
     
-    const { cacheManager } = cacheManagerModule
+    // Извлекаем cacheManager из модуля
+    // В Next.js production сборке CommonJS модули могут быть обернуты в default
+    let cacheManager = decoratorsModule.cacheManager || 
+                       decoratorsModule.default?.cacheManager ||
+                       (decoratorsModule.default && typeof decoratorsModule.default.getProfileList === 'function' ? decoratorsModule.default : null)
     
-    if (!cacheManager) {
-      console.error('cacheManager is undefined', { 
-        moduleKeys: Object.keys(cacheManagerModule),
-        hasDefault: !!cacheManagerModule.default 
+    if (!cacheManager || typeof cacheManager.getProfileList !== 'function') {
+      console.error('cacheManager is invalid', { 
+        moduleKeys: Object.keys(decoratorsModule),
+        hasDefault: !!decoratorsModule.default,
+        defaultKeys: decoratorsModule.default ? Object.keys(decoratorsModule.default) : [],
+        cacheManagerType: typeof cacheManager
       })
-      throw new Error('cacheManager not found in module')
+      throw new Error('cacheManager not found or invalid in module')
     }
 
     const { city, page = 1, limit = 24 } = req.query
@@ -152,13 +149,13 @@ export default async function handler(req, res) {
     
     // Записываем в файл для отладки
     try {
-      const fs = require('fs')
-      const path = require('path')
-      const logDir = path.join(process.cwd(), 'logs')
+      const fs = await import('fs')
+      const pathModule = await import('path')
+      const logDir = pathModule.join(process.cwd(), 'logs')
       if (!fs.existsSync(logDir)) {
         fs.mkdirSync(logDir, { recursive: true })
       }
-      const logFile = path.join(logDir, 'profiles-api-errors.log')
+      const logFile = pathModule.join(logDir, 'profiles-api-errors.log')
       const logMessage = `${new Date().toISOString()}\nError: ${error.message}\nStack: ${error.stack}\n\n`
       fs.appendFileSync(logFile, logMessage)
     } catch (logError) {
