@@ -7,6 +7,30 @@ const nextConfig = {
   // Включить детальные ошибки
   productionBrowserSourceMaps: true,
   
+  // Webpack конфигурация для правильной обработки ES modules
+  webpack: (config, { isServer }) => {
+    // Для серверной части - правильно обрабатываем ES modules
+    if (isServer) {
+      // Убедимся, что проблемные модули обрабатываются как CommonJS
+      config.externals = config.externals || []
+      
+      // Не бандлим эти модули, используем как есть
+      config.externals.push({
+        'sharp': 'commonjs sharp',
+        'fluent-ffmpeg': 'commonjs fluent-ffmpeg',
+        'multer': 'commonjs multer',
+      })
+    }
+    
+    // Отключаем агрессивную оптимизацию для стабильности
+    config.optimization = {
+      ...config.optimization,
+      moduleIds: 'deterministic',
+    }
+    
+    return config
+  },
+  
   images: {
     domains: ['localhost', 'kissblow.me'],
     formats: ['image/webp', 'image/avif'],
