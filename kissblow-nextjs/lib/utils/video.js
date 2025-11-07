@@ -108,7 +108,19 @@ const convertVideo = (inputPath, outputPath, onProgress = null) => {
         }
         
         if (onProgress && typeof onProgress === 'function' && percent > 0) {
-          onProgress(percent)
+          logToFile('Calling onProgress callback', { percent, hasCallback: true })
+          try {
+            onProgress(percent)
+            logToFile('onProgress called successfully', { percent })
+          } catch (err) {
+            logToFile('onProgress error', { percent, error: err.message, stack: err.stack })
+          }
+        } else {
+          logToFile('onProgress NOT called', { 
+            hasOnProgress: !!onProgress, 
+            isFunction: onProgress && typeof onProgress === 'function',
+            percent 
+          })
         }
       })
       .on('end', () => {
@@ -235,8 +247,10 @@ const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
     
     // Функция для обновления прогресса в базе данных
     const updateProgress = async (percent) => {
+      logToFile('updateProgress ENTERED', { mediaId, percent })
       try {
         const progressValue = Math.min(100, Math.max(0, percent))
+        logToFile('updateProgress - calculated value', { mediaId, percent, progressValue })
         console.log(`[Progress Update] Media ${mediaId}: ${progressValue.toFixed(1)}%`)
         
         await new Promise((resolve) => {
@@ -245,10 +259,14 @@ const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
             [progressValue, mediaId],
             function(err) {
               if (err) {
+                logToFile('Progress update DB error', { mediaId, error: err.message, progressValue })
                 console.error(`[Progress Update Error] Media ${mediaId}:`, err)
               } else {
+                logToFile('Progress update DB result', { mediaId, progress: progressValue, rowsChanged: this.changes })
                 if (this.changes > 0) {
                   console.log(`[Progress Updated] Media ${mediaId}: ${progressValue.toFixed(1)}% (rows changed: ${this.changes})`)
+                } else {
+                  logToFile('Progress update - no rows changed', { mediaId, progress: progressValue })
                 }
               }
               resolve()
@@ -256,6 +274,7 @@ const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
           )
         })
       } catch (err) {
+        logToFile('Progress update exception', { mediaId, error: err.message, stack: err.stack })
         console.error('[Progress Update Exception] Media ' + mediaId + ':', err)
         // Не критично, продолжаем конвертацию
       }
