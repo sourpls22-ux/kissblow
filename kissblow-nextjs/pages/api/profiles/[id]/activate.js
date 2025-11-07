@@ -31,7 +31,7 @@ export default async function handler(req, res) {
 
   // Check if profile exists and belongs to user
   db.get(
-    'SELECT id, is_active, boost_expires_at FROM profiles WHERE id = ? AND user_id = ?',
+    'SELECT id, is_active, boost_expires_at, city FROM profiles WHERE id = ? AND user_id = ?',
     [id, req.user.id],
     (err, profile) => {
       if (err) {
@@ -58,6 +58,22 @@ export default async function handler(req, res) {
             async (err) => {
               if (err) {
                 return res.status(500).json({ error: 'Database error' })
+              }
+              
+              // Trigger revalidation for boosted profile activation
+              try {
+                const { revalidateProfileUpdates } = await import('../../../../lib/utils/revalidation.js')
+                if (profile.city) {
+                  const citySlug = profile.city.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+                  await revalidateProfileUpdates(id, citySlug)
+                  console.log(`✅ Triggered revalidation for boosted activated profile ${id} in ${citySlug}`)
+                } else {
+                  const { revalidateHomepage } = await import('../../../../lib/utils/revalidation.js')
+                  await revalidateHomepage()
+                  console.log(`✅ Triggered homepage revalidation for boosted activated profile ${id}`)
+                }
+              } catch (revalidationError) {
+                console.error('❌ Revalidation error:', revalidationError)
               }
               
               res.json({
@@ -122,9 +138,16 @@ export default async function handler(req, res) {
                   // Trigger On-Demand Revalidation for profile pages
                   try {
                     const { revalidateProfileUpdates } = await import('../../../../lib/utils/revalidation.js')
-                    const citySlug = profile.city.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
-                    await revalidateProfileUpdates(citySlug, id)
-                    console.log(`✅ Triggered revalidation for activated profile ${id} in ${citySlug}`)
+                    if (profile.city) {
+                      const citySlug = profile.city.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+                      await revalidateProfileUpdates(id, citySlug) // Правильный порядок: profileId, city
+                      console.log(`✅ Triggered revalidation for activated profile ${id} in ${citySlug}`)
+                    } else {
+                      // Если city нет, ревалидируем только главную страницу
+                      const { revalidateHomepage } = await import('../../../../lib/utils/revalidation.js')
+                      await revalidateHomepage()
+                      console.log(`✅ Triggered homepage revalidation for activated profile ${id}`)
+                    }
                   } catch (revalidationError) {
                     console.error('❌ Revalidation error:', revalidationError)
                     // Don't fail the request if revalidation fails
