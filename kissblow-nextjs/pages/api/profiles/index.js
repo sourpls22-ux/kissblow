@@ -3,16 +3,17 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
+  let db = null
+
   try {
-    // Dynamic import to avoid webpack issues
-    const { default: DatabaseQuery } = await import('../../../lib/database/query.js')
+    const sqlite3 = await import('sqlite3')
+    const path = await import('path')
     const { cacheManager } = await import('../../../lib/cache/decorators.js')
 
     const { city, page = 1, limit = 24 } = req.query
     const offset = (parseInt(page) - 1) * parseInt(limit)
     
     // Try to get from cache first
-    const cacheKey = `profiles_${city || 'all'}_${page}_${limit}`
     let cachedResult = cacheManager.getProfileList(city, page, limit)
     
     if (cachedResult) {
@@ -21,6 +22,9 @@ export default async function handler(req, res) {
         cached: true
       })
     }
+    
+    const dbPath = path.join(process.cwd(), 'database.sqlite')
+    db = new sqlite3.Database(dbPath)
     
     let query = `
       SELECT p.*, 
@@ -62,8 +66,26 @@ export default async function handler(req, res) {
     }
 
     const [profiles, countResult] = await Promise.all([
-      DatabaseQuery.all(query, params),
-      DatabaseQuery.get(countQuery, countParams)
+      new Promise((resolve, reject) => {
+        db.all(query, params, (err, rows) => {
+          if (err) {
+            console.error('Database query error:', err)
+            reject(err)
+          } else {
+            resolve(rows || [])
+          }
+        })
+      }),
+      new Promise((resolve, reject) => {
+        db.get(countQuery, countParams, (err, row) => {
+          if (err) {
+            console.error('Database count query error:', err)
+            reject(err)
+          } else {
+            resolve(row || { total: 0 })
+          }
+        })
+      })
     ])
 
     // Parse JSON fields for each profile
@@ -101,5 +123,9 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('Database error:', error)
     res.status(500).json({ error: 'Database error' })
+  } finally {
+    if (db) {
+      db.close()
+    }
   }
 }

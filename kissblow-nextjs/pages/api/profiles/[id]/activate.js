@@ -62,6 +62,15 @@ export default async function handler(req, res) {
               
               // Trigger revalidation for boosted profile activation
               try {
+                // Clear profile lists cache first
+                try {
+                  const { cacheInvalidation } = await import('../../../../lib/cache/decorators.js')
+                  cacheInvalidation.invalidateProfileLists()
+                  console.log(`✅ Cleared profile lists cache for boosted activated profile ${id}`)
+                } catch (cacheErr) {
+                  console.error('❌ Cache invalidation error:', cacheErr)
+                }
+                
                 const { revalidateProfileUpdates } = await import('../../../../lib/utils/revalidation.js')
                 if (profile.city) {
                   const citySlug = profile.city.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
@@ -137,6 +146,15 @@ export default async function handler(req, res) {
 
                   // Trigger On-Demand Revalidation for profile pages
                   try {
+                    // Clear profile lists cache first
+                    try {
+                      const { cacheInvalidation } = await import('../../../../lib/cache/decorators.js')
+                      cacheInvalidation.invalidateProfileLists()
+                      console.log(`✅ Cleared profile lists cache for activated profile ${id}`)
+                    } catch (cacheErr) {
+                      console.error('❌ Cache invalidation error:', cacheErr)
+                    }
+                    
                     const { revalidateProfileUpdates } = await import('../../../../lib/utils/revalidation.js')
                     if (profile.city) {
                       const citySlug = profile.city.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
