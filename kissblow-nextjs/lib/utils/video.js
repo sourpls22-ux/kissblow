@@ -28,15 +28,26 @@ const convertVideo = (inputPath, outputPath, onProgress = null) => {
   return new Promise((resolve, reject) => {
     let videoDuration = null
     
-    // Сначала получаем длительность видео для расчета прогресса
-    ffmpeg.ffprobe(inputPath, (err, metadata) => {
-      if (!err && metadata && metadata.format && metadata.format.duration) {
-        videoDuration = metadata.format.duration
-        console.log(`[FFmpeg] Video duration: ${videoDuration} seconds`)
-      }
-    })
+    // Сначала получаем длительность видео для расчета прогресса (синхронно через промис)
+    const getVideoDuration = () => {
+      return new Promise((resolveDuration) => {
+        ffmpeg.ffprobe(inputPath, (err, metadata) => {
+          if (!err && metadata && metadata.format && metadata.format.duration) {
+            videoDuration = metadata.format.duration
+            console.log(`[FFmpeg] Video duration: ${videoDuration} seconds`)
+            logToFile('FFmpeg video duration', { duration: videoDuration, inputPath })
+          } else {
+            console.warn(`[FFmpeg] Could not get video duration:`, err?.message || 'No duration in metadata')
+            logToFile('FFmpeg duration error', { error: err?.message, inputPath })
+          }
+          resolveDuration(videoDuration)
+        })
+      })
+    }
     
-    ffmpeg(inputPath)
+    // Запускаем конвертацию после получения длительности
+    getVideoDuration().then(() => {
+      ffmpeg(inputPath)
       .output(outputPath)
       .videoCodec('libx264')
       .audioCodec('aac')
@@ -61,6 +72,7 @@ const convertVideo = (inputPath, outputPath, onProgress = null) => {
         if (progress.percent && !isNaN(progress.percent)) {
           percent = parseFloat(progress.percent)
           console.log('[FFmpeg] Processing: ' + percent + '% done (from progress.percent)')
+          logToFile('FFmpeg progress', { percent, source: 'progress.percent', timemark: progress.timemark })
         } else if (videoDuration && progress.timemark) {
           // Рассчитываем прогресс на основе timemark и длительности
           const timeParts = progress.timemark.split(':')
@@ -71,6 +83,13 @@ const convertVideo = (inputPath, outputPath, onProgress = null) => {
             if (currentTime > 0 && videoDuration > 0) {
               percent = Math.min(100, (currentTime / videoDuration) * 100)
               console.log('[FFmpeg] Processing: ' + percent.toFixed(1) + '% done (calculated from timemark: ' + progress.timemark + ' / ' + videoDuration.toFixed(1) + 's)')
+              logToFile('FFmpeg progress', { 
+                percent: percent.toFixed(1), 
+                source: 'timemark', 
+                timemark: progress.timemark,
+                currentTime,
+                videoDuration 
+              })
             }
           }
         } else {
@@ -79,6 +98,12 @@ const convertVideo = (inputPath, outputPath, onProgress = null) => {
             timemark: progress.timemark,
             frames: progress.frames,
             currentKbps: progress.currentKbps
+          })
+          logToFile('FFmpeg progress unavailable', {
+            hasPercent: !!progress.percent,
+            timemark: progress.timemark,
+            frames: progress.frames,
+            videoDuration
           })
         }
         
@@ -105,6 +130,47 @@ const convertVideo = (inputPath, outputPath, onProgress = null) => {
         reject(err)
       })
       .run()
+    }).catch((err) => {
+      console.error('[FFmpeg] Error getting video duration:', err)
+      logToFile('FFmpeg duration error', { error: err.message, inputPath })
+      // Продолжаем конвертацию даже без длительности (прогресс будет менее точным)
+      ffmpeg(inputPath)
+        .output(outputPath)
+        .videoCodec('libx264')
+        .audioCodec('aac')
+        .format('mp4')
+        .videoBitrate('1000k')
+        .audioBitrate('128k')
+        .videoFilter('scale=1280:720:force_original_aspect_ratio=decrease:force_divisible_by=2')
+        .on('start', (commandLine) => {
+          console.log('[FFmpeg] Process started:', commandLine)
+          logToFile('FFmpeg process started', { commandLine, inputPath, outputPath })
+        })
+        .on('progress', (progress) => {
+          // Без длительности можем только логировать события
+          console.log('[FFmpeg] Progress event (no duration):', progress.timemark)
+          logToFile('FFmpeg progress (no duration)', { timemark: progress.timemark })
+        })
+        .on('end', () => {
+          console.log('Video conversion completed')
+          logToFile('FFmpeg conversion completed', { inputPath, outputPath })
+          if (onProgress && typeof onProgress === 'function') {
+            onProgress(100)
+          }
+          resolve()
+        })
+        .on('error', (err) => {
+          console.error('Video conversion error:', err)
+          logToFile('FFmpeg conversion error', { 
+            error: err.message, 
+            stack: err.stack,
+            inputPath,
+            outputPath
+          })
+          reject(err)
+        })
+        .run()
+    })
   })
 }
 
