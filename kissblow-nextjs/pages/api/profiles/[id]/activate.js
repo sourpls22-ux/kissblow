@@ -147,12 +147,9 @@ export default async function handler(req, res) {
                   // Trigger On-Demand Revalidation for profile pages
                   try {
                     // Clear profile lists cache first
-                    try {
-                      const { cacheInvalidation } = await import('../../../../lib/cache/decorators.js')
-                      cacheInvalidation.invalidateProfileLists()
+                    if (typeof global.profileCache !== 'undefined') {
+                      global.profileCache.clear()
                       console.log(`✅ Cleared profile lists cache for activated profile ${id}`)
-                    } catch (cacheErr) {
-                      console.error('❌ Cache invalidation error:', cacheErr)
                     }
                     
                     const { revalidateProfileUpdates } = await import('../../../../lib/utils/revalidation.js')

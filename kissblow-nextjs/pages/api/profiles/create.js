@@ -158,6 +158,12 @@ export default async function handler(req, res) {
       userId: user.id
     })
 
+    // Очищаем кэш профилей
+    if (typeof global.profileCache !== 'undefined') {
+      global.profileCache.clear()
+      log('Profile cache cleared after profile creation')
+    }
+
     log('Sending success response', { profileId })
     res.status(201).json({
       message: 'Profile created successfully',

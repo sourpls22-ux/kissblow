@@ -366,6 +366,12 @@ export default async function handler(req, res) {
         city: sanitizedCity
       })
 
+      // Очищаем кэш профилей
+      if (typeof global.profileCache !== 'undefined') {
+        global.profileCache.clear()
+        log('Profile cache cleared after profile update')
+      }
+
       res.json({
         message: 'Profile updated successfully',
         profile: {
