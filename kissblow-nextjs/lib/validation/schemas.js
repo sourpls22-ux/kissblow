@@ -136,8 +136,8 @@ const validateSocialHandle = (handle) => {
     return true // Allow empty handles
   }
   
-  // Allow alphanumeric, underscores, hyphens
-  const handleRegex = /^[a-zA-Z0-9_\-]+$/
+  // Allow @ at the beginning for Telegram handles, then alphanumeric, underscores, hyphens
+  const handleRegex = /^@?[a-zA-Z0-9_\-]+$/
   return handleRegex.test(trimmed) && trimmed.length <= 50
 }
 

@@ -130,6 +130,7 @@ export default async function handler(req, res) {
         currency, price_30min, price_1hour, price_2hours, price_night, 
         description: description?.substring(0, 50), 
         services: typeof services, 
+        servicesValue: services,
         main_photo_id 
       })
 
@@ -139,6 +140,24 @@ export default async function handler(req, res) {
         validateWebsite, validateCurrency, validateMeasurement, validateBust, validateDescription,
         validateServices, sanitizeString 
       } = await import('../../../../lib/validation/schemas.js')
+
+      // Parse services if it's a string
+      let servicesToValidate = services
+      if (typeof services === 'string') {
+        try {
+          // Try to parse as JSON first
+          if (services.trim().startsWith('[') || services.trim().startsWith('{')) {
+            servicesToValidate = JSON.parse(services)
+          } else {
+            // If it's just a plain string like "string", treat it as empty array
+            log('Services is plain string, treating as empty', { services })
+            servicesToValidate = []
+          }
+        } catch (e) {
+          log('Failed to parse services', { services, error: e.message })
+          servicesToValidate = []
+        }
+      }
 
       if (!validateName(name)) {
         log('Name validation failed', { name, type: typeof name, length: name?.length })
@@ -230,7 +249,7 @@ export default async function handler(req, res) {
       const sanitizedWhatsapp = sanitizeString(whatsapp)
       const sanitizedWebsite = sanitizeString(website)
       const sanitizedDescription = sanitizeString(description)
-      const validatedServices = validateServices(services)
+      const validatedServices = validateServices(servicesToValidate)
 
       // Check if profile belongs to user
       log('Checking profile ownership', { profileId: id, userId: user.id })
