@@ -1,13 +1,25 @@
-const multer = require('multer')
-const path = require('path')
-const fs = require('fs')
-const sharp = require('sharp')
-const ffmpeg = require('fluent-ffmpeg')
-const { logFileOperation } = require('../logger')
+import multer from 'multer'
+import path from 'path'
+import fs from 'fs'
+import sharp from 'sharp'
+import ffmpeg from 'fluent-ffmpeg'
 
 // Use process.cwd() for Next.js compatibility (works in both dev and production)
 const getUploadPath = (subfolder) => {
   return path.join(process.cwd(), 'public', 'uploads', subfolder)
+}
+
+// Helper function to get logFileOperation with fallback
+const logFileOperation = async (operation, filePath, success, error = null) => {
+  try {
+    const loggerModule = await import('../logger.js')
+    if (loggerModule.logFileOperation) {
+      loggerModule.logFileOperation(operation, filePath, success, error)
+    }
+  } catch (err) {
+    // Fallback to console if logger import fails
+    console.log(`[File Operation] ${operation}: ${filePath} - ${success ? 'SUCCESS' : 'FAILED'}`, error || '')
+  }
 }
 
 // File validation utilities
@@ -106,10 +118,10 @@ const convertImageToJpg = async (inputPath, outputPath) => {
       })
       .toFile(outputPath)
     
-    logFileOperation('image_conversion', inputPath, true)
+    await logFileOperation('image_conversion', inputPath, true)
     return { success: true }
   } catch (error) {
-    logFileOperation('image_conversion', inputPath, false, error)
+    await logFileOperation('image_conversion', inputPath, false, error)
     return { success: false, error: error.message }
   }
 }
@@ -121,12 +133,12 @@ const convertVideoToMp4 = async (inputPath, outputPath) => {
       .videoCodec('libx264')
       .audioCodec('aac')
       .format('mp4')
-      .on('end', () => {
-        logFileOperation('video_conversion', inputPath, true)
+      .on('end', async () => {
+        await logFileOperation('video_conversion', inputPath, true)
         resolve({ success: true })
       })
-      .on('error', (error) => {
-        logFileOperation('video_conversion', inputPath, false, error)
+      .on('error', async (error) => {
+        await logFileOperation('video_conversion', inputPath, false, error)
         resolve({ success: false, error: error.message })
       })
       .run()
@@ -258,7 +270,7 @@ const processUploadedFile = async (file) => {
     const filePath = file.path
     const needsConv = needsConversion(file.mimetype)
     
-    logFileOperation('file_upload', filePath, true, { 
+    await logFileOperation('file_upload', filePath, true, { 
       originalName: file.originalname,
       mimetype: file.mimetype,
       size: file.size,
@@ -309,12 +321,12 @@ const processUploadedFile = async (file) => {
     return { success: true, path: newPath, converted: true }
     
   } catch (error) {
-    logFileOperation('file_processing', file.path, false, error)
+    await logFileOperation('file_processing', file.path, false, error)
     return { success: false, error: error.message }
   }
 }
 
-module.exports = { 
+export { 
   upload, 
   verificationUpload, 
   handleMulterError,
