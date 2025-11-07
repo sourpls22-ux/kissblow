@@ -55,17 +55,25 @@ const validateImageFile = (file) => {
 
 const validateVideoFile = (file) => {
   // Check MIME type - support all popular video formats
+  // Некоторые форматы имеют несколько возможных MIME типов в зависимости от браузера/системы
   const allowedVideoTypes = [
     'video/mp4',
     'video/webm',
     'video/quicktime',
+    'video/x-quicktime', // Альтернативный MIME для MOV
     'video/avi',
+    'video/x-msvideo', // Альтернативный MIME для AVI
     'video/mov',
     'video/wmv',
+    'video/x-ms-wmv', // Альтернативный MIME для WMV
     'video/flv',
+    'video/x-flv', // Альтернативный MIME для FLV
     'video/mkv',
+    'video/x-matroska', // Правильный MIME для MKV (чаще всего используется)
     'video/3gp',
-    'video/ogv'
+    'video/3gpp', // Альтернативный MIME для 3GP
+    'video/ogv',
+    'video/ogg' // Альтернативный MIME для OGV
   ]
   
   if (!validateFileType(file, allowedVideoTypes)) {
@@ -207,6 +215,12 @@ const upload = multer({
     } else if (file.mimetype.startsWith('video/')) {
       const validation = validateVideoFile(file)
       if (!validation.valid) {
+        // Логируем для отладки
+        console.log('Video validation failed:', {
+          mimetype: file.mimetype,
+          originalname: file.originalname,
+          size: file.size
+        })
         return cb(new Error(validation.error), false)
       }
     } else {
