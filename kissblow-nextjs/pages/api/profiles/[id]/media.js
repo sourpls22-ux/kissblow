@@ -57,12 +57,14 @@ export default async function handler(req, res) {
     let db = null
     let user = null
     try {
+      // Use require for CommonJS module (multer.js uses module.exports)
+      const { upload, handleMulterError, processUploadedFile } = require('../../../../lib/middleware/multer.js')
+      
       // Dynamic import to avoid webpack issues
       const jwt = await import('jsonwebtoken')
       const sqlite3 = await import('sqlite3')
       const path = await import('path')
       const fs = await import('fs')
-      const { upload, handleMulterError, processUploadedFile } = await import('../../../../lib/middleware/multer.js')
       
       // Get logger with fallback
       let logger
