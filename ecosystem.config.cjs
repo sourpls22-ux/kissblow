@@ -69,6 +69,47 @@ module.exports = {
         TELEGRAM_BOT_TOKEN: '7762390260:AAHBTsEZXFl1VL200pZO54qicwuEKomhnYY',
         ADMIN_TELEGRAM_ID: '1119283257'
       }
+    },
+    {
+      name: 'telegram-verification-bot',
+      script: 'tgbots/verificationBot.js',
+      cwd: './',
+      instances: 1,
+      exec_mode: 'fork',
+      env: {
+        NODE_ENV: 'production',
+        TELEGRAM_BOT_TOKEN: '7762390260:AAHBTsEZXFl1VL200pZO54qicwuEKomhnYY',
+        ADMIN_TELEGRAM_ID: '1119283257',
+        BACKEND_URL: 'https://kissblow.me'
+      },
+      error_file: './logs/telegram-verification-bot-err.log',
+      out_file: './logs/telegram-verification-bot-out.log',
+      log_file: './logs/telegram-verification-bot-combined.log',
+      time: true,
+      autorestart: true,
+      max_restarts: 10,
+      min_uptime: '10s',
+      max_memory_restart: '500M'
+    },
+    {
+      name: 'telegram-backup-bot',
+      script: 'tgbots/telegramBot.js',
+      cwd: './',
+      instances: 1,
+      exec_mode: 'fork',
+      env: {
+        NODE_ENV: 'production',
+        TELEGRAM_BOT_TOKEN: '7760908645:AAEZEDxzE14WEXtQk8AtgFzjNIhy6BuUXEc',
+        ADMIN_TELEGRAM_ID: '1119283257'
+      },
+      error_file: './logs/telegram-backup-bot-err.log',
+      out_file: './logs/telegram-backup-bot-out.log',
+      log_file: './logs/telegram-backup-bot-combined.log',
+      time: true,
+      autorestart: true,
+      max_restarts: 10,
+      min_uptime: '10s',
+      max_memory_restart: '500M'
     }
   ]
 }

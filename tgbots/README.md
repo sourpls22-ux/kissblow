@@ -11,16 +11,58 @@ cd tgbots
 npm install
 ```
 
+**Важно:** После установки зависимостей, если были уязвимости, переустановите зависимости для применения `overrides`:
+
+```bash
+rm -rf node_modules package-lock.json
+npm install
+npm audit  # Проверьте, что уязвимости исправлены
+```
+
 ### Настройка переменных окружения
 
-Создайте файл `.env` в корне проекта или установите переменные:
+Создайте файл `.env` в папке `tgbots` или установите переменные окружения:
 
 ```env
-TELEGRAM_BOT_TOKEN=your_bot_token
-ADMIN_TELEGRAM_ID=your_telegram_id
+# Telegram Bot Configuration
+# Получите токен бота у @BotFather в Telegram
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
+
+# Telegram Admin User ID
+# Ваш Telegram User ID (можно узнать у @userinfobot)
+ADMIN_TELEGRAM_ID=your_telegram_user_id_here
+
+# Backend API URL
+# URL вашего Next.js API (для production используйте https://kissblow.me)
 BACKEND_URL=http://localhost:3000
-ADMIN_API_KEY=kissblow-admin-2024-verification-bot-key-12345
+# Или используйте NEXT_PUBLIC_API_URL если он уже настроен
+# NEXT_PUBLIC_API_URL=https://kissblow.me
+
+# Admin API Key
+# Секретный ключ для доступа к admin API endpoints
+# Должен совпадать с ADMIN_API_KEY в kissblow-nextjs/.env
+ADMIN_API_KEY=your_admin_api_key_here
 ```
+
+**Как получить значения:**
+
+1. **TELEGRAM_BOT_TOKEN**: 
+   - Откройте Telegram и найдите бота @BotFather
+   - Отправьте команду `/newbot` и следуйте инструкциям
+   - Скопируйте полученный токен
+
+2. **ADMIN_TELEGRAM_ID**:
+   - Откройте Telegram и найдите бота @userinfobot
+   - Отправьте команду `/start`
+   - Скопируйте ваш User ID (число)
+
+3. **BACKEND_URL**:
+   - Для разработки: `http://localhost:3000`
+   - Для production: `https://kissblow.me`
+
+4. **ADMIN_API_KEY**:
+   - Сгенерируйте случайный секретный ключ
+   - Убедитесь, что он совпадает с `ADMIN_API_KEY` в `kissblow-nextjs/.env`
 
 ### Запуск
 

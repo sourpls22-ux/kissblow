@@ -6,13 +6,19 @@
   "main": "verificationBot.js",
   "scripts": {
     "start:verification": "node verificationBot.js",
-    "start:backup": "node backupService.js"
+    "start:backup": "node telegramBot.js"
   },
   "dependencies": {
     "node-telegram-bot-api": "^0.66.0",
     "archiver": "^7.0.1",
     "fs-extra": "^11.2.0",
-    "axios": "^1.12.2"
+    "axios": "^1.12.2",
+    "dotenv": "^16.4.5",
+    "node-cron": "^3.0.3"
+  },
+  "overrides": {
+    "form-data": "^2.5.4",
+    "tough-cookie": "^4.1.3"
   }
 }
 
