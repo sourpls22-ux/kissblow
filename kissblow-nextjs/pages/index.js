@@ -336,22 +336,12 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
   }, [router.isReady, page])
 
   // Инициализация фильтров из URL параметра service
+  // НЕ добавляем service в фильтры, если он приходит из URL (Browse by Category)
+  // Фильтры по сервисам применяются только из модального окна фильтров
+  // Когда service в URL - показываем все профили, только меняем заголовок
   useEffect(() => {
-    if (router.isReady && service) {
-      // Если есть параметр service в URL, добавляем его в фильтры
-      const serviceValue = decodeURIComponent(service)
-      setFilters(prev => {
-        // Проверяем, не добавлен ли уже этот сервис
-        if (prev.services.includes(serviceValue)) {
-          return prev
-        }
-        return {
-          ...prev,
-          services: [...prev.services, serviceValue]
-        }
-      })
-    } else if (router.isReady && !service) {
-      // Если параметра service нет, очищаем фильтры сервисов
+    // Если параметра service нет, очищаем фильтры сервисов
+    if (router.isReady && !service) {
       setFilters(prev => ({
         ...prev,
         services: []
@@ -519,11 +509,13 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
     }
 
     // Фильтр по сервисам
-    if (filters.services.length > 0) {
+    // Пропускаем фильтрацию по сервисам, если service приходит из URL (Browse by Category)
+    // В этом случае показываем все профили, только меняем заголовок
+    if (!service && filters.services.length > 0) {
       const profileServices = profile.services ? (Array.isArray(profile.services) ? profile.services : profile.services.split(',').map(s => s.trim())) : []
-      const hasMatchingService = filters.services.some(service => 
+      const hasMatchingService = filters.services.some(serviceFilter => 
         profileServices.some(profileService => 
-          profileService.toLowerCase().includes(service.toLowerCase())
+          profileService.toLowerCase().includes(serviceFilter.toLowerCase())
         )
       )
       if (!hasMatchingService) {
