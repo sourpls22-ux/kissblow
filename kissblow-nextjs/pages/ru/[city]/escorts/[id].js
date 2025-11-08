@@ -276,17 +276,28 @@ export default function Girl({ profile, profileMedia, initialReviews, cityName: 
 
   // Обработка отправки отзыва
   const handleSubmitReview = async () => {
+    console.log('[REVIEW SUBMIT] Starting review submission', {
+      hasUser: !!user,
+      userAccountType: user?.accountType,
+      userId: user?.id,
+      profileId: profile.id,
+      commentLength: reviewComment.trim().length
+    })
+
     if (!user) {
+      console.error('[REVIEW SUBMIT] No user found')
       error(t('girl.reviews.loginToReview'))
       return
     }
 
     if (user.accountType !== 'member') {
+      console.error('[REVIEW SUBMIT] User is not a member', { accountType: user.accountType })
       error(t('girl.reviews.memberOnly'))
       return
     }
 
     if (!reviewComment.trim()) {
+      console.error('[REVIEW SUBMIT] Empty comment')
       error(t('girl.reviews.writeComment'))
       return
     }
@@ -295,10 +306,27 @@ export default function Girl({ profile, profileMedia, initialReviews, cityName: 
       // Получаем токен из контекста или localStorage для надежности
       const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('kissblow-token') : null)
       
+      console.log('[REVIEW SUBMIT] Token check', {
+        hasTokenFromContext: !!token,
+        hasTokenFromStorage: !!(typeof window !== 'undefined' ? localStorage.getItem('kissblow-token') : null),
+        hasAuthToken: !!authToken,
+        tokenLength: authToken?.length,
+        tokenPreview: authToken ? (authToken.substring(0, 20) + '...') : null
+      })
+      
       if (!authToken) {
+        console.error('[REVIEW SUBMIT] No auth token available')
         error(t('girl.reviews.loginToReview'))
         return
       }
+
+      console.log('[REVIEW SUBMIT] Making API request', {
+        url: `/api/profiles/${profile.id}/reviews`,
+        profileId: profile.id,
+        commentLength: reviewComment.trim().length,
+        hasAuthHeader: true,
+        method: 'POST'
+      })
 
       const response = await axios.post(`/api/profiles/${profile.id}/reviews`, {
         comment: reviewComment.trim()
@@ -308,6 +336,12 @@ export default function Girl({ profile, profileMedia, initialReviews, cityName: 
         }
       })
 
+      console.log('[REVIEW SUBMIT] Success response', {
+        status: response.status,
+        reviewId: response.data.review?.id,
+        data: response.data
+      })
+
       setMyReview(response.data.review)
       setReviewComment('')
       success(t('girl.reviews.reviewSaved'))
@@ -315,7 +349,21 @@ export default function Girl({ profile, profileMedia, initialReviews, cityName: 
       // Refresh reviews list
       await fetchReviews(profile.id)
     } catch (err) {
-      console.error('Failed to submit review:', err)
+      console.error('[REVIEW SUBMIT] Error details:', {
+        message: err.message,
+        response: err.response ? {
+          status: err.response.status,
+          statusText: err.response.statusText,
+          data: err.response.data,
+          headers: err.response.headers
+        } : null,
+        request: err.request ? {
+          url: err.config?.url,
+          method: err.config?.method,
+          headers: err.config?.headers
+        } : null,
+        stack: err.stack
+      })
       error(err.response?.data?.error || t('girl.reviews.reviewFailed'))
     }
   }
