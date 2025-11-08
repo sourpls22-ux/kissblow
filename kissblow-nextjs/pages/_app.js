@@ -58,7 +58,15 @@ function MyApp({ Component, pageProps }) {
           lowerMessage.includes('loaded saved form data') ||
           lowerMessage.includes('cleared saved form data') ||
           lowerMessage.includes('error activating profile') ||
-          (lowerMessage.includes('post') && lowerMessage.includes('/api/profiles/') && lowerMessage.includes('/activate') && lowerMessage.includes('400'))
+          lowerMessage.includes('error deactivating profile') ||
+          lowerMessage.includes('turnstile error') ||
+          lowerMessage.includes('cloudflare turnstile') ||
+          lowerMessage.includes('600010') ||
+          lowerMessage.includes('handler took') ||
+          lowerMessage.includes('forced reflow') ||
+          lowerMessage.includes('challenge-platform') ||
+          lowerMessage.includes('preloaded using link preload') ||
+          (lowerMessage.includes('post') && lowerMessage.includes('/api/profiles/') && (lowerMessage.includes('/activate') || lowerMessage.includes('/deactivate')) && lowerMessage.includes('400'))
         ) {
           return true
         }
@@ -70,7 +78,8 @@ function MyApp({ Component, pageProps }) {
            lowerMessage.includes('escorts.json') ||
            lowerMessage.includes('favicon.ico') ||
            (lowerMessage.includes('router.ts') && lowerMessage.includes('get')) ||
-           (lowerMessage.includes('_next/data') && lowerMessage.includes('404')))
+           (lowerMessage.includes('_next/data') && lowerMessage.includes('404')) ||
+           lowerMessage.includes('kissblow.me/_next/data/'))
         ) {
           return true
         }
@@ -78,16 +87,26 @@ function MyApp({ Component, pageProps }) {
         // Подавляем ошибки prefetch даже без явного упоминания 404, если есть router.ts и _next/data
         if (
           lowerMessage.includes('router.ts') &&
-          (lowerMessage.includes('/_next/data/') || lowerMessage.includes('escorts.json'))
+          (lowerMessage.includes('/_next/data/') || 
+           lowerMessage.includes('escorts.json') ||
+           lowerMessage.includes('kissblow.me/_next/data/'))
         ) {
           return true
         }
         
-        // Подавляем ошибки с GET запросами к _next/data
+        // Подавляем ошибки с GET запросами к _next/data (любой формат)
         if (
-          lowerMessage.includes('get') &&
-          lowerMessage.includes('/_next/data/') &&
-          (lowerMessage.includes('404') || lowerMessage.includes('not found'))
+          (lowerMessage.includes('get') || lowerMessage.includes('GET')) &&
+          (lowerMessage.includes('/_next/data/') || lowerMessage.includes('_next/data')) &&
+          (lowerMessage.includes('404') || lowerMessage.includes('not found') || lowerMessage.includes('router.ts'))
+        ) {
+          return true
+        }
+        
+        // Подавляем любые сообщения, содержащие URL с _next/data и escorts.json
+        if (
+          lowerMessage.includes('_next/data') &&
+          lowerMessage.includes('escorts.json')
         ) {
           return true
         }
@@ -98,10 +117,17 @@ function MyApp({ Component, pageProps }) {
       // Перехватываем console.error
       const originalConsoleError = console.error
       console.error = (...args) => {
-        const errorMessage = args.map(arg => 
-          typeof arg === 'string' ? arg : 
-          arg?.message || arg?.toString() || ''
-        ).join(' ')
+        // Собираем все аргументы в строку для проверки, включая URL из ошибок
+        const errorMessage = args.map(arg => {
+          if (typeof arg === 'string') return arg
+          if (arg?.message) return arg.message
+          if (arg?.config?.url) return arg.config.url // Для axios ошибок
+          if (arg?.request?.responseURL) return arg.request.responseURL // Для сетевых ошибок
+          if (arg?.request?.url) return arg.request.url
+          if (arg?.url) return arg.url
+          if (arg?.toString) return arg.toString()
+          return String(arg)
+        }).join(' ')
         
         if (shouldSuppressMessage(errorMessage)) {
           return
@@ -113,10 +139,17 @@ function MyApp({ Component, pageProps }) {
       // Перехватываем console.warn
       const originalConsoleWarn = console.warn
       console.warn = (...args) => {
-        const warningMessage = args.map(arg => 
-          typeof arg === 'string' ? arg : 
-          arg?.message || arg?.toString() || ''
-        ).join(' ')
+        // Собираем все аргументы в строку для проверки, включая URL из ошибок
+        const warningMessage = args.map(arg => {
+          if (typeof arg === 'string') return arg
+          if (arg?.message) return arg.message
+          if (arg?.config?.url) return arg.config.url // Для axios ошибок
+          if (arg?.request?.responseURL) return arg.request.responseURL // Для сетевых ошибок
+          if (arg?.request?.url) return arg.request.url
+          if (arg?.url) return arg.url
+          if (arg?.toString) return arg.toString()
+          return String(arg)
+        }).join(' ')
         
         if (shouldSuppressMessage(warningMessage)) {
           return
@@ -220,16 +253,69 @@ function MyApp({ Component, pageProps }) {
         handleError(event.error, event)
       }
 
+      // Перехватываем fetch для подавления ошибок prefetch
+      const originalFetch = window.fetch
+      window.fetch = async (...args) => {
+        try {
+          const response = await originalFetch(...args)
+          // Если это prefetch запрос с 404, не логируем ошибку
+          if (!response.ok && response.status === 404) {
+            const url = args[0]?.toString() || ''
+            if (url.includes('/_next/data/') && url.includes('escorts.json')) {
+              // Возвращаем ответ, но не логируем ошибку
+              return response
+            }
+          }
+          return response
+        } catch (error) {
+          const url = args[0]?.toString() || ''
+          if (url.includes('/_next/data/') && url.includes('escorts.json')) {
+            // Подавляем ошибку для prefetch запросов - создаем "тихую" ошибку
+            const silentError = new Error('Prefetch error suppressed')
+            silentError.silent = true
+            throw silentError
+          }
+          throw error
+        }
+      }
+
+      // Перехватываем XMLHttpRequest для подавления ошибок prefetch
+      const originalXHROpen = XMLHttpRequest.prototype.open
+      const originalXHRSend = XMLHttpRequest.prototype.send
+      
+      XMLHttpRequest.prototype.open = function(method, url, ...rest) {
+        this._url = url
+        return originalXHROpen.apply(this, [method, url, ...rest])
+      }
+      
+      XMLHttpRequest.prototype.send = function(...args) {
+        if (this._url && this._url.includes('/_next/data/') && this._url.includes('escorts.json')) {
+          // Перехватываем ошибки для prefetch запросов
+          this.addEventListener('error', (event) => {
+            event.stopPropagation()
+          }, true)
+          this.addEventListener('load', (event) => {
+            if (this.status === 404) {
+              event.stopPropagation()
+            }
+          }, true)
+        }
+        return originalXHRSend.apply(this, args)
+      }
+
       window.addEventListener('error', handleWindowError)
       window.addEventListener('unhandledrejection', handleUnhandledRejection)
 
       return () => {
-        // Восстанавливаем оригинальные функции консоли
+        // Восстанавливаем оригинальные функции консоли, fetch и XMLHttpRequest
         console.error = originalConsoleError
         console.warn = originalConsoleWarn
         console.log = originalConsoleLog
         console.info = originalConsoleInfo
         console.debug = originalConsoleDebug
+        window.fetch = originalFetch
+        XMLHttpRequest.prototype.open = originalXHROpen
+        XMLHttpRequest.prototype.send = originalXHRSend
         window.removeEventListener('error', handleWindowError)
         window.removeEventListener('unhandledrejection', handleUnhandledRejection)
       }

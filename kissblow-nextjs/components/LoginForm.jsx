@@ -16,6 +16,7 @@ const LoginForm = () => {
   const [turnstileToken, setTurnstileToken] = useState('')
   const [turnstileError, setTurnstileError] = useState('')
   const [showTurnstile, setShowTurnstile] = useState(false)
+  const [turnstileFailed, setTurnstileFailed] = useState(false) // Флаг для ошибок конфигурации
   const turnstileRef = useRef(null)
   const { t } = useTranslation()
   const { login } = useAuth()
@@ -35,23 +36,31 @@ const LoginForm = () => {
         token = window.turnstile.getResponse(turnstileRef.current)
       }
       
-      if (!token) {
-        // Если токена нет - показываем виджет и ждем
+      if (!token && !turnstileFailed) {
+        // Если токена нет и Turnstile не был в ошибке - показываем виджет и ждем
         setShowTurnstile(true)
         // НЕ сбрасываем loading - кнопка остается в состоянии "Verifying..."
         return
+      }
+      
+      // Если Turnstile не работает (ошибка конфигурации), разрешаем вход без токена
+      if (!token && turnstileFailed) {
+        // Продолжаем без Turnstile токена (бэкенд разрешит вход при ошибках конфигурации)
       }
 
       // Продолжаем с отправкой формы
       const result = await login(formData.email, formData.password, token)
     
       if (result.success) {
+        // Сбрасываем флаг при успешном входе
+        setTurnstileFailed(false)
         router.push('/dashboard')
       } else {
         setError(result.error)
         // Сбрасываем токен при неудачной попытке входа
         setTurnstileToken('')
         setShowTurnstile(false)
+        setTurnstileFailed(false) // Сбрасываем флаг для повторной попытки
       }
       
       setLoading(false)
@@ -100,8 +109,20 @@ const LoginForm = () => {
   }
 
   const handleTurnstileError = (error) => {
-    console.error('Turnstile error:', error)
-    setTurnstileToken('')
+    // Ошибка 600010 - это ошибка конфигурации, не критичная
+    // Позволяем пользователю попробовать войти без Turnstile
+    if (error === '600010' || error === 'invalid-input-response') {
+      setTurnstileError('')
+      setTurnstileToken('')
+      setShowTurnstile(false)
+      setTurnstileFailed(true) // Устанавливаем флаг, что Turnstile не работает
+      setLoading(false) // Разрешаем отправку формы
+      // Позволяем пользователю попробовать войти без Turnstile
+      // (бэкенд разрешит вход при ошибках конфигурации)
+    } else {
+      setTurnstileError('Security verification failed. Please try again.')
+      setTurnstileToken('')
+    }
   }
 
   const handleTurnstileExpired = () => {

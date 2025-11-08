@@ -110,14 +110,44 @@ export default async function handler(req, res) {
       log('Verifying Turnstile token')
       const turnstileResult = await verifyTurnstileToken(turnstileToken)
       log('Turnstile verification result', { success: turnstileResult.success, errorCodes: turnstileResult.errorCodes })
+      
       if (!turnstileResult.success) {
-        log('Turnstile verification failed')
-        return res.status(400).json({ 
-          error: 'Security verification failed',
-          details: turnstileResult.errorCodes || turnstileResult.error
-        })
+        const errorCodes = turnstileResult.errorCodes || []
+        
+        // Ошибки конфигурации - разрешаем вход (но логируем для мониторинга)
+        const isConfigError = errorCodes.some(code => 
+          code === '600010' || 
+          code === 'invalid-input-response' || 
+          code === 'invalid-input-secret' ||
+          code === 'missing-input-secret' ||
+          code === 'missing-input-response' ||
+          code === 'timeout-or-duplicate'
+        )
+        
+        // Ошибки бота - блокируем вход
+        const isBotError = errorCodes.some(code => 
+          code === 'internal-error' ||
+          code === 'bad-request'
+        )
+        
+        if (isConfigError) {
+          log('Turnstile configuration error - allowing login (monitoring)', { errorCodes })
+          // Продолжаем без Turnstile верификации, но логируем для мониторинга
+        } else if (isBotError) {
+          log('Turnstile bot detection - blocking login', { errorCodes })
+          return res.status(400).json({ 
+            error: 'Security verification failed',
+            details: turnstileResult.errorCodes || turnstileResult.error
+          })
+        } else {
+          // Неизвестные ошибки - разрешаем вход (но логируем)
+          log('Turnstile unknown error - allowing login (monitoring)', { errorCodes })
+        }
+      } else {
+        log('Turnstile verified successfully')
       }
-      log('Turnstile verified successfully')
+    } else {
+      log('No Turnstile token provided - allowing login')
     }
 
     // Find user

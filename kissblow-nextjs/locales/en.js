@@ -68,7 +68,7 @@ const en = {
   // Search page
   search: {
     title: 'Find Your Perfect Match',
-    subtitle: 'Search for verified escort services by city. Find the best escorts in your area with our advanced search and filtering options.',
+    subtitle: 'perfect escort in your city',
     findYour: 'Find your',
     bestEscorts: 'Best',
     bestEscorts2: 'escorts',
@@ -84,7 +84,7 @@ const en = {
     termsOfUse: 'Terms of Use',
     seo: {
       title: 'Find Your Perfect Match - KissBlow.me',
-      description: 'Search for verified escort services by city. Find the best escorts in your area with our advanced search and filtering options.',
+      description: 'perfect escort in your city',
       keywords: 'escort search, find escorts, city search, verified escorts, KissBlow, escort directory'
     },
     forUsers: {

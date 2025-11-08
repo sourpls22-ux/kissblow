@@ -764,7 +764,6 @@ export default function Dashboard() {
       
       success(t('dashboard.messages.profileDeactivated'))
     } catch (err) {
-      console.error('Error deactivating profile:', err)
       const errorMessage = err.response?.data?.error || t('dashboard.messages.profileDeactivateError')
       error(errorMessage)
     }
