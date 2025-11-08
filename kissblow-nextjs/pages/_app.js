@@ -17,23 +17,75 @@ function MyApp({ Component, pageProps }) {
       setMounted(true)
     })
 
-    // Обработка глобальных ошибок
-    const handleError = (error, errorInfo) => {
-      console.error('Global error:', error, errorInfo)
-    }
-
-    // Обработка необработанных промисов
-    const handleUnhandledRejection = (event) => {
-      console.error('Unhandled promise rejection:', event.reason)
-      handleError(event.reason, { type: 'unhandledRejection' })
-    }
-
+    // Подавление ошибок 404 от prefetch для страниц с fallback: 'blocking'
     if (typeof window !== 'undefined') {
-      window.addEventListener('error', (event) => handleError(event.error, event))
+      // Обработка необработанных промисов (включая ошибки prefetch)
+      const handleUnhandledRejection = (event) => {
+        // Игнорируем ошибки prefetch для страниц городов
+        const reason = event.reason
+        const reasonString = reason?.message || reason?.toString() || ''
+        const reasonStack = reason?.stack || ''
+        
+        // Проверяем, является ли это ошибкой prefetch для страниц с fallback
+        if (
+          (reasonString.includes('404') || reasonString.includes('Not Found')) &&
+          (reasonString.includes('/_next/data/') || 
+           reasonString.includes('escorts.json') ||
+           reasonStack.includes('/_next/data/'))
+        ) {
+          // Предотвращаем вывод ошибки в консоль
+          event.preventDefault()
+          return
+        }
+        
+        console.error('Unhandled promise rejection:', reason)
+      }
+
+      // Обработка глобальных ошибок
+      const handleError = (error, errorInfo) => {
+        // Игнорируем ошибки prefetch для страниц с fallback
+        const errorMessage = error?.message || errorInfo?.message || ''
+        const errorStack = error?.stack || errorInfo?.stack || ''
+        const errorSource = errorInfo?.filename || errorInfo?.source || ''
+        
+        if (
+          (errorMessage.includes('404') || errorMessage.includes('Not Found')) &&
+          (errorMessage.includes('/_next/data/') || 
+           errorMessage.includes('escorts.json') ||
+           errorStack.includes('/_next/data/') ||
+           errorSource.includes('/_next/data/'))
+        ) {
+          // Игнорируем ошибки prefetch
+          return
+        }
+        
+        console.error('Global error:', error, errorInfo)
+      }
+
+      // Обработчик ошибок window
+      const handleWindowError = (event) => {
+        // Игнорируем ошибки prefetch
+        const errorMessage = event.message || ''
+        const errorSource = event.filename || event.source || ''
+        
+        if (
+          (errorMessage.includes('404') || errorMessage.includes('Not Found')) &&
+          (errorMessage.includes('/_next/data/') || 
+           errorMessage.includes('escorts.json') ||
+           errorSource.includes('/_next/data/'))
+        ) {
+          event.preventDefault()
+          return
+        }
+        
+        handleError(event.error, event)
+      }
+
+      window.addEventListener('error', handleWindowError)
       window.addEventListener('unhandledrejection', handleUnhandledRejection)
 
       return () => {
-        window.removeEventListener('error', handleError)
+        window.removeEventListener('error', handleWindowError)
         window.removeEventListener('unhandledrejection', handleUnhandledRejection)
       }
     }
