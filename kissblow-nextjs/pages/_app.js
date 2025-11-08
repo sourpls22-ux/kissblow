@@ -54,17 +54,40 @@ function MyApp({ Component, pageProps }) {
           lowerMessage.includes('payment url') ||
           lowerMessage.includes('atlos is ready') ||
           lowerMessage.includes('attempting atlos') ||
-          lowerMessage.includes('atlos calling')
+          lowerMessage.includes('atlos calling') ||
+          lowerMessage.includes('loaded saved form data') ||
+          lowerMessage.includes('cleared saved form data') ||
+          lowerMessage.includes('error activating profile') ||
+          (lowerMessage.includes('post') && lowerMessage.includes('/api/profiles/') && lowerMessage.includes('/activate') && lowerMessage.includes('400'))
         ) {
           return true
         }
         
-        // Подавляем ошибки prefetch
+        // Подавляем ошибки prefetch - улучшенная проверка
         if (
           (lowerMessage.includes('404') || lowerMessage.includes('not found')) &&
           (lowerMessage.includes('/_next/data/') || 
            lowerMessage.includes('escorts.json') ||
-           lowerMessage.includes('favicon.ico'))
+           lowerMessage.includes('favicon.ico') ||
+           (lowerMessage.includes('router.ts') && lowerMessage.includes('get')) ||
+           (lowerMessage.includes('_next/data') && lowerMessage.includes('404')))
+        ) {
+          return true
+        }
+        
+        // Подавляем ошибки prefetch даже без явного упоминания 404, если есть router.ts и _next/data
+        if (
+          lowerMessage.includes('router.ts') &&
+          (lowerMessage.includes('/_next/data/') || lowerMessage.includes('escorts.json'))
+        ) {
+          return true
+        }
+        
+        // Подавляем ошибки с GET запросами к _next/data
+        if (
+          lowerMessage.includes('get') &&
+          lowerMessage.includes('/_next/data/') &&
+          (lowerMessage.includes('404') || lowerMessage.includes('not found'))
         ) {
           return true
         }
@@ -182,10 +205,13 @@ function MyApp({ Component, pageProps }) {
       const handleWindowError = (event) => {
         const errorMessage = event.message || ''
         const errorSource = event.filename || event.source || ''
+        const errorTarget = event.target
+        const errorUrl = errorTarget?.src || errorTarget?.href || errorTarget?.action || ''
         
         if (
           shouldSuppressMessage(errorMessage) ||
-          shouldSuppressMessage(errorSource)
+          shouldSuppressMessage(errorSource) ||
+          shouldSuppressMessage(errorUrl)
         ) {
           event.preventDefault()
           return

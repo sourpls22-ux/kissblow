@@ -530,7 +530,6 @@ export default function Dashboard() {
       if (savedData) {
         const parsedData = JSON.parse(savedData)
         setEditFormData(parsedData)
-        console.log('Loaded saved form data for profile:', profile.id)
       } else {
         // Если нет сохраненных данных, загружаем из профиля
         setEditFormData({
@@ -652,9 +651,8 @@ export default function Dashboard() {
       // Очищаем сохраненные данные из localStorage после успешного обновления
       try {
         localStorage.removeItem(`editFormData_${editingProfile.id}`)
-        console.log('Cleared saved form data for profile:', editingProfile.id)
       } catch (error) {
-        console.error('Failed to clear saved form data:', error)
+        // Игнорируем ошибки очистки localStorage
       }
       
       // Revalidation removed - frontend updates state locally
@@ -744,7 +742,6 @@ export default function Dashboard() {
       
       success(t('dashboard.messages.profileActivated'))
     } catch (err) {
-      console.error('Error activating profile:', err)
       const errorMessage = err.response?.data?.error || t('dashboard.messages.profileActivateError')
       error(errorMessage)
     }
@@ -1900,9 +1897,8 @@ export default function Dashboard() {
                     if (editingProfile?.id) {
                       try {
                         localStorage.removeItem(`editFormData_${editingProfile.id}`)
-                        console.log('Cleared saved form data on modal close for profile:', editingProfile.id)
                       } catch (error) {
-                        console.error('Failed to clear saved form data on modal close:', error)
+                        // Игнорируем ошибки очистки localStorage
                       }
                     }
                     
@@ -2555,9 +2551,8 @@ export default function Dashboard() {
                     if (editingProfile?.id) {
                       try {
                         localStorage.removeItem(`editFormData_${editingProfile.id}`)
-                        console.log('Cleared saved form data on cancel for profile:', editingProfile.id)
                       } catch (error) {
-                        console.error('Failed to clear saved form data on cancel:', error)
+                        // Игнорируем ошибки очистки localStorage
                       }
                     }
                     
