@@ -38,7 +38,23 @@ function MyApp({ Component, pageProps }) {
           lowerMessage.includes('google tag') ||
           lowerMessage.includes('installhook') ||
           lowerMessage.includes('react-devtools') ||
-          lowerMessage.includes('overrideMethod')
+          lowerMessage.includes('overrideMethod') ||
+          lowerMessage.includes('normal?lang=auto') ||
+          lowerMessage.includes('violation') ||
+          lowerMessage.includes('readystatechange') ||
+          lowerMessage.includes('private access token') ||
+          lowerMessage.includes('document.write') ||
+          lowerMessage.includes('script-src') ||
+          lowerMessage.includes('default-src') ||
+          lowerMessage.includes('content security policy') ||
+          lowerMessage.includes('csp') ||
+          lowerMessage.includes('translation value is undefined') ||
+          lowerMessage.includes('translation value is not a string') ||
+          lowerMessage.includes('payment data received') ||
+          lowerMessage.includes('payment url') ||
+          lowerMessage.includes('atlos is ready') ||
+          lowerMessage.includes('attempting atlos') ||
+          lowerMessage.includes('atlos calling')
         ) {
           return true
         }

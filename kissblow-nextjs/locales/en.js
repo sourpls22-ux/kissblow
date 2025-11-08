@@ -676,6 +676,7 @@ const en = {
     backToDashboard: 'Back to Dashboard',
     title: 'Top Up Balance',
     subtitle: 'Enter amount to top up with cryptocurrency',
+    description: 'Top up your account balance using secure cryptocurrency payments',
     paymentMethod: 'Payment Method',
     usdtTron: 'USDT (TRON)',
     fastAnonymous: 'Fast and anonymous',

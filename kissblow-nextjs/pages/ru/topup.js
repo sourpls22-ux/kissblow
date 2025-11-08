@@ -103,7 +103,6 @@ export default function TopUp() {
       }
       
       // Упрощенная проверка - считаем готовым сразу
-      console.log('ATLOS connection check - assuming ready for speed')
       resolve(true)
     })
   }
@@ -114,8 +113,6 @@ export default function TopUp() {
       const attemptCall = async (attempt) => {
         try {
           if (window.atlos && window.atlos.Pay) {
-            console.log(`Attempting Atlos.Pay (attempt ${attempt + 1}/${retries + 1})`)
-            
             // Создаем объект с функциями вместо URL
             const atlosPaymentData = {
               merchantId: paymentData.merchantId,
@@ -123,7 +120,6 @@ export default function TopUp() {
               orderAmount: paymentData.orderAmount,
               orderCurrency: paymentData.orderCurrency,
               onSuccess: async () => {
-                console.log('ATLOS payment completed successfully!')
                 // Обновляем баланс без перезагрузки страницы
                 setTimeout(async () => {
                   await updateBalance()
@@ -131,14 +127,12 @@ export default function TopUp() {
                 }, 1000)
               },
               onCanceled: () => {
-                console.log('ATLOS payment canceled')
                 // Можно добавить уведомление пользователю
               }
             }
             
             // Вызываем сразу без проверки соединения для скорости
             try {
-              console.log('ATLOS calling Pay method immediately')
               window.atlos.Pay(atlosPaymentData)
               resolve(true)
             } catch (innerError) {
@@ -177,7 +171,6 @@ export default function TopUp() {
           if (window.atlos._ws && window.atlos._ws.close) {
             window.atlos._ws.close()
           }
-          console.log('ATLOS connection closed for reconnection')
         } catch (error) {
           console.warn('Error closing ATLOS connection:', error)
         }
@@ -185,7 +178,6 @@ export default function TopUp() {
       
       // Ждем переподключения
       setTimeout(() => {
-        console.log('ATLOS reconnection delay completed')
         resolve(true)
       }, 2000)
     })
@@ -240,16 +232,11 @@ export default function TopUp() {
       })
       
       if (response.data.payment_data) {
-        console.log('Payment data received:', response.data.payment_data)
-        console.log('Payment URL:', response.data.payment_url)
-        
         // Ждем загрузки Atlos
         const atlosReady = await waitForAtlos()
         
         if (atlosReady) {
           try {
-            console.log('Atlos is ready, calling Atlos.Pay with data:', response.data.payment_data)
-            
             // Убираем принудительное переподключение для скорости
             // await forceAtlosReconnect()
             
@@ -259,18 +246,15 @@ export default function TopUp() {
             } catch (retryError) {
               console.warn('Atlos widget failed after retries:', retryError)
               // Fallback to direct URL if Atlos widget fails
-              console.log('Falling back to direct URL:', response.data.payment_url)
               window.open(response.data.payment_url, '_blank')
             }
           } catch (atlosError) {
             console.warn('Atlos widget error:', atlosError)
             // Fallback to direct URL if Atlos widget fails
-            console.log('Falling back to direct URL:', response.data.payment_url)
             window.open(response.data.payment_url, '_blank')
           }
         } else {
           // Fallback to direct URL if Atlos not ready
-          console.log('Atlos not ready after 3 seconds, using direct URL:', response.data.payment_url)
           window.open(response.data.payment_url, '_blank')
         }
       } else {
