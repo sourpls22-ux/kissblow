@@ -57,83 +57,39 @@ export async function createBackup() {
 function addFilesToArchive(archive) {
   console.log('📁 Добавляю файлы в архив...')
   
-  // 1. База данных SQLite (в kissblow-nextjs)
+  // 1. База данных SQLite - содержит ВСЕ данные:
+  //    - users (аккаунты, балансы)
+  //    - profiles (профили и их информация)
+  //    - reviews (отзывы)
+  //    - payments (payment history - история платежей)
+  //    - media (ссылки на медиафайлы)
+  //    - profile_verifications (верификации)
+  //    - likes, messages и другие таблицы
   const dbPath = path.join(NEXTJS_ROOT, 'database.sqlite')
   if (fs.existsSync(dbPath)) {
-    console.log('  📄 database.sqlite')
+    console.log('  📄 database.sqlite (аккаунты, профили, отзывы, payment history, балансы)')
     archive.file(dbPath, { name: 'database.sqlite' })
   } else {
     console.log('  ⚠️ database.sqlite не найден')
   }
   
-  // 2. Конфигурационные файлы (в kissblow-nextjs/lib/config)
-  const configDir = path.join(NEXTJS_ROOT, 'lib', 'config')
-  if (fs.existsSync(configDir)) {
-    console.log('  📁 lib/config/')
-    archive.directory(configDir, 'lib/config')
+  // 2. Фото и видео профилей
+  const profilesUploadsDir = path.join(NEXTJS_ROOT, 'public', 'uploads', 'profiles')
+  if (fs.existsSync(profilesUploadsDir)) {
+    console.log('  📁 public/uploads/profiles/ (фото и видео профилей)')
+    archive.directory(profilesUploadsDir, 'public/uploads/profiles')
+  } else {
+    console.log('  ⚠️ public/uploads/profiles/ не найден')
   }
   
-  // 3. Переменные окружения (только примеры, не реальные)
-  const envExample = path.join(NEXTJS_ROOT, 'env.example')
-  if (fs.existsSync(envExample)) {
-    console.log('  📄 env.example')
-    archive.file(envExample, { name: 'env.example' })
+  // 3. Фото верификаций
+  const verificationsUploadsDir = path.join(NEXTJS_ROOT, 'public', 'uploads', 'verifications')
+  if (fs.existsSync(verificationsUploadsDir)) {
+    console.log('  📁 public/uploads/verifications/ (фото верификаций)')
+    archive.directory(verificationsUploadsDir, 'public/uploads/verifications')
+  } else {
+    console.log('  ⚠️ public/uploads/verifications/ не найден')
   }
-  
-  // 4. Основные конфигурационные файлы
-  const packageJson = path.join(NEXTJS_ROOT, 'package.json')
-  if (fs.existsSync(packageJson)) {
-    console.log('  📄 package.json')
-    archive.file(packageJson, { name: 'package.json' })
-  }
-  
-  const ecosystemConfig = path.join(PROJECT_ROOT, 'ecosystem.config.cjs')
-  if (fs.existsSync(ecosystemConfig)) {
-    console.log('  📄 ecosystem.config.cjs')
-    archive.file(ecosystemConfig, { name: 'ecosystem.config.cjs' })
-  }
-  
-  // 5. Логи (в kissblow-nextjs/logs)
-  const logsDir = path.join(NEXTJS_ROOT, 'logs')
-  if (fs.existsSync(logsDir)) {
-    console.log('  📁 logs/')
-    archive.directory(logsDir, 'logs')
-  }
-  
-  // 6. Скрипты (в kissblow-nextjs/scripts)
-  const scriptsDir = path.join(NEXTJS_ROOT, 'scripts')
-  if (fs.existsSync(scriptsDir)) {
-    console.log('  📁 scripts/')
-    archive.directory(scriptsDir, 'scripts')
-  }
-  
-  // 7. Библиотеки (в kissblow-nextjs/lib)
-  const libDir = path.join(NEXTJS_ROOT, 'lib')
-  if (fs.existsSync(libDir)) {
-    console.log('  📁 lib/')
-    archive.directory(libDir, 'lib')
-  }
-  
-  // 8. API routes (в kissblow-nextjs/pages/api)
-  const apiDir = path.join(NEXTJS_ROOT, 'pages', 'api')
-  if (fs.existsSync(apiDir)) {
-    console.log('  📁 pages/api/')
-    archive.directory(apiDir, 'pages/api')
-  }
-  
-  // 9. Информация о системе
-  const systemInfo = {
-    timestamp: new Date().toISOString(),
-    nodeVersion: process.version,
-    platform: process.platform,
-    arch: process.arch,
-    uptime: process.uptime(),
-    memoryUsage: process.memoryUsage(),
-    env: process.env.NODE_ENV || 'development'
-  }
-  
-  console.log('  📄 system-info.json')
-  archive.append(JSON.stringify(systemInfo, null, 2), { name: 'system-info.json' })
   
   console.log('✅ Все файлы добавлены в архив')
 }
