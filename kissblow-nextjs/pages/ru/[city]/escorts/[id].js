@@ -45,7 +45,7 @@ export default function Girl({ profile, profileMedia, initialReviews, cityName: 
   const { language } = useLanguage()
   const { t } = useTranslation()
   const { success, error } = useToast()
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   
   // Client-side state
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
@@ -292,8 +292,20 @@ export default function Girl({ profile, profileMedia, initialReviews, cityName: 
     }
 
     try {
+      // Получаем токен из контекста или localStorage для надежности
+      const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('kissblow-token') : null)
+      
+      if (!authToken) {
+        error(t('girl.reviews.loginToReview'))
+        return
+      }
+
       const response = await axios.post(`/api/profiles/${profile.id}/reviews`, {
         comment: reviewComment.trim()
+      }, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
       })
 
       setMyReview(response.data.review)
