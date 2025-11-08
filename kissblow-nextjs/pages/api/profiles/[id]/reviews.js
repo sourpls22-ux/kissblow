@@ -174,11 +174,13 @@ export default async function handler(req, res) {
         })
       } else {
         // Create new review
+        // Rating is required by DB schema (NOT NULL), so we use default value 5
+        const defaultRating = 5
         const result = await new Promise((resolve, reject) => {
           db.run(
-            `INSERT INTO reviews (user_id, profile_id, comment, created_at)
-             VALUES (?, ?, ?, CURRENT_TIMESTAMP)`,
-            [user.id, id, sanitizedComment],
+            `INSERT INTO reviews (user_id, profile_id, rating, comment, created_at)
+             VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+            [user.id, id, defaultRating, sanitizedComment],
             function(err) {
               if (err) reject(err)
               else resolve({ lastID: this.lastID })
