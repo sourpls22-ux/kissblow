@@ -324,20 +324,62 @@ const Navbar = () => {
               </>
             ) : (
               <>
+                {/* Login and Post Ad buttons - optimized for mobile */}
                 <Link 
                   href={linkTo('/login')} 
-                  className="flex items-center justify-center space-x-1 sm:space-x-2 border-2 border-gray-300 dark:border-white bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-white hover:text-gray-900 dark:hover:text-gray-900 transition-colors text-sm sm:text-sm font-medium min-h-[36px]"
+                  className="flex items-center justify-center space-x-1 sm:space-x-2 border-2 border-gray-300 dark:border-white bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-white hover:text-gray-900 dark:hover:text-gray-900 transition-colors text-xs sm:text-sm font-medium min-h-[36px] sm:min-h-[40px]"
                 >
-                  {isLoaded && <User size={20} className="sm:w-5 sm:h-5" />}
+                  {isLoaded && <User size={16} className="sm:w-5 sm:h-5" />}
                   <span>{t('nav.login')}</span>
                 </Link>
                 <Link 
                   href={linkTo('/register')} 
-                  className="flex items-center space-x-1 sm:space-x-2 bg-onlyfans-accent text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:opacity-80 transition-colors text-sm sm:text-sm font-medium min-h-[36px]"
+                  className="flex items-center justify-center space-x-1 sm:space-x-2 bg-onlyfans-accent text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:opacity-80 transition-colors text-xs sm:text-sm font-medium min-h-[36px] sm:min-h-[40px]"
                 >
-                  {isLoaded && <Plus size={16} className="sm:w-4 sm:h-4" />}
-                  <span>{t('nav.postAd')}</span>
+                  {isLoaded && <Plus size={14} className="sm:w-4 sm:h-4" />}
+                  <span className="whitespace-nowrap">{t('nav.postAd')}</span>
                 </Link>
+
+                {/* Mobile Menu for Non-Authenticated Users - positioned on the right */}
+                <div className="relative sm:hidden" ref={mobileMenuRef}>
+                  <button
+                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    className="flex items-center justify-center space-x-2 theme-text hover:text-onlyfans-accent transition-colors min-h-[44px] min-w-[44px] p-2 ml-1"
+                  >
+                    {isLoaded && (isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />)}
+                  </button>
+                  
+                  {isMobileMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 sm:w-56 theme-surface border theme-border rounded-lg shadow-lg z-50">
+                      <div className="py-2">
+                        {/* Theme toggle */}
+                        <button
+                          onClick={() => {
+                            toggleTheme()
+                            setIsMobileMenuOpen(false)
+                          }}
+                          className="flex items-center space-x-2 w-full px-4 py-2 theme-text hover:bg-onlyfans-dark/20 transition-colors"
+                          suppressHydrationWarning
+                        >
+                          {isLoaded && (isDark ? <Sun size={16} /> : <Moon size={16} />)}
+                          <span>{isDark ? 'Light Theme' : 'Dark Theme'}</span>
+                        </button>
+                        
+                        {/* Language toggle */}
+                        <button
+                          onClick={() => {
+                            toggleLanguage()
+                            setIsMobileMenuOpen(false)
+                          }}
+                          className="flex items-center space-x-2 w-full px-4 py-2 theme-text hover:bg-onlyfans-dark/20 transition-colors"
+                        >
+                          {isLoaded && <Globe size={16} />}
+                          <span>Language: {isLoaded ? language.toUpperCase() : 'EN'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </>
             )}
           </div>

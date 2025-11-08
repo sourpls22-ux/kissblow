@@ -115,8 +115,8 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
   }
   
   // State переменные из оригинала
-  const [profiles, setProfiles] = useState(initialProfiles)
-  const [pagination, setPagination] = useState(initialPagination)
+  const [profiles, setProfiles] = useState(initialProfiles || [])
+  const [pagination, setPagination] = useState(initialPagination || {})
   const [loading, setLoading] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [profileLikes, setProfileLikes] = useState({})
@@ -156,15 +156,6 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
 
   // Текущая страница для условного отображения SEO секций
   const currentPage = parseInt(page) || 1
-
-  // Обработка initialProfiles для правильного отображения изображений
-  useEffect(() => {
-    if (initialProfiles && initialProfiles.length > 0) {
-      startTransition(() => {
-        setProfiles(initialProfiles)
-      })
-    }
-  }, [initialProfiles])
 
   // Загрузка профилей с фильтрами (Client-side)
   const fetchProfiles = async (pageNum = null, append = false) => {
@@ -238,9 +229,13 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
       
     } catch (error) {
       console.error('Failed to fetch profiles:', error)
-      startTransition(() => {
-        setProfiles([])
-      })
+      // Не очищаем профили при ошибке, если это базовая страница без параметров
+      // Оставляем initialProfiles, если они были
+      if (city || page || search || service) {
+        startTransition(() => {
+          setProfiles([])
+        })
+      }
     } finally {
       setLoading(false)
       setLoadingMore(false)
@@ -292,20 +287,36 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
     }
   }
 
-  // Загрузка при изменении city/page/search
+  // Обработка initialProfiles для правильного отображения изображений
   useEffect(() => {
-    if (router.isReady && (city || page || search)) {
+    if (initialProfiles && initialProfiles.length > 0) {
+      // Устанавливаем initialProfiles только если нет параметров в URL
+      if (!router.isReady || (!city && !page && !search && !service)) {
+        startTransition(() => {
+          setProfiles(initialProfiles)
+          setPagination(initialPagination || {})
+        })
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialProfiles, initialPagination])
+
+  // Загрузка при изменении city/page/search/service
+  useEffect(() => {
+    if (router.isReady && (city || page || search || service)) {
       startTransition(() => {
         fetchProfiles()
       })
-    } else if (router.isReady && !city && !page && !search) {
+    } else if (router.isReady && !city && !page && !search && !service) {
       // Используем ISR данные для базовой страницы
-      startTransition(() => {
-        setProfiles(initialProfiles)
-        setPagination(initialPagination)
-      })
+      if (initialProfiles && initialProfiles.length > 0) {
+        startTransition(() => {
+          setProfiles(initialProfiles)
+          setPagination(initialPagination || {})
+        })
+      }
     }
-  }, [router.isReady, city, page, search])
+  }, [router.isReady, city, page, search, service])
 
   // Обработчики для поиска
   const handleInputChange = (e) => {
@@ -619,6 +630,10 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
             </p>
           </div>
 
+          {/* Search and Filter Section */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-semibold theme-text mb-4">{t('browse.searchAndFilter')}</h2>
+
           {/* Desktop: All buttons on one level */}
           <div className="hidden sm:flex items-center justify-between mb-6">
             {/* Left side: Search and Filters */}
@@ -801,6 +816,7 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
               </button>
             </div>
           </div>
+          </div>
 
           {/* Список профилей */}
           {loading ? (
@@ -809,6 +825,11 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
             </div>
           ) : (
             <>
+              {/* Profiles Section */}
+              <div className="mb-12">
+                <h2 className="text-2xl font-semibold theme-text mb-6">{t('browse.availableProfiles')}</h2>
+                
+                {/* Profiles Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 smooth-transition">
                 {filteredProfiles.map((profile, index) => (
                   <Link
@@ -893,6 +914,7 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
 
               {/* Пагинация */}
               <PaginationControls pagination={pagination} />
+              </div>
             </>
           )}
 
@@ -1027,10 +1049,10 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Age Range */}
                 <div className="max-w-xs">
-                  <h3 className="text-sm font-semibold theme-text mb-2">Age</h3>
+                  <h3 className="text-sm font-semibold theme-text mb-2">{t('browse.filterModal.age')}</h3>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-xs font-medium theme-text mb-1">Min</label>
+                      <label className="block text-xs font-medium theme-text mb-1">{t('browse.filterModal.min')}</label>
                       <input
                         type="number"
                         value={filters.minAge}
@@ -1042,7 +1064,7 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium theme-text mb-1">Max</label>
+                      <label className="block text-xs font-medium theme-text mb-1">{t('browse.filterModal.max')}</label>
                       <input
                         type="number"
                         value={filters.maxAge}
@@ -1058,10 +1080,10 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
 
                 {/* Price Range */}
                 <div className="max-w-xs">
-                  <h3 className="text-sm font-semibold theme-text mb-2">Price ($)</h3>
+                  <h3 className="text-sm font-semibold theme-text mb-2">{t('browse.filterModal.price')}</h3>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-xs font-medium theme-text mb-1">Min</label>
+                      <label className="block text-xs font-medium theme-text mb-1">{t('browse.filterModal.min')}</label>
                       <input
                         type="number"
                         value={filters.minPrice}
@@ -1073,7 +1095,7 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium theme-text mb-1">Max</label>
+                      <label className="block text-xs font-medium theme-text mb-1">{t('browse.filterModal.max')}</label>
                       <input
                         type="number"
                         value={filters.maxPrice}
@@ -1092,10 +1114,10 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Height Range */}
                 <div className="max-w-xs">
-                  <h3 className="text-sm font-semibold theme-text mb-2">Height (cm)</h3>
+                  <h3 className="text-sm font-semibold theme-text mb-2">{t('browse.filterModal.height')}</h3>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-xs font-medium theme-text mb-1">Min</label>
+                      <label className="block text-xs font-medium theme-text mb-1">{t('browse.filterModal.min')}</label>
                       <input
                         type="number"
                         value={filters.minHeight}
@@ -1107,7 +1129,7 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium theme-text mb-1">Max</label>
+                      <label className="block text-xs font-medium theme-text mb-1">{t('browse.filterModal.max')}</label>
                       <input
                         type="number"
                         value={filters.maxHeight}
@@ -1123,10 +1145,10 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
 
                 {/* Weight Range */}
                 <div className="max-w-xs">
-                  <h3 className="text-sm font-semibold theme-text mb-2">Weight (kg)</h3>
+                  <h3 className="text-sm font-semibold theme-text mb-2">{t('browse.filterModal.weight')}</h3>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-xs font-medium theme-text mb-1">Min</label>
+                      <label className="block text-xs font-medium theme-text mb-1">{t('browse.filterModal.min')}</label>
                       <input
                         type="number"
                         value={filters.minWeight}
@@ -1138,7 +1160,7 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium theme-text mb-1">Max</label>
+                      <label className="block text-xs font-medium theme-text mb-1">{t('browse.filterModal.max')}</label>
                       <input
                         type="number"
                         value={filters.maxWeight}
@@ -1155,14 +1177,14 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
 
               {/* Bust */}
               <div className="max-w-xs">
-                <h3 className="text-sm font-semibold theme-text mb-2">Bust</h3>
+                <h3 className="text-sm font-semibold theme-text mb-2">{t('browse.filterModal.bust')}</h3>
                 <div className="grid grid-cols-1 gap-2">
                   <select
                     value={filters.bust}
                     onChange={(e) => handleFilterChange('bust', e.target.value)}
                     className="input-field py-2 text-sm"
                   >
-                    <option value="">Any</option>
+                    <option value="">{t('browse.filterModal.any')}</option>
                     <option value="A">A</option>
                     <option value="B">B</option>
                     <option value="C">C</option>
@@ -1178,7 +1200,7 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
 
               {/* Services */}
               <div>
-                <h3 className="text-sm font-semibold theme-text mb-2">Services</h3>
+                <h3 className="text-sm font-semibold theme-text mb-2">{t('browse.filterModal.services')}</h3>
                 <div className="grid grid-cols-3 gap-2">
                   {['Anal sex', 'Oral without condom', 'Kissing', 'Cunnilingus', 'Cum in mouth', 'Cum on face', 'Cum on body', 'Classic massage', 'Erotic massage', 'Striptease', 'Shower together', 'Strapon', 'Rimming', 'Golden shower (for men)', 'Domination', 'Blowjob in the car', 'Virtual sex', 'Photo/video'].map((service) => (
                     <label key={service} className="flex items-center space-x-2 cursor-pointer">
@@ -1199,7 +1221,7 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
 
               {/* Additional Filters */}
               <div>
-                <h3 className="text-sm font-semibold theme-text mb-2">Additional Filters</h3>
+                <h3 className="text-sm font-semibold theme-text mb-2">{t('browse.filterModal.additionalFilters')}</h3>
                 <div className="grid grid-cols-3 gap-4">
                   <label className="flex items-center space-x-2 cursor-pointer">
                     <input
@@ -1208,7 +1230,7 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
                       onChange={handleVerifiedToggle}
                       className="rounded border-gray-300 text-onlyfans-accent focus:ring-onlyfans-accent w-3 h-3"
                     />
-                    <span className="theme-text text-xs">Verified Only</span>
+                    <span className="theme-text text-xs">{t('browse.filterModal.verifiedOnly')}</span>
                   </label>
                   
                   <label className="flex items-center space-x-2 cursor-pointer">
@@ -1218,7 +1240,7 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
                       onChange={handleHasReviewsToggle}
                       className="rounded border-gray-300 text-onlyfans-accent focus:ring-onlyfans-accent w-3 h-3"
                     />
-                    <span className="theme-text text-xs">With Reviews</span>
+                    <span className="theme-text text-xs">{t('browse.filterModal.hasReviews')}</span>
                   </label>
                   
                   <label className="flex items-center space-x-2 cursor-pointer">
@@ -1228,7 +1250,7 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
                       onChange={handleHasVideoToggle}
                       className="rounded border-gray-300 text-onlyfans-accent focus:ring-onlyfans-accent w-3 h-3"
                     />
-                    <span className="theme-text text-xs">With Video</span>
+                    <span className="theme-text text-xs">{t('browse.filterModal.hasVideo')}</span>
                   </label>
                 </div>
               </div>

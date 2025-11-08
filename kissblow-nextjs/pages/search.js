@@ -58,8 +58,6 @@ export default function Search() {
 
               {/* Search Section */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold theme-text">{t('search.searchTitle')}</h3>
-                
                 {/* Client Component для поиска */}
                 <div className="relative flex gap-2 w-full max-w-none mx-auto sm:max-w-none sm:mx-0">
                   <CitySearchInput />
@@ -68,7 +66,6 @@ export default function Search() {
 
               {/* Popular Cities Section */}
               <div className="space-y-3">
-                <h3 className="text-lg font-semibold theme-text text-center">{t('search.popularCities')}</h3>
                 <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-center">
                   <button 
                     onClick={() => router.push('/hong-kong/escorts')}

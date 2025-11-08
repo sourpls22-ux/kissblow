@@ -255,7 +255,7 @@ const FiltersModal = ({ onClose, onApply, initialFilters = {} }) => {
 
           {/* Services */}
           <div>
-            <h3 className="text-sm font-semibold theme-text mb-2">Services</h3>
+            <h3 className="text-sm font-semibold theme-text mb-2">{t('browse.filterModal.services')}</h3>
             <div className="grid grid-cols-3 gap-2">
               {serviceOptions.map((service) => (
                 <label key={service} className="flex items-center space-x-2 cursor-pointer">
@@ -276,7 +276,7 @@ const FiltersModal = ({ onClose, onApply, initialFilters = {} }) => {
 
           {/* Additional Filters */}
           <div>
-            <h3 className="text-sm font-semibold theme-text mb-2">Additional Filters</h3>
+            <h3 className="text-sm font-semibold theme-text mb-2">{t('browse.filterModal.additionalFilters')}</h3>
             <div className="grid grid-cols-3 gap-4">
               <label className="flex items-center space-x-2 cursor-pointer">
                 <input
@@ -285,7 +285,7 @@ const FiltersModal = ({ onClose, onApply, initialFilters = {} }) => {
                   onChange={(e) => handleChange('verified', e.target.checked)}
                   className="rounded border-gray-300 text-onlyfans-accent focus:ring-onlyfans-accent w-3 h-3"
                 />
-                <span className="theme-text text-xs">Verified Only</span>
+                <span className="theme-text text-xs">{t('browse.filterModal.verifiedOnly')}</span>
               </label>
               
               <label className="flex items-center space-x-2 cursor-pointer">
@@ -295,7 +295,7 @@ const FiltersModal = ({ onClose, onApply, initialFilters = {} }) => {
                   onChange={(e) => handleChange('hasReviews', e.target.checked)}
                   className="rounded border-gray-300 text-onlyfans-accent focus:ring-onlyfans-accent w-3 h-3"
                 />
-                <span className="theme-text text-xs">With Reviews</span>
+                <span className="theme-text text-xs">{t('browse.filterModal.hasReviews')}</span>
               </label>
               
               <label className="flex items-center space-x-2 cursor-pointer">
@@ -305,7 +305,7 @@ const FiltersModal = ({ onClose, onApply, initialFilters = {} }) => {
                   onChange={(e) => handleChange('hasVideo', e.target.checked)}
                   className="rounded border-gray-300 text-onlyfans-accent focus:ring-onlyfans-accent w-3 h-3"
                 />
-                <span className="theme-text text-xs">With Video</span>
+                <span className="theme-text text-xs">{t('browse.filterModal.hasVideo')}</span>
               </label>
             </div>
           </div>

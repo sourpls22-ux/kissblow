@@ -249,14 +249,23 @@ export async function getStaticProps({ params }) {
 
   const relatedPosts = getRelatedPosts(params.id, 3)
 
+  // Оптимизация: передаем только необходимые переводы вместо всех
+  const translations = {
+    en: {
+      blog: en.blog,
+      breadcrumbs: en.breadcrumbs
+    },
+    ru: {
+      blog: ru.blog,
+      breadcrumbs: ru.breadcrumbs
+    }
+  }
+
   return {
     props: {
       post,
       relatedPosts,
-      translations: {
-        en: en,
-        ru: ru
-      },
+      translations,
       lastUpdated: new Date().toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',

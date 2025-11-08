@@ -1064,10 +1064,10 @@ const CityPage = ({ initialProfiles, initialPagination, cityName, citySlug, last
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Age Range */}
                 <div className="max-w-xs">
-                  <h3 className="text-sm font-semibold theme-text mb-2">Age</h3>
+                  <h3 className="text-sm font-semibold theme-text mb-2">{t('browse.filterModal.age')}</h3>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-xs font-medium theme-text mb-1">Min</label>
+                      <label className="block text-xs font-medium theme-text mb-1">{t('browse.filterModal.min')}</label>
                       <input
                         type="number"
                         value={filters.minAge}
@@ -1079,7 +1079,7 @@ const CityPage = ({ initialProfiles, initialPagination, cityName, citySlug, last
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium theme-text mb-1">Max</label>
+                      <label className="block text-xs font-medium theme-text mb-1">{t('browse.filterModal.max')}</label>
                       <input
                         type="number"
                         value={filters.maxAge}
@@ -1095,10 +1095,10 @@ const CityPage = ({ initialProfiles, initialPagination, cityName, citySlug, last
 
                 {/* Price Range */}
                 <div className="max-w-xs">
-                  <h3 className="text-sm font-semibold theme-text mb-2">Price ($)</h3>
+                  <h3 className="text-sm font-semibold theme-text mb-2">{t('browse.filterModal.price')}</h3>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-xs font-medium theme-text mb-1">Min</label>
+                      <label className="block text-xs font-medium theme-text mb-1">{t('browse.filterModal.min')}</label>
                       <input
                         type="number"
                         value={filters.minPrice}
@@ -1110,7 +1110,7 @@ const CityPage = ({ initialProfiles, initialPagination, cityName, citySlug, last
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium theme-text mb-1">Max</label>
+                      <label className="block text-xs font-medium theme-text mb-1">{t('browse.filterModal.max')}</label>
                       <input
                         type="number"
                         value={filters.maxPrice}
@@ -1129,10 +1129,10 @@ const CityPage = ({ initialProfiles, initialPagination, cityName, citySlug, last
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Height Range */}
                 <div className="max-w-xs">
-                  <h3 className="text-sm font-semibold theme-text mb-2">Height (cm)</h3>
+                  <h3 className="text-sm font-semibold theme-text mb-2">{t('browse.filterModal.height')}</h3>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-xs font-medium theme-text mb-1">Min</label>
+                      <label className="block text-xs font-medium theme-text mb-1">{t('browse.filterModal.min')}</label>
                       <input
                         type="number"
                         value={filters.minHeight}
@@ -1144,7 +1144,7 @@ const CityPage = ({ initialProfiles, initialPagination, cityName, citySlug, last
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium theme-text mb-1">Max</label>
+                      <label className="block text-xs font-medium theme-text mb-1">{t('browse.filterModal.max')}</label>
                       <input
                         type="number"
                         value={filters.maxHeight}
@@ -1160,10 +1160,10 @@ const CityPage = ({ initialProfiles, initialPagination, cityName, citySlug, last
 
                 {/* Weight Range */}
                 <div className="max-w-xs">
-                  <h3 className="text-sm font-semibold theme-text mb-2">Weight (kg)</h3>
+                  <h3 className="text-sm font-semibold theme-text mb-2">{t('browse.filterModal.weight')}</h3>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-xs font-medium theme-text mb-1">Min</label>
+                      <label className="block text-xs font-medium theme-text mb-1">{t('browse.filterModal.min')}</label>
                       <input
                         type="number"
                         value={filters.minWeight}
@@ -1175,7 +1175,7 @@ const CityPage = ({ initialProfiles, initialPagination, cityName, citySlug, last
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium theme-text mb-1">Max</label>
+                      <label className="block text-xs font-medium theme-text mb-1">{t('browse.filterModal.max')}</label>
                       <input
                         type="number"
                         value={filters.maxWeight}
@@ -1192,14 +1192,14 @@ const CityPage = ({ initialProfiles, initialPagination, cityName, citySlug, last
 
               {/* Bust */}
               <div className="max-w-xs">
-                <h3 className="text-sm font-semibold theme-text mb-2">Bust</h3>
+                <h3 className="text-sm font-semibold theme-text mb-2">{t('browse.filterModal.bust')}</h3>
                 <div className="grid grid-cols-1 gap-2">
                   <select
                     value={filters.bust}
                     onChange={(e) => handleFilterChange('bust', e.target.value)}
                     className="input-field py-2 text-sm"
                   >
-                    <option value="">Any</option>
+                    <option value="">{t('browse.filterModal.any')}</option>
                     <option value="A">A</option>
                     <option value="B">B</option>
                     <option value="C">C</option>
@@ -1215,7 +1215,7 @@ const CityPage = ({ initialProfiles, initialPagination, cityName, citySlug, last
 
               {/* Services */}
               <div>
-                <h3 className="text-sm font-semibold theme-text mb-2">Services</h3>
+                <h3 className="text-sm font-semibold theme-text mb-2">{t('browse.filterModal.services')}</h3>
                 <div className="grid grid-cols-3 gap-2">
                   {['Anal sex', 'Oral without condom', 'Kissing', 'Cunnilingus', 'Cum in mouth', 'Cum on face', 'Cum on body', 'Classic massage', 'Erotic massage', 'Striptease', 'Shower together', 'Strapon', 'Rimming', 'Golden shower (for men)', 'Domination', 'Blowjob in the car', 'Virtual sex', 'Photo/video'].map((service) => (
                     <label key={service} className="flex items-center space-x-2 cursor-pointer">
@@ -1236,7 +1236,7 @@ const CityPage = ({ initialProfiles, initialPagination, cityName, citySlug, last
 
               {/* Additional Filters */}
               <div>
-                <h3 className="text-sm font-semibold theme-text mb-2">Additional Filters</h3>
+                <h3 className="text-sm font-semibold theme-text mb-2">{t('browse.filterModal.additionalFilters')}</h3>
                 <div className="grid grid-cols-3 gap-4">
                   <label className="flex items-center space-x-2 cursor-pointer">
                     <input
@@ -1245,7 +1245,7 @@ const CityPage = ({ initialProfiles, initialPagination, cityName, citySlug, last
                       onChange={handleVerifiedToggle}
                       className="rounded border-gray-300 text-onlyfans-accent focus:ring-onlyfans-accent w-3 h-3"
                     />
-                    <span className="theme-text text-xs">Verified Only</span>
+                    <span className="theme-text text-xs">{t('browse.filterModal.verifiedOnly')}</span>
                   </label>
                   
                   <label className="flex items-center space-x-2 cursor-pointer">
@@ -1255,7 +1255,7 @@ const CityPage = ({ initialProfiles, initialPagination, cityName, citySlug, last
                       onChange={handleHasReviewsToggle}
                       className="rounded border-gray-300 text-onlyfans-accent focus:ring-onlyfans-accent w-3 h-3"
                     />
-                    <span className="theme-text text-xs">With Reviews</span>
+                    <span className="theme-text text-xs">{t('browse.filterModal.hasReviews')}</span>
                   </label>
                   
                   <label className="flex items-center space-x-2 cursor-pointer">
@@ -1265,7 +1265,7 @@ const CityPage = ({ initialProfiles, initialPagination, cityName, citySlug, last
                       onChange={handleHasVideoToggle}
                       className="rounded border-gray-300 text-onlyfans-accent focus:ring-onlyfans-accent w-3 h-3"
                     />
-                    <span className="theme-text text-xs">With Video</span>
+                    <span className="theme-text text-xs">{t('browse.filterModal.hasVideo')}</span>
                   </label>
                 </div>
               </div>

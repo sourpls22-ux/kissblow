@@ -92,7 +92,7 @@ const ru = {
   // Search page
   search: {
     title: 'Найдите свою идеальную пару',
-    subtitle: 'Ищите проверенные эскорт-услуги по городам. Найдите лучших эскортов в вашем районе с помощью наших расширенных возможностей поиска и фильтрации.',
+    subtitle: 'идеальные эскорт услуги в вашем городе',
     findYour: 'Найдите',
     bestEscorts: 'Лучшие',
     bestEscorts2: 'эскорт-услуги',
@@ -138,6 +138,8 @@ const ru = {
     noProfiles: 'Профили не найдены',
     noProfilesGeneral: 'Профили не найдены',
     searchPlaceholder: 'Поиск городов...',
+    searchAndFilter: 'Поиск и фильтры',
+    availableProfiles: 'Доступные профили',
     // Profile card translations
     contactForPrice: 'Уточнить цену',
     verified: 'Проверен',
@@ -241,12 +243,12 @@ const ru = {
       bust: 'Размер груди',
       price: 'Цена',
       services: 'Услуги',
+      additionalFilters: 'Дополнительные фильтры',
       apply: 'Применить',
       clear: 'Очистить',
       cancel: 'Отмена',
       min: 'Мин',
       max: 'Макс',
-      cancel: 'Отмена',
       any: 'Любой',
       verifiedOnly: 'Только проверенные',
       hasReviews: 'Есть отзывы',

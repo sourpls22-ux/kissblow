@@ -241,38 +241,47 @@ export async function getStaticProps({ params }) {
   const { en } = await import('../../../locales/en')
   const { ru } = await import('../../../locales/ru')
   
-       const post = getBlogPostById(params.id)
-       
-       if (!post) {
-         return { notFound: true }
-       }
+  const post = getBlogPostById(params.id)
+  
+  if (!post) {
+    return { notFound: true }
+  }
 
-       // Получаем русский перевод статьи
-       const russianPost = {
-         ...post,
-         title: ru.blog.articles[params.id]?.title || post.title,
-         excerpt: ru.blog.articles[params.id]?.excerpt || post.excerpt,
-         content: ru.blog.articles[params.id]?.content || post.content
-       }
+  // Получаем русский перевод статьи
+  const russianPost = {
+    ...post,
+    title: ru.blog.articles[params.id]?.title || post.title,
+    excerpt: ru.blog.articles[params.id]?.excerpt || post.excerpt,
+    content: ru.blog.articles[params.id]?.content || post.content
+  }
 
-       const relatedPosts = getRelatedPosts(params.id, 3)
+  const relatedPosts = getRelatedPosts(params.id, 3)
 
-       return {
-         props: {
-           post: russianPost,
-           relatedPosts,
-           translations: {
-             en: en,
-             ru: ru
-           },
-           lastUpdated: new Date().toLocaleDateString('ru-RU', {
-             year: 'numeric',
-             month: 'long',
-             day: 'numeric'
-           })
-         },
-         revalidate: 86400 // 24 часа
-       }
+  // Оптимизация: передаем только необходимые переводы вместо всех
+  const translations = {
+    en: {
+      blog: en.blog,
+      breadcrumbs: en.breadcrumbs
+    },
+    ru: {
+      blog: ru.blog,
+      breadcrumbs: ru.breadcrumbs
+    }
+  }
+
+  return {
+    props: {
+      post: russianPost,
+      relatedPosts,
+      translations,
+      lastUpdated: new Date().toLocaleDateString('ru-RU', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    },
+    revalidate: 86400 // 24 часа
+  }
 }
 
 export default BlogPost
