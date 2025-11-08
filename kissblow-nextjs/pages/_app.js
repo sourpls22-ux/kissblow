@@ -19,7 +19,44 @@ function MyApp({ Component, pageProps }) {
 
     // Подавление ошибок 404 от prefetch для страниц с fallback: 'blocking'
     if (typeof window !== 'undefined') {
-      // Перехватываем console.error для подавления ошибок prefetch
+      // Функция для проверки, является ли сообщение от Google или prefetch
+      const shouldSuppressMessage = (message) => {
+        if (!message || typeof message !== 'string') return false
+        
+        const lowerMessage = message.toLowerCase()
+        
+        // Подавляем сообщения от Google
+        if (
+          lowerMessage.includes('google') ||
+          lowerMessage.includes('gtag') ||
+          lowerMessage.includes('analytics') ||
+          lowerMessage.includes('googletagmanager') ||
+          lowerMessage.includes('doubleclick') ||
+          lowerMessage.includes('googleapis.com') ||
+          lowerMessage.includes('gstatic.com') ||
+          lowerMessage.includes('google-analytics') ||
+          lowerMessage.includes('google tag') ||
+          lowerMessage.includes('installhook') ||
+          lowerMessage.includes('react-devtools') ||
+          lowerMessage.includes('overrideMethod')
+        ) {
+          return true
+        }
+        
+        // Подавляем ошибки prefetch
+        if (
+          (lowerMessage.includes('404') || lowerMessage.includes('not found')) &&
+          (lowerMessage.includes('/_next/data/') || 
+           lowerMessage.includes('escorts.json') ||
+           lowerMessage.includes('favicon.ico'))
+        ) {
+          return true
+        }
+        
+        return false
+      }
+
+      // Перехватываем console.error
       const originalConsoleError = console.error
       console.error = (...args) => {
         const errorMessage = args.map(arg => 
@@ -27,36 +64,80 @@ function MyApp({ Component, pageProps }) {
           arg?.message || arg?.toString() || ''
         ).join(' ')
         
-        // Игнорируем ошибки prefetch для страниц городов и favicon
-        if (
-          errorMessage.includes('404') &&
-          (errorMessage.includes('/_next/data/') || 
-           errorMessage.includes('escorts.json') ||
-           errorMessage.includes('favicon.ico'))
-        ) {
-          return // Не выводим ошибку в консоль
+        if (shouldSuppressMessage(errorMessage)) {
+          return
         }
         
-        // Выводим все остальные ошибки как обычно
         originalConsoleError.apply(console, args)
+      }
+
+      // Перехватываем console.warn
+      const originalConsoleWarn = console.warn
+      console.warn = (...args) => {
+        const warningMessage = args.map(arg => 
+          typeof arg === 'string' ? arg : 
+          arg?.message || arg?.toString() || ''
+        ).join(' ')
+        
+        if (shouldSuppressMessage(warningMessage)) {
+          return
+        }
+        
+        originalConsoleWarn.apply(console, args)
+      }
+
+      // Перехватываем console.log
+      const originalConsoleLog = console.log
+      console.log = (...args) => {
+        const logMessage = args.map(arg => 
+          typeof arg === 'string' ? arg : 
+          arg?.message || arg?.toString() || ''
+        ).join(' ')
+        
+        if (shouldSuppressMessage(logMessage)) {
+          return
+        }
+        
+        originalConsoleLog.apply(console, args)
+      }
+
+      // Перехватываем console.info
+      const originalConsoleInfo = console.info
+      console.info = (...args) => {
+        const infoMessage = args.map(arg => 
+          typeof arg === 'string' ? arg : 
+          arg?.message || arg?.toString() || ''
+        ).join(' ')
+        
+        if (shouldSuppressMessage(infoMessage)) {
+          return
+        }
+        
+        originalConsoleInfo.apply(console, args)
+      }
+
+      // Перехватываем console.debug
+      const originalConsoleDebug = console.debug
+      console.debug = (...args) => {
+        const debugMessage = args.map(arg => 
+          typeof arg === 'string' ? arg : 
+          arg?.message || arg?.toString() || ''
+        ).join(' ')
+        
+        if (shouldSuppressMessage(debugMessage)) {
+          return
+        }
+        
+        originalConsoleDebug.apply(console, args)
       }
 
       // Обработка необработанных промисов (включая ошибки prefetch)
       const handleUnhandledRejection = (event) => {
-        // Игнорируем ошибки prefetch для страниц городов
         const reason = event.reason
         const reasonString = reason?.message || reason?.toString() || ''
         const reasonStack = reason?.stack || ''
         
-        // Проверяем, является ли это ошибкой prefetch для страниц с fallback
-        if (
-          (reasonString.includes('404') || reasonString.includes('Not Found')) &&
-          (reasonString.includes('/_next/data/') || 
-           reasonString.includes('escorts.json') ||
-           reasonString.includes('favicon.ico') ||
-           reasonStack.includes('/_next/data/'))
-        ) {
-          // Предотвращаем вывод ошибки в консоль
+        if (shouldSuppressMessage(reasonString) || shouldSuppressMessage(reasonStack)) {
           event.preventDefault()
           return
         }
@@ -66,20 +147,15 @@ function MyApp({ Component, pageProps }) {
 
       // Обработка глобальных ошибок
       const handleError = (error, errorInfo) => {
-        // Игнорируем ошибки prefetch для страниц с fallback
         const errorMessage = error?.message || errorInfo?.message || ''
         const errorStack = error?.stack || errorInfo?.stack || ''
         const errorSource = errorInfo?.filename || errorInfo?.source || ''
         
         if (
-          (errorMessage.includes('404') || errorMessage.includes('Not Found')) &&
-          (errorMessage.includes('/_next/data/') || 
-           errorMessage.includes('escorts.json') ||
-           errorMessage.includes('favicon.ico') ||
-           errorStack.includes('/_next/data/') ||
-           errorSource.includes('/_next/data/'))
+          shouldSuppressMessage(errorMessage) ||
+          shouldSuppressMessage(errorStack) ||
+          shouldSuppressMessage(errorSource)
         ) {
-          // Игнорируем ошибки prefetch
           return
         }
         
@@ -88,16 +164,12 @@ function MyApp({ Component, pageProps }) {
 
       // Обработчик ошибок window
       const handleWindowError = (event) => {
-        // Игнорируем ошибки prefetch
         const errorMessage = event.message || ''
         const errorSource = event.filename || event.source || ''
         
         if (
-          (errorMessage.includes('404') || errorMessage.includes('Not Found')) &&
-          (errorMessage.includes('/_next/data/') || 
-           errorMessage.includes('escorts.json') ||
-           errorMessage.includes('favicon.ico') ||
-           errorSource.includes('/_next/data/'))
+          shouldSuppressMessage(errorMessage) ||
+          shouldSuppressMessage(errorSource)
         ) {
           event.preventDefault()
           return
@@ -110,8 +182,12 @@ function MyApp({ Component, pageProps }) {
       window.addEventListener('unhandledrejection', handleUnhandledRejection)
 
       return () => {
-        // Восстанавливаем оригинальный console.error
+        // Восстанавливаем оригинальные функции консоли
         console.error = originalConsoleError
+        console.warn = originalConsoleWarn
+        console.log = originalConsoleLog
+        console.info = originalConsoleInfo
+        console.debug = originalConsoleDebug
         window.removeEventListener('error', handleWindowError)
         window.removeEventListener('unhandledrejection', handleUnhandledRejection)
       }

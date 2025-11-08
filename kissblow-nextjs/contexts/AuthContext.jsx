@@ -35,13 +35,20 @@ export const AuthProvider = ({ children }) => {
     const checkAuth = async () => {
       if (token) {
         try {
+          // Убеждаемся, что заголовок установлен перед запросом
+          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+          
           const response = await axios.get(`${''}/api/user/profile`)
           // Используем startTransition для отложенного обновления во время гидратации
           startTransition(() => {
             setUser(response.data)
           })
         } catch (error) {
-          console.error('Auth check failed:', error)
+          // Не выводим ошибку в консоль, если это просто означает, что пользователь не авторизован
+          // (токен истек или невалиден - это нормальная ситуация)
+          if (error.response?.status !== 401) {
+            console.error('Auth check failed:', error)
+          }
           logout()
         }
       }

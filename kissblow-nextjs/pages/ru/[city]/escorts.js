@@ -222,8 +222,6 @@ const CityPage = ({ initialProfiles, initialPagination, cityName, citySlug, last
       // Используем pageNum если передан, иначе текущую страницу из URL
       const currentPageNum = pageNum || parseInt(page) || 1
       
-      console.log('fetchProfiles called with:', { pageNum, page, currentPageNum, cityName })
-      
       const params = new URLSearchParams({
         page: currentPageNum.toString(),
         limit: '24',
@@ -234,14 +232,10 @@ const CityPage = ({ initialProfiles, initialPagination, cityName, citySlug, last
         params.append('city', cityName)
       }
       
-      console.log('API request params:', params.toString())
-      
       const API_URL = process.env.NEXT_PUBLIC_API_URL || ''
       const baseUrl = API_URL || 'http://localhost:3000'
       const response = await axios.get(`${API_URL}/api/profiles?${params}`)
       const { profiles: profilesData, pagination: paginationData } = response.data
-      
-      console.log('API response:', { profilesCount: profilesData?.length, pagination: paginationData })
       
       // Загружаем медиа для каждого профиля
       const formattedProfiles = await Promise.all(
@@ -858,7 +852,6 @@ const CityPage = ({ initialProfiles, initialPagination, cityName, citySlug, last
                           src={profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url}
                           alt={profile.name}
                           className="w-full h-full object-cover object-center"
-                          onLoad={() => console.log('Image loaded:', profile.name)}
                           onError={(e) => {
                             console.error('Failed to load profile image:', profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url)
                             e.target.style.display = 'none'
