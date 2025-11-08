@@ -6,12 +6,27 @@ import { useTranslation } from '../hooks/useTranslation'
 const PaginationControls = ({ pagination }) => {
   const router = useRouter()
   const { t } = useTranslation()
+  const { page } = router.query
 
   if (!pagination || !pagination.totalPages || pagination.totalPages <= 1) {
     return null
   }
 
-  const { currentPage = 1, totalPages = 1, hasNextPage = false, hasPrevPage = false } = pagination
+  // Синхронизируем currentPage с URL параметром page для правильного отображения
+  // Если page есть в URL, используем его (даже если это 1), иначе используем из pagination
+  const urlPage = page ? parseInt(page) : null
+  const paginationPage = pagination.currentPage || pagination.page || 1
+  // Используем URL параметр как приоритетный источник текущей страницы
+  const currentPage = urlPage !== null ? urlPage : paginationPage
+  
+  // Поддержка обоих вариантов названий полей для обратной совместимости
+  const totalPages = pagination.totalPages || 1
+  const hasNextPage = pagination.hasNextPage !== undefined 
+    ? pagination.hasNextPage 
+    : (pagination.hasNext !== undefined ? pagination.hasNext : currentPage < totalPages)
+  const hasPrevPage = pagination.hasPrevPage !== undefined 
+    ? pagination.hasPrevPage 
+    : (pagination.hasPrev !== undefined ? pagination.hasPrev : currentPage > 1)
   
   // Ensure all values are valid numbers
   const safeCurrentPage = Number(currentPage) || 1

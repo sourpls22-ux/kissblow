@@ -25,7 +25,7 @@ const KeywordsSection = () => {
         {displayedKeywords.map((keyword) => (
           <Link
             key={keyword}
-            href={linkTo(`/search?service=${encodeURIComponent(keyword)}`)}
+            href={linkTo(`/?service=${encodeURIComponent(keyword)}`)}
             className="group px-3 py-2 text-sm font-medium theme-text bg-theme-surface border theme-border rounded-full hover:bg-onlyfans-accent hover:text-white hover:border-onlyfans-accent transition-all duration-200 text-center"
             aria-label={`Search for ${keyword} escort services`}
           >

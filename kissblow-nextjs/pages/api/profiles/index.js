@@ -122,11 +122,14 @@ export default async function handler(req, res) {
       profiles,
       pagination: {
         page: parseInt(page),
+        currentPage: parseInt(page), // Добавляем currentPage для совместимости с компонентом
         limit: parseInt(limit),
         total,
         totalPages,
         hasNext: parseInt(page) < totalPages,
-        hasPrev: parseInt(page) > 1
+        hasNextPage: parseInt(page) < totalPages, // Добавляем hasNextPage для совместимости
+        hasPrev: parseInt(page) > 1,
+        hasPrevPage: parseInt(page) > 1 // Добавляем hasPrevPage для совместимости
       }
     }
 

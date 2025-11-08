@@ -178,11 +178,15 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
       // Используем pageNum если передан, иначе текущую страницу из URL
       const currentPageNum = pageNum || parseInt(page) || 1
       
-      console.log('fetchProfiles called with:', { pageNum, page, currentPageNum, city })
+      console.log('fetchProfiles called with:', { pageNum, page, currentPageNum, city, service })
+      
+      // Если есть параметр service, загружаем все профили (большой limit)
+      // Иначе используем обычную пагинацию
+      const limit = service ? '10000' : '24'
       
       const params = new URLSearchParams({
         page: currentPageNum.toString(),
-        limit: '24',
+        limit: limit,
         t: Date.now().toString()
       })
       
@@ -298,20 +302,62 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
     }
   }
 
-  // Загрузка при изменении city/page/search
+  // Загрузка при изменении city/page/search/service
   useEffect(() => {
-    if (router.isReady && (city || page || search)) {
+    if (router.isReady && (city || page || search || service)) {
       startTransition(() => {
         fetchProfiles()
       })
-    } else if (router.isReady && !city && !page && !search) {
+    } else if (router.isReady && !city && !page && !search && !service) {
       // Используем ISR данные для базовой страницы
       startTransition(() => {
         setProfiles(initialProfiles)
         setPagination(initialPagination)
       })
     }
-  }, [router.isReady, city, page, search])
+  }, [router.isReady, city, page, search, service])
+
+  // Синхронизируем currentPage в pagination с URL параметром page
+  useEffect(() => {
+    if (router.isReady && pagination) {
+      const urlPage = parseInt(page) || 1
+      setPagination(prev => {
+        // Обновляем только если currentPage отличается от URL
+        if (prev && prev.currentPage !== urlPage) {
+          return {
+            ...prev,
+            currentPage: urlPage,
+            page: urlPage
+          }
+        }
+        return prev
+      })
+    }
+  }, [router.isReady, page])
+
+  // Инициализация фильтров из URL параметра service
+  useEffect(() => {
+    if (router.isReady && service) {
+      // Если есть параметр service в URL, добавляем его в фильтры
+      const serviceValue = decodeURIComponent(service)
+      setFilters(prev => {
+        // Проверяем, не добавлен ли уже этот сервис
+        if (prev.services.includes(serviceValue)) {
+          return prev
+        }
+        return {
+          ...prev,
+          services: [...prev.services, serviceValue]
+        }
+      })
+    } else if (router.isReady && !service) {
+      // Если параметра service нет, очищаем фильтры сервисов
+      setFilters(prev => ({
+        ...prev,
+        services: []
+      }))
+    }
+  }, [router.isReady, service])
 
   // Обработчики для поиска
   const handleInputChange = (e) => {
@@ -616,12 +662,16 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
           {/* Title Section */}
           <div className="mb-6">
             <h1 className="text-3xl font-bold theme-text mb-2">
-              {service ? `${service} Escorts` : 
-               keyword ? `${keyword.charAt(0).toUpperCase() + keyword.slice(1).replace(/-/g, ' ')} Escorts` : 
-               city ? `${t('browse.escorts')} in ${city}` : t('browse.allEscorts')}
+              {service 
+                ? `${decodeURIComponent(service).charAt(0).toUpperCase() + decodeURIComponent(service).slice(1)} Escorts` 
+                : keyword 
+                  ? `${keyword.charAt(0).toUpperCase() + keyword.slice(1).replace(/-/g, ' ')} Escorts` 
+                  : city 
+                    ? `${t('browse.escorts')} in ${city}` 
+                    : t('browse.allEscorts')}
             </h1>
             <p className="theme-text-secondary">
-              {t('browse.foundProfiles')} {profiles.length}
+              {t('browse.foundProfiles')} {filteredProfiles.length}
             </p>
           </div>
 

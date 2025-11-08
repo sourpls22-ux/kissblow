@@ -343,6 +343,24 @@ const CityPage = ({ initialProfiles, initialPagination, cityName, citySlug, last
     }
   }, [router.isReady, page, search])
 
+  // Синхронизируем currentPage в pagination с URL параметром page
+  useEffect(() => {
+    if (router.isReady && pagination) {
+      const urlPage = parseInt(page) || 1
+      setPagination(prev => {
+        // Обновляем только если currentPage отличается от URL
+        if (prev && prev.currentPage !== urlPage) {
+          return {
+            ...prev,
+            currentPage: urlPage,
+            page: urlPage
+          }
+        }
+        return prev
+      })
+    }
+  }, [router.isReady, page])
+
   // Обработчики для поиска
   const handleInputChange = (e) => {
     setSearchQuery(e.target.value)

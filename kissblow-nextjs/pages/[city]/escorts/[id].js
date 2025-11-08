@@ -28,6 +28,18 @@ import {
   Home
 } from 'lucide-react'
 
+// Функция для преобразования названия города в URL slug
+const cityNameToUrl = (cityName) => {
+  if (!cityName) return ''
+  // Декодируем URL-encoded строку (например, "Hong%20Kong" -> "Hong Kong")
+  const decoded = decodeURIComponent(cityName)
+  // Преобразуем в slug: нижний регистр, пробелы в дефисы, удаляем спецсимволы
+  return decoded
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+}
+
 export default function Girl({ profile, profileMedia, initialReviews, cityName: propCityName, lastUpdated }) {
   const router = useRouter()
   const { language } = useLanguage()
@@ -87,10 +99,12 @@ export default function Girl({ profile, profileMedia, initialReviews, cityName: 
       const from = router.query.from
       const city = router.query.city
       
-      // Получаем название города из URL или props
+      // Получаем название города из URL или props и преобразуем в slug
       if (city) {
-        setCityName(city)
+        // Преобразуем city из query в slug (может быть URL-encoded)
+        setCityName(cityNameToUrl(city))
       } else if (propCityName) {
+        // propCityName уже должен быть slug из getStaticProps
         setCityName(propCityName)
       }
       
@@ -115,7 +129,7 @@ export default function Girl({ profile, profileMedia, initialReviews, cityName: 
       }
       setIsNavigationReady(true)
     }
-  }, [router.isReady, router.query.from, router.query.city])
+  }, [router.isReady, router.query.from, router.query.city, propCityName])
 
   // Клавиатурная навигация для галереи
   useEffect(() => {
@@ -991,6 +1005,19 @@ export async function getStaticProps({ params }) {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || ''
   const baseUrl = API_URL || 'http://localhost:3000'
   
+  // Преобразуем city в slug (декодируем и нормализуем)
+  // Функция должна быть доступна здесь, но так как это серверный код,
+  // мы можем использовать inline версию
+  const cityNameToUrl = (cityName) => {
+    if (!cityName) return ''
+    const decoded = decodeURIComponent(cityName)
+    return decoded
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '')
+  }
+  const citySlug = cityNameToUrl(city)
+  
   try {
     // Загрузить профиль
     const profileRes = await fetch(`${baseUrl}/api/profiles/${id}`)
@@ -1022,7 +1049,7 @@ export async function getStaticProps({ params }) {
         profile,
         profileMedia,
         initialReviews: reviewsData.reviews,
-        cityName: city,
+        cityName: citySlug, // Используем slug вместо исходного city
         lastUpdated: new Date().toISOString()
       },
       revalidate: 300 // 5 минут как fallback
@@ -1035,7 +1062,7 @@ export async function getStaticProps({ params }) {
         profile: null,
         profileMedia: [],
         initialReviews: [],
-        cityName: city,
+        cityName: citySlug, // Используем slug вместо исходного city
         lastUpdated: new Date().toISOString()
       },
       revalidate: 300 // 5 минут как fallback

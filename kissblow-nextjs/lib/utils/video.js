@@ -300,7 +300,9 @@ const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
     fs.unlinkSync(inputPath)
     
     // Update URL in database and mark as completed
-    const finalUrl = `/uploads/profiles/${path.basename(outputPath)}`
+    // Используем API route для отдачи файлов вместо прямого пути
+    // Это необходимо, потому что Next.js в production не видит новые файлы в public/ без рестарта
+    const finalUrl = `/api/uploads/profiles/${path.basename(outputPath)}`
     logToFile('convertVideoAsync - Updating database with final URL', { mediaId, finalUrl })
     await new Promise((resolve, reject) => {
       conversionDb.run(
