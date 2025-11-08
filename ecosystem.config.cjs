@@ -80,7 +80,8 @@ module.exports = {
         NODE_ENV: 'production',
         TELEGRAM_BOT_TOKEN: '7762390260:AAHBTsEZXFl1VL200pZO54qicwuEKomhnYY',
         ADMIN_TELEGRAM_ID: '1119283257',
-        BACKEND_URL: 'https://kissblow.me'
+        BACKEND_URL: 'https://kissblow.me',
+        ADMIN_API_KEY: 'kissblow-admin-2024-verification-bot-key-12345'
       },
       error_file: './logs/telegram-verification-bot-err.log',
       out_file: './logs/telegram-verification-bot-out.log',
