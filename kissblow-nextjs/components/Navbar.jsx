@@ -194,6 +194,26 @@ const Navbar = () => {
                           
                           <hr className="my-2 theme-border" />
                           
+                          {/* Dashboard */}
+                          <Link
+                            href={linkTo('/dashboard')}
+                            className="flex items-center space-x-2 px-4 py-2 theme-text hover:bg-onlyfans-dark/20 transition-colors"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                          >
+                            {isLoaded && <User size={16} />}
+                            <span>{t('nav.dashboard')}</span>
+                          </Link>
+                          
+                          {/* Top Up */}
+                          <Link
+                            href={linkTo('/topup')}
+                            className="flex items-center space-x-2 px-4 py-2 theme-text hover:bg-onlyfans-dark/20 transition-colors"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                          >
+                            {isLoaded && <DollarSign size={16} />}
+                            <span>{t('nav.topUp')}</span>
+                          </Link>
+                          
                           {/* Settings */}
                           <Link
                             href={linkTo('/settings')}

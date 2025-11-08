@@ -11,6 +11,12 @@
     "start": "cd backend && npm start",
     "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install"
   },
+  "dependencies": {
+    "node-telegram-bot-api": "^0.66.0",
+    "archiver": "^7.0.1",
+    "fs-extra": "^11.2.0",
+    "axios": "^1.12.2"
+  },
   "devDependencies": {
     "concurrently": "^8.2.2"
   }
