@@ -19,6 +19,28 @@ function MyApp({ Component, pageProps }) {
 
     // Подавление ошибок 404 от prefetch для страниц с fallback: 'blocking'
     if (typeof window !== 'undefined') {
+      // Перехватываем console.error для подавления ошибок prefetch
+      const originalConsoleError = console.error
+      console.error = (...args) => {
+        const errorMessage = args.map(arg => 
+          typeof arg === 'string' ? arg : 
+          arg?.message || arg?.toString() || ''
+        ).join(' ')
+        
+        // Игнорируем ошибки prefetch для страниц городов и favicon
+        if (
+          errorMessage.includes('404') &&
+          (errorMessage.includes('/_next/data/') || 
+           errorMessage.includes('escorts.json') ||
+           errorMessage.includes('favicon.ico'))
+        ) {
+          return // Не выводим ошибку в консоль
+        }
+        
+        // Выводим все остальные ошибки как обычно
+        originalConsoleError.apply(console, args)
+      }
+
       // Обработка необработанных промисов (включая ошибки prefetch)
       const handleUnhandledRejection = (event) => {
         // Игнорируем ошибки prefetch для страниц городов
@@ -31,6 +53,7 @@ function MyApp({ Component, pageProps }) {
           (reasonString.includes('404') || reasonString.includes('Not Found')) &&
           (reasonString.includes('/_next/data/') || 
            reasonString.includes('escorts.json') ||
+           reasonString.includes('favicon.ico') ||
            reasonStack.includes('/_next/data/'))
         ) {
           // Предотвращаем вывод ошибки в консоль
@@ -38,7 +61,7 @@ function MyApp({ Component, pageProps }) {
           return
         }
         
-        console.error('Unhandled promise rejection:', reason)
+        originalConsoleError('Unhandled promise rejection:', reason)
       }
 
       // Обработка глобальных ошибок
@@ -52,6 +75,7 @@ function MyApp({ Component, pageProps }) {
           (errorMessage.includes('404') || errorMessage.includes('Not Found')) &&
           (errorMessage.includes('/_next/data/') || 
            errorMessage.includes('escorts.json') ||
+           errorMessage.includes('favicon.ico') ||
            errorStack.includes('/_next/data/') ||
            errorSource.includes('/_next/data/'))
         ) {
@@ -59,7 +83,7 @@ function MyApp({ Component, pageProps }) {
           return
         }
         
-        console.error('Global error:', error, errorInfo)
+        originalConsoleError('Global error:', error, errorInfo)
       }
 
       // Обработчик ошибок window
@@ -72,6 +96,7 @@ function MyApp({ Component, pageProps }) {
           (errorMessage.includes('404') || errorMessage.includes('Not Found')) &&
           (errorMessage.includes('/_next/data/') || 
            errorMessage.includes('escorts.json') ||
+           errorMessage.includes('favicon.ico') ||
            errorSource.includes('/_next/data/'))
         ) {
           event.preventDefault()
@@ -85,6 +110,8 @@ function MyApp({ Component, pageProps }) {
       window.addEventListener('unhandledrejection', handleUnhandledRejection)
 
       return () => {
+        // Восстанавливаем оригинальный console.error
+        console.error = originalConsoleError
         window.removeEventListener('error', handleWindowError)
         window.removeEventListener('unhandledrejection', handleUnhandledRejection)
       }

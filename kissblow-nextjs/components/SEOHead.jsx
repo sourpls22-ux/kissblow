@@ -45,6 +45,12 @@ const SEOHead = ({
 
   return (
     <Head>
+      {/* Favicon */}
+      <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+      <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+      <link rel="shortcut icon" href="/favicon.svg" />
+      <link rel="apple-touch-icon" href="/favicon-16x16.png" />
+      
       {/* Basic Meta Tags */}
       <title>{fullTitle}</title>
       <meta name="description" content={fullDescription} />
