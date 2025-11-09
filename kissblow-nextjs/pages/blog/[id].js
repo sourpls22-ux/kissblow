@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { Calendar, User, ArrowLeft, Clock } from 'lucide-react'
-import { useLanguage } from '../../contexts/LanguageContext'
 import SEOHead from '../../components/SEOHead'
 import Breadcrumbs from '../../components/Breadcrumbs'
 import ShareButton from '../../components/ShareButton'
@@ -8,7 +7,6 @@ import { generateArticleSchema } from '../../utils/schemaMarkup'
 import { useEffect, useState } from 'react'
 
 const BlogPost = ({ post, relatedPosts, translations, lastUpdated }) => {
-  const { language } = useLanguage()
   const currentTranslations = translations.en
   const [articleSchema, setArticleSchema] = useState(null)
 
@@ -271,8 +269,7 @@ export async function getStaticProps({ params }) {
         month: 'long',
         day: 'numeric'
       })
-    },
-    revalidate: 86400 // 24 часа
+    }
   }
 }
 

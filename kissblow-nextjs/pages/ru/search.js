@@ -3,11 +3,42 @@ import { useRouter } from 'next/router'
 import { Cloud, MapPin } from 'lucide-react'
 import SEOHead from '../../components/SEOHead'
 import CitySearchInput from '../../components/CitySearchInput'
-import { useTranslation } from '../../hooks/useTranslation'
 
-export default function Search() {
+const Search = ({ translations }) => {
   const router = useRouter()
-  const { t } = useTranslation()
+  
+  // Локальная функция t() для использования переводов из props
+  const t = (key, params = {}) => {
+    const keys = key.split('.')
+    let value = translations
+    
+    for (const k of keys) {
+      if (value && typeof value === 'object') {
+        value = value[k]
+      } else {
+        value = undefined
+        break
+      }
+    }
+    
+    if (value === undefined) {
+      return key
+    }
+    
+    // Handle function translations
+    if (typeof value === 'function') {
+      return value(params)
+    }
+    
+    // Handle string replacements
+    if (typeof value === 'string' && Object.keys(params).length > 0) {
+      return value.replace(/\{(\w+)\}/g, (match, paramKey) => {
+        return params[paramKey] || match
+      })
+    }
+    
+    return value
+  }
 
   const seoData = {
     title: t('search.seo.title'),
@@ -125,4 +156,16 @@ export default function Search() {
     </>
   )
 }
+
+export async function getStaticProps() {
+  const { ru } = await import('../../locales/ru')
+  
+  return {
+    props: {
+      translations: ru
+    }
+  }
+}
+
+export default Search
 

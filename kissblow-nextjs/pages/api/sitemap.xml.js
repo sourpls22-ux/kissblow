@@ -26,6 +26,37 @@ async function getAllCities() {
   }
 }
 
+// Функция для получения всех активных профилей из базы данных
+async function getAllActiveProfiles() {
+  try {
+    const sqlite3 = await import('sqlite3')
+    const path = await import('path')
+    
+    const dbPath = path.join(process.cwd(), 'database.sqlite')
+    const db = new sqlite3.Database(dbPath)
+    
+    const profiles = await new Promise((resolve, reject) => {
+      db.all(
+        `SELECT id, city, updated_at FROM profiles WHERE is_active = 1`,
+        [],
+        (err, rows) => {
+          if (err) {
+            reject(err)
+          } else {
+            resolve(rows || [])
+          }
+        }
+      )
+    })
+    
+    db.close()
+    return profiles
+  } catch (error) {
+    console.error('Error fetching active profiles:', error)
+    return []
+  }
+}
+
 function generateSitemapXML(urls) {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
@@ -111,7 +142,8 @@ export default async function handler(req, res) {
     { path: '/blog', priority: '0.8', changefreq: 'daily' },
     { path: '/terms', priority: '0.5', changefreq: 'yearly' },
     { path: '/privacy', priority: '0.5', changefreq: 'yearly' },
-    { path: '/contact-dmca', priority: '0.6', changefreq: 'monthly' }
+    { path: '/contact-dmca', priority: '0.6', changefreq: 'monthly' },
+    { path: '/faq', priority: '0.6', changefreq: 'monthly' }
   ]
 
   staticPagesEN.forEach(page => {
@@ -202,6 +234,43 @@ export default async function handler(req, res) {
         { hreflang: 'en', href: `${SITE_URL}/blog/${postId}` },
         { hreflang: 'ru', href: `${SITE_URL}/ru/blog/${postId}` },
         { hreflang: 'x-default', href: `${SITE_URL}/blog/${postId}` }
+      ]
+    })
+  })
+
+  // Активные профили (EN и RU)
+  const activeProfiles = await getAllActiveProfiles()
+  activeProfiles.forEach(profile => {
+    if (!profile.city) return
+    
+    const citySlug = normalizeCityName(profile.city)
+    const lastmod = profile.updated_at 
+      ? new Date(profile.updated_at).toISOString().split('T')[0]
+      : now
+    
+    // EN версия профиля
+    urls.push({
+      loc: `${SITE_URL}/${citySlug}/escorts/${profile.id}`,
+      lastmod: lastmod,
+      changefreq: 'daily',
+      priority: '0.8',
+      alternate: [
+        { hreflang: 'en', href: `${SITE_URL}/${citySlug}/escorts/${profile.id}` },
+        { hreflang: 'ru', href: `${SITE_URL}/ru/${citySlug}/escorts/${profile.id}` },
+        { hreflang: 'x-default', href: `${SITE_URL}/${citySlug}/escorts/${profile.id}` }
+      ]
+    })
+
+    // RU версия профиля
+    urls.push({
+      loc: `${SITE_URL}/ru/${citySlug}/escorts/${profile.id}`,
+      lastmod: lastmod,
+      changefreq: 'daily',
+      priority: '0.8',
+      alternate: [
+        { hreflang: 'en', href: `${SITE_URL}/${citySlug}/escorts/${profile.id}` },
+        { hreflang: 'ru', href: `${SITE_URL}/ru/${citySlug}/escorts/${profile.id}` },
+        { hreflang: 'x-default', href: `${SITE_URL}/${citySlug}/escorts/${profile.id}` }
       ]
     })
   })

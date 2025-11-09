@@ -1,20 +1,55 @@
 import SEOHead from '../components/SEOHead'
 import Breadcrumbs from '../components/Breadcrumbs'
-import { useTranslation } from '../hooks/useTranslation'
+import { useLanguage } from '../contexts/LanguageContext'
 
-const About = () => {
-  const { t } = useTranslation()
-  const lastUpdated = new Date().toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
+const About = ({ translations, lastUpdated }) => {
+  const { language: clientLanguage } = useLanguage()
+  const currentTranslations = translations.en
+  const t = (key, params = {}) => {
+    const keys = key.split('.')
+    let value = currentTranslations
+    
+    for (const k of keys) {
+      if (value && typeof value === 'object') {
+        value = value[k]
+      } else {
+        value = undefined
+        break
+      }
+    }
+    
+    if (value === undefined) {
+      console.warn(`Translation not found for key: ${key}`)
+      return key
+    }
+    
+    // If returnObjects is true, return the value as-is (array or object)
+    if (params.returnObjects) {
+      return value
+    }
+    
+    if (Array.isArray(value)) {
+      return value
+    }
+    
+    if (typeof value === 'function') {
+      return value(params)
+    }
+    
+    if (typeof value === 'string' && Object.keys(params).length > 0) {
+      return value.replace(/\{(\w+)\}/g, (match, paramKey) => {
+        return params[paramKey] || match
+      })
+    }
+    
+    return value
+  }
 
 
   const seoData = {
-    title: t('about.seo.title'),
-    description: t('about.seo.description'),
-    keywords: t('about.seo.keywords'),
+    title: t('seo.title'),
+    description: t('seo.description'),
+    keywords: t('seo.keywords'),
     url: 'https://kissblow.me/about',
     canonical: 'https://kissblow.me/about',
     alternate: {
@@ -34,29 +69,29 @@ const About = () => {
         </div>
 
         <div className="theme-surface rounded-lg p-8 border theme-border">
-          <h1 className="text-3xl font-bold theme-text mb-8">{t('about.title')}</h1>
+          <h1 className="text-3xl font-bold theme-text mb-8">{t('title')}</h1>
           
           <p className="text-sm theme-text-secondary mb-8">Last Updated: {lastUpdated}</p>
           
           <div className="space-y-8 theme-text-secondary">
             {/* Mission Section */}
             <section>
-              <h2 className="text-2xl font-semibold theme-text mb-4">{t('about.mission.title')}</h2>
+              <h2 className="text-2xl font-semibold theme-text mb-4">{t('mission.title')}</h2>
               <p className="text-lg leading-relaxed">
-                {t('about.mission.content')}
+                {t('mission.content')}
               </p>
             </section>
 
             {/* Company Section */}
             <section>
-              <h2 className="text-2xl font-semibold theme-text mb-4">{t('about.company.title')}</h2>
+              <h2 className="text-2xl font-semibold theme-text mb-4">{t('company.title')}</h2>
               <p className="text-lg leading-relaxed mb-4">
-                {t('about.company.content')}
+                {t('company.content')}
               </p>
               <div className="bg-onlyfans-accent/10 rounded-lg p-4">
-                <h3 className="text-lg font-semibold theme-text mb-3">{t('about.company.valuesTitle')}</h3>
+                <h3 className="text-lg font-semibold theme-text mb-3">{t('company.valuesTitle')}</h3>
                 <ul className="list-disc list-inside space-y-2">
-                  {t('about.company.values', { returnObjects: true }).map((value, index) => (
+                  {t('company.values', { returnObjects: true }).map((value, index) => (
                     <li key={index} className="text-onlyfans-accent font-medium">{value}</li>
                   ))}
                 </ul>
@@ -65,9 +100,9 @@ const About = () => {
 
             {/* Services Section */}
             <section>
-              <h2 className="text-2xl font-semibold theme-text mb-4">{t('about.services.title')}</h2>
+              <h2 className="text-2xl font-semibold theme-text mb-4">{t('services.title')}</h2>
               <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {t('about.services.items', { returnObjects: true }).map((item, index) => (
+                {t('services.items', { returnObjects: true }).map((item, index) => (
                   <li key={index} className="flex items-start space-x-2">
                     <span className="text-onlyfans-accent font-bold mt-1">•</span>
                     <span>{item}</span>
@@ -78,14 +113,14 @@ const About = () => {
 
             {/* Legal Compliance Section */}
             <section>
-              <h2 className="text-2xl font-semibold theme-text mb-4">{t('about.legal.title')}</h2>
+              <h2 className="text-2xl font-semibold theme-text mb-4">{t('legal.title')}</h2>
               <p className="text-lg leading-relaxed mb-4">
-                {t('about.legal.content')}
+                {t('legal.content')}
               </p>
               <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-green-800 dark:text-green-200 mb-3">{t('about.legal.complianceTitle')}</h3>
+                <h3 className="text-lg font-semibold text-green-800 dark:text-green-200 mb-3">{t('legal.complianceTitle')}</h3>
                 <ul className="list-disc list-inside space-y-2">
-                  {t('about.legal.compliance', { returnObjects: true }).map((item, index) => (
+                  {t('legal.compliance', { returnObjects: true }).map((item, index) => (
                     <li key={index} className="text-green-700 dark:text-green-300">{item}</li>
                   ))}
                 </ul>
@@ -94,33 +129,33 @@ const About = () => {
 
             {/* Zero Tolerance Policy Section */}
             <section>
-              <h2 className="text-2xl font-semibold theme-text mb-4 text-red-600 dark:text-red-400">{t('about.zeroTolerance.title')}</h2>
+              <h2 className="text-2xl font-semibold theme-text mb-4 text-red-600 dark:text-red-400">{t('zeroTolerance.title')}</h2>
               <p className="text-lg leading-relaxed mb-4">
-                {t('about.zeroTolerance.content')}
+                {t('zeroTolerance.content')}
               </p>
               <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 mb-4">
-                <h3 className="text-lg font-semibold text-red-800 dark:text-red-200 mb-3">{t('about.zeroTolerance.policiesTitle')}</h3>
+                <h3 className="text-lg font-semibold text-red-800 dark:text-red-200 mb-3">{t('zeroTolerance.policiesTitle')}</h3>
                 <ul className="list-disc list-inside space-y-2">
-                  {t('about.zeroTolerance.policies', { returnObjects: true }).map((policy, index) => (
+                  {t('zeroTolerance.policies', { returnObjects: true }).map((policy, index) => (
                     <li key={index} className="text-red-700 dark:text-red-300">{policy}</li>
                   ))}
                 </ul>
               </div>
               <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
                 <p className="text-yellow-800 dark:text-yellow-200 font-medium">
-                  <strong>{t('about.zeroTolerance.enforcementTitle')}:</strong> {t('about.zeroTolerance.enforcement')}
+                  <strong>{t('zeroTolerance.enforcementTitle')}:</strong> {t('zeroTolerance.enforcement')}
                 </p>
               </div>
             </section>
 
             {/* Team Section */}
             <section>
-              <h2 className="text-2xl font-semibold theme-text mb-4">{t('about.team.title')}</h2>
+              <h2 className="text-2xl font-semibold theme-text mb-4">{t('team.title')}</h2>
               <p className="text-lg leading-relaxed mb-4">
-                {t('about.team.content')}
+                {t('team.content')}
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {t('about.team.departments', { returnObjects: true }).map((department, index) => (
+                {t('team.departments', { returnObjects: true }).map((department, index) => (
                   <div key={index} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
                     <p className="text-gray-800 dark:text-gray-200 font-medium">{department}</p>
                   </div>
@@ -130,22 +165,22 @@ const About = () => {
 
             {/* Contact Section */}
             <section>
-              <h2 className="text-2xl font-semibold theme-text mb-4">{t('about.contact.title')}</h2>
+              <h2 className="text-2xl font-semibold theme-text mb-4">{t('contact.title')}</h2>
               <p className="text-lg leading-relaxed mb-4">
-                {t('about.contact.content')}
+                {t('contact.content')}
               </p>
               <div className="bg-onlyfans-accent/10 rounded-lg p-6 text-center">
                 <p className="text-lg theme-text mb-3">
-                  {t('about.contact.singleEmail')}
+                  {t('contact.singleEmail')}
                 </p>
                 <a 
-                  href={`mailto:${t('about.contact.email')}`}
+                  href={`mailto:${t('contact.email')}`}
                   className="text-2xl font-bold text-onlyfans-accent hover:text-onlyfans-accent/80 transition-colors block mb-4"
                 >
-                  {t('about.contact.email')}
+                  {t('contact.email')}
                 </a>
                 <p className="text-sm theme-text-secondary italic">
-                  {t('about.contact.note')}
+                  {t('contact.note')}
                 </p>
               </div>
             </section>
@@ -157,7 +192,24 @@ const About = () => {
   )
 }
 
-// Removed getStaticProps to reduce page-data size
+export async function getStaticProps() {
+  const { en } = await import('../locales/en')
+  const { ru } = await import('../locales/ru')
+  
+  return {
+    props: {
+      translations: {
+        en: en.about,
+        ru: ru.about
+      },
+      lastUpdated: new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    }
+  }
+}
 
 export default About
 

@@ -63,7 +63,7 @@ export default async function handler(req, res) {
           try {
             const { revalidateProfileUpdates } = await import('../../../../lib/utils/revalidation.js')
             const citySlug = profile.city.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
-            await revalidateProfileUpdates(citySlug, id)
+            await revalidateProfileUpdates(id, citySlug)
             console.log(`✅ Triggered revalidation for deactivated profile ${id} in ${citySlug}`)
           } catch (revalidationError) {
             console.error('❌ Revalidation error:', revalidationError)

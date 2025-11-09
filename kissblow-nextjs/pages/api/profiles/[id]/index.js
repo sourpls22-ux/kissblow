@@ -372,6 +372,17 @@ export default async function handler(req, res) {
         log('Profile cache cleared after profile update')
       }
 
+      // Trigger On-Demand Revalidation for ISR pages
+      try {
+        const { revalidateProfileUpdates } = await import('../../../../lib/utils/revalidation.js')
+        const citySlug = sanitizedCity.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+        await revalidateProfileUpdates(parseInt(id), citySlug)
+        log('Profile pages revalidated after update', { profileId: id, city: citySlug })
+      } catch (revalidationError) {
+        log('Revalidation error (non-critical)', { error: revalidationError.message })
+        // Don't fail the request if revalidation fails
+      }
+
       res.json({
         message: 'Profile updated successfully',
         profile: {
@@ -539,7 +550,11 @@ export default async function handler(req, res) {
         )
       })
 
-      // 6. Удаляем сам профиль (CASCADE удалит связанные записи в media и reviews автоматически)
+      // 6. Сохраняем информацию о городе перед удалением для revalidation
+      const profileCity = profile.city
+      const citySlug = profileCity ? profileCity.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') : null
+
+      // 7. Удаляем сам профиль (CASCADE удалит связанные записи в media и reviews автоматически)
       await new Promise((resolve, reject) => {
         db.run(
           'DELETE FROM profiles WHERE id = ? AND user_id = ?',
@@ -550,6 +565,30 @@ export default async function handler(req, res) {
           }
         )
       })
+
+      // 8. Trigger On-Demand Revalidation for ISR pages
+      if (citySlug) {
+        try {
+          const { revalidateHomepage, revalidateCity } = await import('../../../../lib/utils/revalidation.js')
+          // Revalidate homepage (profile removed from list)
+          await revalidateHomepage()
+          // Revalidate city page (profile removed from city list)
+          await revalidateCity(citySlug)
+          console.log(`✅ Triggered revalidation after profile deletion: homepage and city ${citySlug}`)
+        } catch (revalidationError) {
+          console.error('❌ Revalidation error (non-critical):', revalidationError)
+          // Don't fail the request if revalidation fails
+        }
+      } else {
+        // If no city, just revalidate homepage
+        try {
+          const { revalidateHomepage } = await import('../../../../lib/utils/revalidation.js')
+          await revalidateHomepage()
+          console.log(`✅ Triggered homepage revalidation after profile deletion`)
+        } catch (revalidationError) {
+          console.error('❌ Revalidation error (non-critical):', revalidationError)
+        }
+      }
 
       console.log(`Profile ${id} and all associated files deleted successfully`)
       res.json({ message: 'Profile deleted successfully' })

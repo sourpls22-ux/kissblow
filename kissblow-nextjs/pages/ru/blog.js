@@ -4,14 +4,48 @@ import { Filter, Calendar, User, ArrowRight } from 'lucide-react'
 import SEOHead from '../../components/SEOHead'
 import Breadcrumbs from '../../components/Breadcrumbs'
 import { blogPosts } from '../../data/blogPosts'
-import { useTranslation } from '../../hooks/useTranslation'
 
-const Blog = () => {
-  const { t } = useTranslation()
+const Blog = ({ translations, lastUpdated: staticLastUpdated }) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
 
-  const lastUpdated = new Date().toLocaleDateString('ru-RU', { year: 'numeric', month: 'long', day: 'numeric' })
+  const currentTranslations = translations.ru
+  const t = (key, params = {}) => {
+    const keys = key.split('.')
+    let value = currentTranslations
+    
+    for (const k of keys) {
+      if (value && typeof value === 'object') {
+        value = value[k]
+      } else {
+        value = undefined
+        break
+      }
+    }
+    
+    if (value === undefined) {
+      console.warn(`Translation not found for key: ${key}`)
+      return key
+    }
+    
+    if (Array.isArray(value)) {
+      return value
+    }
+    
+    if (typeof value === 'function') {
+      return value(params)
+    }
+    
+    if (typeof value === 'string' && Object.keys(params).length > 0) {
+      return value.replace(/\{(\w+)\}/g, (match, paramKey) => {
+        return params[paramKey] || match
+      })
+    }
+    
+    return value
+  }
+
+  const lastUpdated = staticLastUpdated || new Date().toLocaleDateString('ru-RU', { year: 'numeric', month: 'long', day: 'numeric' })
 
   const categories = [
     { value: 'all', label: t('blog.categories.all') },
@@ -176,7 +210,30 @@ const Blog = () => {
   )
 }
 
-// Removed getStaticProps to avoid large page-data from translations
+export async function getStaticProps() {
+  const { en } = await import('../../locales/en')
+  const { ru } = await import('../../locales/ru')
+  
+  return {
+    props: {
+      translations: {
+        en: {
+          blog: en.blog,
+          breadcrumbs: en.breadcrumbs
+        },
+        ru: {
+          blog: ru.blog,
+          breadcrumbs: ru.breadcrumbs
+        }
+      },
+      lastUpdated: new Date().toLocaleDateString('ru-RU', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    }
+  }
+}
 
 export default Blog
 

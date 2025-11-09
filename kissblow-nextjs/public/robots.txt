@@ -10,9 +10,8 @@ Allow: /how-it-works
 Allow: /terms
 Allow: /privacy
 Allow: /contact-dmca
-Allow: /login
-Allow: /register
-Allow: /forgot-password
+Allow: /faq
+Allow: /search
 
 # Disallow private pages
 Disallow: /dashboard/
@@ -20,6 +19,9 @@ Disallow: /settings
 Disallow: /payment-history
 Disallow: /topup
 Disallow: /reset-password/
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
 Disallow: /girl/*/edit
 Disallow: /api/
 Disallow: /admin/

@@ -60,32 +60,75 @@ export async function getStaticProps() {
       })
     )
 
+    // Загружаем переводы для SEO
+    const { en } = await import('../locales/en')
+    
     return {
       props: {
         initialProfiles: profilesWithLikes,
         initialPagination: data.pagination || {},
-        lastUpdated: new Date().toISOString()
+        lastUpdated: new Date().toISOString(),
+        translations: {
+          en: {
+            browse: en.browse
+          }
+        }
       },
       revalidate: 600 // 10 минут как fallback
     }
   } catch (error) {
     console.error('Failed to fetch profiles for ISR:', error)
+    const { en } = await import('../locales/en')
     return {
       props: {
         initialProfiles: [],
         initialPagination: {},
-        lastUpdated: new Date().toISOString()
+        lastUpdated: new Date().toISOString(),
+        translations: {
+          en: {
+            browse: en.browse
+          }
+        }
       },
       revalidate: 600
     }
   }
 }
 
-const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
+const Home = ({ initialProfiles, initialPagination, lastUpdated, translations }) => {
   const router = useRouter()
   const { city, page, search, keyword, service } = router.query
   const { language, linkTo } = useLanguage()
-  const { t } = useTranslation()
+  const { t: tClient } = useTranslation()
+  
+  // Локальная функция t() для SEO (использует переводы из props, генерируется на сервере)
+  const currentTranslations = translations?.en || {}
+  const t = (key, params = {}) => {
+    const keys = key.split('.')
+    let value = currentTranslations
+    
+    for (const k of keys) {
+      if (value && typeof value === 'object') {
+        value = value[k]
+      } else {
+        value = undefined
+        break
+      }
+    }
+    
+    if (value === undefined) {
+      // Fallback на клиентский перевод
+      return tClient(key, params)
+    }
+    
+    if (typeof value === 'string' && Object.keys(params).length > 0) {
+      return value.replace(/\{(\w+)\}/g, (match, paramKey) => {
+        return params[paramKey] || match
+      })
+    }
+    
+    return value
+  }
   
   // Функция для получения минимальной цены профиля
   const getMinPrice = (profile) => {
@@ -622,6 +665,7 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated }) => {
     structuredData.push(generateItemListSchema(filteredProfiles.slice(0, 10), itemListTitle))
   }
 
+  // SEO-метаданные генерируются на сервере с использованием переводов из props
   const seoData = {
     title: city ? `${t('browse.escorts')} in ${city}` : t('browse.seo.title'),
     description: city 

@@ -1220,6 +1220,16 @@ const en = {
     }
   },
 
+  // FAQ page
+  faq: {
+    title: 'FAQ — Frequently Asked Questions',
+    seo: {
+      title: 'FAQ — Frequently Asked Questions - KissBlow.me',
+      description: 'Answers to common questions about verification, safety, contacting providers, and reporting.',
+      keywords: 'FAQ, frequently asked questions, KissBlow, verification, safety, contact, report'
+    }
+  },
+
   // Contact DMCA page
   contactDMCA: {
     backToHome: 'Back to Escorts',
