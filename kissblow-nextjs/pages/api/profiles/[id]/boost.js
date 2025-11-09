@@ -96,10 +96,36 @@ export default async function handler(req, res) {
                     return res.status(500).json({ error: 'Database error' })
                   }
 
+                  // Clear profile lists cache first
+                  if (typeof global.profileCache !== 'undefined') {
+                    global.profileCache.clear()
+                    console.log(`✅ Cleared profile lists cache for boosted profile ${id}`)
+                  }
+
                   res.json({
                     message: 'Profile boosted successfully',
                     newBalance: newBalance,
                     boostExpiresAt: boostExpiry.toISOString()
+                  })
+
+                  // Trigger On-Demand Revalidation after response (non-blocking)
+                  db.get('SELECT city FROM profiles WHERE id = ?', [id], async (err, profile) => {
+                    if (!err && profile) {
+                      try {
+                        if (profile.city) {
+                          const { revalidateProfileUpdates } = await import('../../../../lib/utils/revalidation.js')
+                          const citySlug = profile.city.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+                          await revalidateProfileUpdates(parseInt(id), citySlug)
+                          console.log(`✅ Triggered revalidation for boosted profile ${id} in ${citySlug}`)
+                        } else {
+                          const { revalidateHomepage } = await import('../../../../lib/utils/revalidation.js')
+                          await revalidateHomepage()
+                          console.log(`✅ Triggered homepage revalidation for boosted profile ${id}`)
+                        }
+                      } catch (revalidationError) {
+                        console.error('❌ Revalidation error (non-critical):', revalidationError)
+                      }
+                    }
                   })
                 }
               )

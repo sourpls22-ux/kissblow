@@ -276,6 +276,10 @@ export default async function handler(req, res) {
 
       log('Profile ownership verified')
 
+      // Check if city changed - need to revalidate both old and new city
+      const oldCity = profile.city
+      const cityChanged = oldCity && sanitizedCity && oldCity.toLowerCase() !== sanitizedCity.toLowerCase()
+
       // Media validation - check if profile has at least 1 photo
       const photoCountResult = await new Promise((resolve, reject) => {
         db.get(
@@ -374,10 +378,19 @@ export default async function handler(req, res) {
 
       // Trigger On-Demand Revalidation for ISR pages
       try {
-        const { revalidateProfileUpdates } = await import('../../../../lib/utils/revalidation.js')
-        const citySlug = sanitizedCity.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
-        await revalidateProfileUpdates(parseInt(id), citySlug)
-        log('Profile pages revalidated after update', { profileId: id, city: citySlug })
+        const { revalidateProfileUpdates, revalidateCity } = await import('../../../../lib/utils/revalidation.js')
+        const newCitySlug = sanitizedCity.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+        
+        // Always revalidate profile pages with new city
+        await revalidateProfileUpdates(parseInt(id), newCitySlug)
+        log('Profile pages revalidated after update', { profileId: id, city: newCitySlug })
+        
+        // If city changed, also revalidate old city page
+        if (cityChanged && oldCity) {
+          const oldCitySlug = oldCity.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+          await revalidateCity(oldCitySlug)
+          log('Old city page revalidated after city change', { oldCity: oldCitySlug })
+        }
       } catch (revalidationError) {
         log('Revalidation error (non-critical)', { error: revalidationError.message })
         // Don't fail the request if revalidation fails

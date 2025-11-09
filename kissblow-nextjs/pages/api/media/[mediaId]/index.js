@@ -48,6 +48,20 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'Media not found or access denied' })
     }
 
+    // Get profile info before deletion for revalidation
+    const profile = await new Promise((resolve, reject) => {
+      db.get(
+        `SELECT p.id, p.city FROM profiles p 
+         JOIN media m ON m.profile_id = p.id 
+         WHERE m.id = ?`,
+        [mediaId],
+        (err, row) => {
+          if (err) reject(err)
+          else resolve(row)
+        }
+      )
+    })
+
     // Delete media record
     await new Promise((resolve, reject) => {
       db.run(
@@ -65,6 +79,26 @@ export default async function handler(req, res) {
       console.log('Media deleted successfully:', mediaId)
     }
     res.json({ message: 'Media deleted successfully' })
+
+    // Trigger On-Demand Revalidation after response (non-blocking)
+    if (profile) {
+      (async () => {
+        try {
+          if (profile.city) {
+            const { revalidateProfileUpdates } = await import('../../../../lib/utils/revalidation.js')
+            const citySlug = profile.city.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+            await revalidateProfileUpdates(parseInt(profile.id), citySlug)
+            console.log(`✅ Triggered revalidation after media deletion for profile ${profile.id} in ${citySlug}`)
+          } else {
+            const { revalidateHomepage } = await import('../../../../lib/utils/revalidation.js')
+            await revalidateHomepage()
+            console.log(`✅ Triggered homepage revalidation after media deletion for profile ${profile.id}`)
+          }
+        } catch (revalidationError) {
+          console.error('❌ Revalidation error (non-critical):', revalidationError)
+        }
+      })()
+    }
 
   } catch (error) {
     console.error('Media deletion error:', error)

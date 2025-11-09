@@ -77,7 +77,27 @@ export default async function handler(req, res) {
     })
 
     res.json({ message: 'Main photo updated successfully' })
-    db.close()
+
+    // Trigger On-Demand Revalidation after response (non-blocking)
+    db.get('SELECT city FROM profiles WHERE id = ?', [id], async (err, profile) => {
+      if (!err && profile) {
+        try {
+          if (profile.city) {
+            const { revalidateProfileUpdates } = await import('../../../../lib/utils/revalidation.js')
+            const citySlug = profile.city.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+            await revalidateProfileUpdates(parseInt(id), citySlug)
+            console.log(`✅ Triggered revalidation after main photo change for profile ${id} in ${citySlug}`)
+          } else {
+            const { revalidateHomepage } = await import('../../../../lib/utils/revalidation.js')
+            await revalidateHomepage()
+            console.log(`✅ Triggered homepage revalidation after main photo change for profile ${id}`)
+          }
+        } catch (revalidationError) {
+          console.error('❌ Revalidation error (non-critical):', revalidationError)
+        }
+      }
+      db.close()
+    })
 
   } catch (error) {
     console.error('Set main photo error:', error)

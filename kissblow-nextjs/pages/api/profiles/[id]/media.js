@@ -379,9 +379,11 @@ export default async function handler(req, res) {
             isConverting: needsBackgroundVideoConversion
           })
 
-          // После успешной загрузки видео, ревалидируем страницу профиля только если конвертация не требуется
+          // После успешной загрузки медиа, ревалидируем страницы
+          // Для видео: ревалидируем только если конвертация не требуется
           // Если видео конвертируется, ревалидация произойдёт после завершения конвертации
-          if (type === 'video' && !needsBackgroundVideoConversion) {
+          // Для фото: ревалидируем сразу
+          if (type === 'photo' || (type === 'video' && !needsBackgroundVideoConversion)) {
             try {
               const { revalidateProfileUpdates } = await import('../../../../lib/utils/revalidation.js')
               // Получаем город профиля для ревалидации
@@ -395,7 +397,16 @@ export default async function handler(req, res) {
               if (profileData && profileData.city) {
                 const citySlug = profileData.city.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
                 await revalidateProfileUpdates(parseInt(id), citySlug)
-                log('Profile page revalidated after video upload', { profileId: id, city: citySlug })
+                log('Profile pages revalidated after media upload', { 
+                  profileId: id, 
+                  city: citySlug,
+                  mediaType: type
+                })
+              } else {
+                // If no city, revalidate only homepage
+                const { revalidateHomepage } = await import('../../../../lib/utils/revalidation.js')
+                await revalidateHomepage()
+                log('Homepage revalidated after media upload', { profileId: id, mediaType: type })
               }
             } catch (revalidateError) {
               log('Revalidation failed (non-critical)', { error: revalidateError.message })

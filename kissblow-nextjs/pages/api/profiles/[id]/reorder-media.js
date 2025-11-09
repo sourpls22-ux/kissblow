@@ -75,11 +75,31 @@ export default async function handler(req, res) {
                 } else {
                   console.log('Main photo updated after reorder for profile:', id)
                 }
-                db.close()
+                
+                res.json({ message: 'Media order updated successfully' })
+                
+                // Trigger On-Demand Revalidation after response (non-blocking)
+                db.get('SELECT city FROM profiles WHERE id = ?', [id], async (err, profile) => {
+                  if (!err && profile) {
+                    try {
+                      if (profile.city) {
+                        const { revalidateProfileUpdates } = await import('../../../../lib/utils/revalidation.js')
+                        const citySlug = profile.city.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+                        await revalidateProfileUpdates(parseInt(id), citySlug)
+                        console.log(`✅ Triggered revalidation after media reorder for profile ${id} in ${citySlug}`)
+                      } else {
+                        const { revalidateHomepage } = await import('../../../../lib/utils/revalidation.js')
+                        await revalidateHomepage()
+                        console.log(`✅ Triggered homepage revalidation after media reorder for profile ${id}`)
+                      }
+                    } catch (revalidationError) {
+                      console.error('❌ Revalidation error (non-critical):', revalidationError)
+                    }
+                  }
+                  db.close()
+                })
               }
             )
-            
-            res.json({ message: 'Media order updated successfully' })
           })
           .catch((err) => {
             console.error('Error updating media order:', err)
