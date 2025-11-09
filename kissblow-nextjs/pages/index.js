@@ -1016,8 +1016,7 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
                         }}
                       >
                         {/* Верхняя часть - только изображение */}
-                        {/* Используем next/image с priority={true} для LCP оптимизации
-                            unoptimized={true} отключает серверную оптимизацию, чтобы избежать задержки на конвертацию WebP/AVIF */}
+                        {/* Используем next/image с priority={true} для LCP оптимизации */}
                         <div className="relative h-96 max-sm:h-64 bg-gradient-to-br from-onlyfans-accent/20 to-onlyfans-dark/20">
                           {profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url ? (
                             <Image
@@ -1030,7 +1029,6 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
                               priority={true}
                               fetchPriority="high"
                               quality={75}
-                              unoptimized={true}
                               onError={(e) => {
                                 console.error('Failed to load profile image:', profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url)
                                 e.target.style.display = 'none'
