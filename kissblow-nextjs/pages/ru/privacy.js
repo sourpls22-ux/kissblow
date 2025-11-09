@@ -9,6 +9,11 @@ const Privacy = ({ translations, lastUpdated }) => {
   // Для русской страницы приоритет русскому языку, но без JS показываем русский
   const currentTranslations = translations.ru
   const t = (key, params = {}) => {
+    if (!currentTranslations || typeof currentTranslations !== 'object') {
+      console.warn(`Translation not found for key: ${key} (translations object is invalid)`)
+      return key
+    }
+    
     const keys = key.split('.')
     let value = currentTranslations
     

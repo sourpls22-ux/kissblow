@@ -8,6 +8,11 @@ const Terms = ({ translations, lastUpdated }) => {
   // Для английской страницы приоритет английскому языку, но без JS показываем английский
   const currentTranslations = translations.en
   const t = (key, params = {}) => {
+    if (!currentTranslations || typeof currentTranslations !== 'object') {
+      console.warn(`Translation not found for key: ${key} (translations object is invalid)`)
+      return key
+    }
+    
     const keys = key.split('.')
     let value = currentTranslations
     
