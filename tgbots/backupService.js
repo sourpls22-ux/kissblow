@@ -57,7 +57,7 @@ export async function createBackup() {
 function addFilesToArchive(archive) {
   console.log('📁 Добавляю файлы в архив...')
   
-  // 1. База данных SQLite - содержит ВСЕ данные:
+  // База данных SQLite - содержит ВСЕ данные:
   //    - users (аккаунты, балансы)
   //    - profiles (профили и их информация)
   //    - reviews (отзывы)
@@ -73,23 +73,8 @@ function addFilesToArchive(archive) {
     console.log('  ⚠️ database.sqlite не найден')
   }
   
-  // 2. Фото и видео профилей
-  const profilesUploadsDir = path.join(NEXTJS_ROOT, 'public', 'uploads', 'profiles')
-  if (fs.existsSync(profilesUploadsDir)) {
-    console.log('  📁 public/uploads/profiles/ (фото и видео профилей)')
-    archive.directory(profilesUploadsDir, 'public/uploads/profiles')
-  } else {
-    console.log('  ⚠️ public/uploads/profiles/ не найден')
-  }
-  
-  // 3. Фото верификаций
-  const verificationsUploadsDir = path.join(NEXTJS_ROOT, 'public', 'uploads', 'verifications')
-  if (fs.existsSync(verificationsUploadsDir)) {
-    console.log('  📁 public/uploads/verifications/ (фото верификаций)')
-    archive.directory(verificationsUploadsDir, 'public/uploads/verifications')
-  } else {
-    console.log('  ⚠️ public/uploads/verifications/ не найден')
-  }
+  // Медиафайлы (фото и видео) не бекапятся для уменьшения размера архива
+  // Они могут быть восстановлены из других источников или перезагружены пользователями
   
   console.log('✅ Все файлы добавлены в архив')
 }
