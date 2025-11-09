@@ -45,12 +45,27 @@ const nextConfig = {
   },
   
   images: {
-    domains: ['localhost', 'kissblow.me'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'kissblow.me',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '3000',
+      },
+    ],
     formats: ['image/webp', 'image/avif'],
     minimumCacheTTL: 60, // 1 минута кэш
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     unoptimized: false, // Включить оптимизацию изображений для продакшна
+    // Оптимизация размеров изображений
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384, 500],
+    // Используем стандартный loader для оптимизации
+    loader: 'default',
   },
   
   async headers() {
