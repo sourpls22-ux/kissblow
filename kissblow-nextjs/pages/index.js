@@ -992,7 +992,7 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
                 <h2 className="text-2xl font-semibold theme-text mb-6">{t('browse.availableProfiles')}</h2>
                 
                 {/* Profiles Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6 smooth-transition">
+                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6">
                 {filteredProfiles.length > 0 && (
                   <>
                     {/* Первый профиль - критичен для LCP, рендерим сразу */}
@@ -1002,7 +1002,7 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
                       <Link
                         key={profile.id}
                         href={profileUrl}
-                        className="theme-surface rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300 border theme-border"
+                        className="theme-surface rounded-lg overflow-hidden border theme-border"
                         onClick={(e) => {
                           // Если клик был на изображении или другой дочерний элемент, убеждаемся что навигация работает
                           // Используем router.push как fallback для гарантии навигации
@@ -1081,7 +1081,7 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
                       <Link
                         key={profile.id}
                         href={profileUrl}
-                        className="theme-surface rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300 border theme-border"
+                        className="theme-surface rounded-lg overflow-hidden border theme-border hover:scale-105 hover:transition-transform hover:duration-300"
                         onClick={(e) => {
                           // Если клик был на изображении или другой дочерний элемент, убеждаемся что навигация работает
                           // Используем router.push как fallback для гарантии навигации
