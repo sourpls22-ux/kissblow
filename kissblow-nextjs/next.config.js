@@ -35,7 +35,8 @@ const nextConfig = {
       // Next.js автоматически использует browserslist из .browserslistrc или package.json
     }
     
-    // Отключаем агрессивную оптимизацию для стабильности
+    // Оптимизация для минимизации
+    // Next.js уже имеет встроенную оптимизацию tree-shaking, не нужно добавлять usedExports
     config.optimization = {
       ...config.optimization,
       moduleIds: 'deterministic',
