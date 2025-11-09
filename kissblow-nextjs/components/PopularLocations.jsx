@@ -26,6 +26,7 @@ const PopularLocations = () => {
           <Link
             key={city}
             href={linkTo(`/${city.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}/escorts`)}
+            prefetch={false}
             className="group flex items-center space-x-2 p-3 theme-surface rounded-lg border theme-border hover:border-onlyfans-accent hover:shadow-md transition-all duration-200"
             aria-label={`Find escorts in ${city.replace(/\s+(UK|CA|US|AU|CL|VE)$/, '')}`}
           >

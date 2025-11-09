@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, startTransition } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import Image from 'next/image'
-import Head from 'next/head'
 import { Search, Filter, Globe, RefreshCw, Star, User, MapPin, Heart, X, Loader2 } from 'lucide-react'
 import SEOHead from '../../components/SEOHead'
 import PaginationControls from '../../components/PaginationControls'
@@ -657,24 +656,9 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
     structuredData: structuredData.length > 0 ? structuredData : undefined
   }
 
-  // Получаем URL первого изображения для preload
-  const firstImageUrl = filteredProfiles.length > 0 && (filteredProfiles[0].image || filteredProfiles[0].main_photo_url || filteredProfiles[0].image_url || filteredProfiles[0].first_photo_url)
-    ? filteredProfiles[0].image || filteredProfiles[0].main_photo_url || filteredProfiles[0].image_url || filteredProfiles[0].first_photo_url
-    : null
-
   return (
     <>
       <SEOHead {...seoData} />
-      {firstImageUrl && (
-        <Head>
-          <link
-            rel="preload"
-            as="image"
-            href={firstImageUrl}
-            fetchPriority="high"
-          />
-        </Head>
-      )}
       <div className="min-h-screen theme-bg py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
