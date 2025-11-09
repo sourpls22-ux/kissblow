@@ -47,9 +47,9 @@ const Privacy = ({ translations, lastUpdated }) => {
   }
 
   const seoData = {
-    title: t('privacy.seo.title'),
-    description: t('privacy.seo.description'),
-    keywords: t('privacy.seo.keywords'),
+    title: t('seo.title'),
+    description: t('seo.description'),
+    keywords: t('seo.keywords'),
     url: 'https://kissblow.me/ru/privacy',
     canonical: 'https://kissblow.me/ru/privacy',
     alternate: {

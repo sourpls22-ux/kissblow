@@ -46,9 +46,9 @@ const Terms = ({ translations, lastUpdated }) => {
   }
 
   const seoData = {
-    title: t('rules.seo.title'),
-    description: t('rules.seo.description'),
-    keywords: t('rules.seo.keywords'),
+    title: t('seo.title'),
+    description: t('seo.description'),
+    keywords: t('seo.keywords'),
     url: 'https://kissblow.me/ru/terms',
     canonical: 'https://kissblow.me/ru/terms',
     alternate: {
