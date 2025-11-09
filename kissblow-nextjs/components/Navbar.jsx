@@ -78,6 +78,7 @@ const Navbar = () => {
                     </div>
                     <Link 
                       href={linkTo('/topup')} 
+                      prefetch={false}
                       className="flex items-center justify-center space-x-1 sm:space-x-0 bg-[#02c464] text-white px-4 py-1 rounded-lg hover:opacity-80 transition-colors text-sm font-medium"
                       style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif" }}
                     >
@@ -207,6 +208,7 @@ const Navbar = () => {
                           {/* Top Up */}
                           <Link
                             href={linkTo('/topup')}
+                            prefetch={false}
                             className="flex items-center space-x-2 px-4 py-2 theme-text hover:bg-onlyfans-dark/20 transition-colors"
                             onClick={() => setIsMobileMenuOpen(false)}
                           >
