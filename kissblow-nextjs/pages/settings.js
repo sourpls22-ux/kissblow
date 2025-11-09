@@ -8,7 +8,7 @@ import { useLanguage } from '../contexts/LanguageContext'
 import { useTranslation } from '../hooks/useTranslation'
 import SEOHead from '../components/SEOHead'
 import Link from 'next/link'
-import { ArrowLeft, User, Lock, Save } from 'lucide-react'
+import { ArrowLeft, User, Lock, Save, Trash2, AlertTriangle } from 'lucide-react'
 import axios from 'axios'
 
 export default function Settings() {
@@ -18,6 +18,8 @@ export default function Settings() {
   const { language } = useLanguage()
   const { t } = useTranslation()
   const [submitting, setSubmitting] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -115,6 +117,40 @@ export default function Settings() {
       error(t('settings.passwordUpdateError'))
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  // Функция удаления аккаунта
+  const handleDeleteAccount = async () => {
+    if (!showDeleteConfirm) {
+      setShowDeleteConfirm(true)
+      return
+    }
+
+    setDeleting(true)
+
+    try {
+      await axios.delete(`${''}/api/user/delete`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('kissblow-token')}`
+        }
+      })
+      
+      success(t('settings.accountDeleted'))
+      
+      // Очищаем токен и редиректим на главную
+      localStorage.removeItem('kissblow-token')
+      localStorage.removeItem('kissblow-refresh-token')
+      
+      setTimeout(() => {
+        router.push('/')
+        window.location.reload()
+      }, 2000)
+    } catch (err) {
+      console.error('Failed to delete account:', err)
+      error(t('settings.accountDeleteError'))
+      setDeleting(false)
+      setShowDeleteConfirm(false)
     }
   }
   
@@ -286,6 +322,62 @@ export default function Settings() {
                 <span>{t('settings.changePassword')}</span>
               </button>
             </form>
+          </div>
+
+          {/* Delete Account */}
+          <div className="theme-surface rounded-lg p-6 border theme-border border-red-500/50">
+            <div className="flex items-center space-x-2 mb-4">
+              <AlertTriangle size={20} className="text-red-500" />
+              <h2 className="text-xl font-semibold theme-text text-red-500">
+                {t('settings.dangerZone')}
+              </h2>
+            </div>
+            
+            <p className="theme-text-secondary mb-4 text-sm">
+              {t('settings.deleteAccountWarning')}
+            </p>
+
+            {!showDeleteConfirm ? (
+              <button
+                type="button"
+                onClick={handleDeleteAccount}
+                disabled={deleting}
+                className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Trash2 size={16} />
+                <span>{t('settings.deleteAccount')}</span>
+              </button>
+            ) : (
+              <div className="space-y-4">
+                <div className="bg-red-500/10 border border-red-500 rounded-lg p-4">
+                  <p className="text-red-500 font-semibold mb-2">
+                    {t('settings.deleteAccountConfirm')}
+                  </p>
+                  <p className="text-sm theme-text-secondary">
+                    {t('settings.deleteAccountConfirmText')}
+                  </p>
+                </div>
+                <div className="flex space-x-3">
+                  <button
+                    type="button"
+                    onClick={handleDeleteAccount}
+                    disabled={deleting}
+                    className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Trash2 size={16} />
+                    <span>{deleting ? t('settings.deleting') : t('settings.confirmDelete')}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteConfirm(false)}
+                    disabled={deleting}
+                    className="px-4 py-2 border theme-border rounded-lg theme-text hover:bg-onlyfans-dark/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {t('settings.cancel')}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
           </div>
         </div>

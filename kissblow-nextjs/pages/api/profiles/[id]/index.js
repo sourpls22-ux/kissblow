@@ -448,7 +448,98 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: 'Profile not found' })
       }
 
-      // Delete profile
+      // Import fs for file operations
+      const fs = await import('fs')
+
+      // 1. Получаем все media файлы профиля
+      const mediaFiles = await new Promise((resolve, reject) => {
+        db.all(
+          'SELECT id, url, type FROM media WHERE profile_id = ?',
+          [id],
+          (err, rows) => {
+            if (err) reject(err)
+            else resolve(rows || [])
+          }
+        )
+      })
+
+      // 2. Удаляем физические файлы media
+      const publicPath = path.join(process.cwd(), 'public')
+      for (const media of mediaFiles) {
+        try {
+          // Нормализуем URL (убираем /api если есть, оставляем только путь от public)
+          let normalizedUrl = media.url
+          if (normalizedUrl.startsWith('/api/uploads/')) {
+            normalizedUrl = normalizedUrl.replace('/api/uploads/', '/uploads/')
+          } else if (normalizedUrl.startsWith('/uploads/')) {
+            // Уже правильный формат
+          } else {
+            // Если URL не начинается с /uploads/, пропускаем
+            console.warn(`Skipping media file with unexpected URL format: ${media.url}`)
+            continue
+          }
+
+          // Удаляем основной файл
+          const filePath = path.join(publicPath, normalizedUrl)
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath)
+            console.log(`Deleted media file: ${filePath}`)
+          }
+
+          // Для видео также удаляем конвертированную версию, если есть
+          if (media.type === 'video' && normalizedUrl.endsWith('.mp4')) {
+            const convertedPath = filePath.replace('.mp4', '-converted.mp4')
+            if (fs.existsSync(convertedPath)) {
+              fs.unlinkSync(convertedPath)
+              console.log(`Deleted converted video file: ${convertedPath}`)
+            }
+          }
+        } catch (fileError) {
+          console.error(`Error deleting media file ${media.url}:`, fileError.message)
+          // Продолжаем удаление других файлов даже если один не удалился
+        }
+      }
+
+      // 3. Получаем верификационные фото профиля
+      const verifications = await new Promise((resolve, reject) => {
+        db.all(
+          'SELECT id, verification_photo_url FROM profile_verifications WHERE profile_id = ?',
+          [id],
+          (err, rows) => {
+            if (err) reject(err)
+            else resolve(rows || [])
+          }
+        )
+      })
+
+      // 4. Удаляем физические файлы верификаций
+      for (const verification of verifications) {
+        if (verification.verification_photo_url) {
+          try {
+            const verificationPath = path.join(publicPath, verification.verification_photo_url)
+            if (fs.existsSync(verificationPath)) {
+              fs.unlinkSync(verificationPath)
+              console.log(`Deleted verification photo: ${verificationPath}`)
+            }
+          } catch (fileError) {
+            console.error(`Error deleting verification photo ${verification.verification_photo_url}:`, fileError.message)
+          }
+        }
+      }
+
+      // 5. Удаляем записи верификаций из базы данных
+      await new Promise((resolve, reject) => {
+        db.run(
+          'DELETE FROM profile_verifications WHERE profile_id = ?',
+          [id],
+          (err) => {
+            if (err) reject(err)
+            else resolve()
+          }
+        )
+      })
+
+      // 6. Удаляем сам профиль (CASCADE удалит связанные записи в media и reviews автоматически)
       await new Promise((resolve, reject) => {
         db.run(
           'DELETE FROM profiles WHERE id = ? AND user_id = ?',
@@ -460,6 +551,7 @@ export default async function handler(req, res) {
         )
       })
 
+      console.log(`Profile ${id} and all associated files deleted successfully`)
       res.json({ message: 'Profile deleted successfully' })
 
     } catch (error) {

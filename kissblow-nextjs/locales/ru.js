@@ -672,7 +672,17 @@ const ru = {
     passwordUpdated: 'Пароль успешно изменен!',
     passwordUpdateError: 'Ошибка изменения пароля',
     passwordMismatch: 'Пароли не совпадают',
-    passwordTooShort: 'Пароль должен содержать минимум 6 символов'
+    passwordTooShort: 'Пароль должен содержать минимум 6 символов',
+    dangerZone: 'Опасная зона',
+    deleteAccount: 'Удалить аккаунт',
+    deleteAccountWarning: 'После удаления аккаунта вернуть его будет невозможно. Все ваши профили, медиафайлы и данные будут безвозвратно удалены.',
+    deleteAccountConfirm: 'Вы абсолютно уверены?',
+    deleteAccountConfirmText: 'Это действие нельзя отменить. Это навсегда удалит ваш аккаунт, все ваши профили и все связанные медиафайлы.',
+    confirmDelete: 'Да, удалить мой аккаунт',
+    cancel: 'Отмена',
+    deleting: 'Удаление...',
+    accountDeleted: 'Аккаунт успешно удален',
+    accountDeleteError: 'Ошибка удаления аккаунта'
   },
 
   // Payment History page

@@ -647,7 +647,17 @@ const en = {
     passwordUpdated: 'Password updated successfully!',
     passwordUpdateError: 'Failed to update password',
     passwordMismatch: 'Passwords do not match',
-    passwordTooShort: 'Password must be at least 6 characters long'
+    passwordTooShort: 'Password must be at least 6 characters long',
+    dangerZone: 'Danger Zone',
+    deleteAccount: 'Delete Account',
+    deleteAccountWarning: 'Once you delete your account, there is no going back. All your profiles, media files, and data will be permanently deleted.',
+    deleteAccountConfirm: 'Are you absolutely sure?',
+    deleteAccountConfirmText: 'This action cannot be undone. This will permanently delete your account, all your profiles, and all associated media files.',
+    confirmDelete: 'Yes, delete my account',
+    cancel: 'Cancel',
+    deleting: 'Deleting...',
+    accountDeleted: 'Account deleted successfully',
+    accountDeleteError: 'Failed to delete account'
   },
 
   // Payment History page

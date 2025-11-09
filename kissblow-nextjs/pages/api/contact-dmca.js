@@ -76,6 +76,22 @@ Submitted at: ${new Date().toISOString()}
 }
 
 export default async function handler(req, res) {
+  // Direct file logging
+  const fs = await import('fs')
+  const path = await import('path')
+  const logFile = path.join(process.cwd(), 'logs', 'contact-dmca-debug.log')
+  const log = (msg, data = {}) => {
+    const timestamp = new Date().toISOString()
+    const logMsg = `[${timestamp}] ${msg} ${JSON.stringify(data)}\n`
+    try {
+      fs.appendFileSync(logFile, logMsg)
+    } catch (e) {
+      // Ignore file write errors
+    }
+  }
+
+  log('CONTACT/DMCA API CALLED', { method: req.method, url: req.url })
+
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
@@ -86,6 +102,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method !== 'POST') {
+    log('Method not allowed', { method: req.method })
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
@@ -93,8 +110,21 @@ export default async function handler(req, res) {
     // Извлекаем данные из тела запроса
     const { name, email, category, message, urls, turnstileToken } = req.body
 
+    log('Received request body', {
+      hasName: !!name,
+      hasEmail: !!email,
+      emailPrefix: email ? email.substring(0, 20) + '...' : 'missing',
+      category: category || 'missing',
+      hasMessage: !!message,
+      messageLength: message ? message.length : 0,
+      urlsCount: Array.isArray(urls) ? urls.length : 0,
+      hasTurnstileToken: !!turnstileToken,
+      turnstileTokenLength: turnstileToken ? turnstileToken.length : 0
+    })
+
     // Валидация обязательных полей
     if (!name || !email || !message || !turnstileToken) {
+      log('Missing required fields', { hasName: !!name, hasEmail: !!email, hasMessage: !!message, hasTurnstileToken: !!turnstileToken })
       return res.status(400).json({ 
         error: 'Missing required fields',
         details: 'Name, email, message, and Turnstile token are required'
@@ -104,35 +134,78 @@ export default async function handler(req, res) {
     // Валидация email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
+      log('Invalid email format', { email: email.substring(0, 20) })
       return res.status(400).json({ error: 'Invalid email format' })
     }
 
     // Валидация длины полей
     if (name.length < 2 || name.length > 100) {
+      log('Invalid name length', { nameLength: name.length })
       return res.status(400).json({ error: 'Name must be between 2 and 100 characters' })
     }
 
     if (message.length < 10 || message.length > 5000) {
+      log('Invalid message length', { messageLength: message.length })
       return res.status(400).json({ error: 'Message must be between 10 and 5000 characters' })
     }
 
     // Верификация Turnstile токена
-    const isHuman = await verifyTurnstileToken(turnstileToken)
-    if (!isHuman) {
-      return res.status(400).json({ error: 'Turnstile verification failed' })
+    log('Verifying Turnstile token', {
+      tokenLength: turnstileToken.length,
+      tokenPrefix: turnstileToken.substring(0, 30) + '...',
+      hasSecretKey: !!process.env.TURNSTILE_SECRET_KEY
+    })
+    
+    const turnstileResult = await verifyTurnstileToken(turnstileToken)
+    
+    log('Turnstile verification result', {
+      success: turnstileResult.success,
+      errorCodes: turnstileResult.errorCodes || [],
+      error: turnstileResult.error || null
+    })
+    
+    if (!turnstileResult.success) {
+      log('Turnstile verification failed', {
+        errorCodes: turnstileResult.errorCodes,
+        error: turnstileResult.error
+      })
+      return res.status(400).json({ 
+        error: 'Turnstile verification failed',
+        details: turnstileResult.errorCodes || [turnstileResult.error]
+      })
     }
 
+    log('Turnstile verified successfully')
+
     // Отправка email
-    await sendContactEmail({
-      name: name.trim(),
-      email: email.trim().toLowerCase(),
+    log('Sending contact email', {
+      email: email.substring(0, 20) + '...',
       category: category || 'other',
-      message: message.trim(),
-      urls: Array.isArray(urls) ? urls.filter(url => url.trim()) : []
+      toEmail: process.env.FROM_EMAIL,
+      hasSMTPConfig: !!(process.env.SMTP_HOST && process.env.SMTP_USER)
     })
+    
+    try {
+      await sendContactEmail({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        category: category || 'other',
+        message: message.trim(),
+        urls: Array.isArray(urls) ? urls.filter(url => url.trim()) : []
+      })
+      log('Contact email sent successfully', { email: email.substring(0, 20) + '...', toEmail: process.env.FROM_EMAIL })
+    } catch (emailError) {
+      log('Error sending contact email', {
+        error: emailError.message,
+        stack: emailError.stack,
+        email: email.substring(0, 20) + '...'
+      })
+      throw emailError
+    }
 
     // Логирование успешной отправки
     console.log(`Contact form submitted successfully: ${email} - ${category}`)
+    log('Contact form submitted successfully', { email: email.substring(0, 20) + '...', category })
 
     return res.status(200).json({ 
       success: true,
@@ -140,9 +213,13 @@ export default async function handler(req, res) {
     })
 
   } catch (error) {
-    console.error('Contact API error:', error)
+    log('ERROR in contact handler', {
+      error: error.message,
+      stack: error.stack,
+      name: error.name
+    })
     
-    // Логирование ошибки
+    console.error('Contact API error:', error)
     console.error(`Contact form error: ${error.message}`)
     
     return res.status(500).json({ 
