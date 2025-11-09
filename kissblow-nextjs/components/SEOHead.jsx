@@ -51,6 +51,10 @@ const SEOHead = ({
 
   return (
     <Head>
+      {/* Resource hints для ускорения загрузки изображений */}
+      <link rel="preconnect" href="https://kissblow.me" crossOrigin="anonymous" />
+      <link rel="dns-prefetch" href="https://kissblow.me" />
+      
       {/* Favicon */}
       <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
       <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, startTransition, useMemo, memo, useCallbac
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import Image from 'next/image'
+import Head from 'next/head'
 import { Search, Filter, Globe, RefreshCw, Star, User, MapPin, Heart, X, Loader2 } from 'lucide-react'
 import SEOHead from '../components/SEOHead'
 import PaginationControls from '../components/PaginationControls'
@@ -746,9 +747,26 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
     structuredData: structuredData.length > 0 ? structuredData : undefined
   }
 
+  // Получаем URL первого изображения для resource hints
+  const firstImageUrl = filteredProfiles.length > 0 && (filteredProfiles[0].image || filteredProfiles[0].main_photo_url || filteredProfiles[0].image_url || filteredProfiles[0].first_photo_url)
+    ? filteredProfiles[0].image || filteredProfiles[0].main_photo_url || filteredProfiles[0].image_url || filteredProfiles[0].first_photo_url
+    : null
+
+  // Определяем домен для preconnect
+  const imageDomain = firstImageUrl && firstImageUrl.startsWith('http') 
+    ? new URL(firstImageUrl).origin 
+    : 'https://kissblow.me'
+
   return (
     <>
       <SEOHead {...seoData} />
+      {firstImageUrl && (
+        <Head>
+          {/* Resource hints для ускорения загрузки первого изображения */}
+          <link rel="preconnect" href={imageDomain} crossOrigin="anonymous" />
+          <link rel="dns-prefetch" href={imageDomain} />
+        </Head>
+      )}
       <div className="min-h-screen theme-bg py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
@@ -986,17 +1004,21 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
                         {/* Верхняя часть - только изображение */}
                         <div className="relative h-96 max-sm:h-[500px] bg-gradient-to-br from-onlyfans-accent/20 to-onlyfans-dark/20">
                           {profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url ? (
-                            <Image
+                            // Используем обычный img для первого изображения (критично для LCP) для максимальной скорости
+                            // Это избегает задержки оптимизации Next.js Image
+                            <img
                               src={profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url}
                               alt={profile.name}
                               width={500}
                               height={500}
-                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 500px"
                               className="w-full h-full object-cover object-center"
                               loading="eager"
-                              priority
-                              quality={75}
                               fetchPriority="high"
+                              decoding="async"
+                              style={{ 
+                                contentVisibility: 'auto',
+                                contain: 'layout style paint'
+                              }}
                               onError={(e) => {
                                 console.error('Failed to load profile image:', profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url)
                                 e.target.style.display = 'none'
