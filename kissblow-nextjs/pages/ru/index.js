@@ -12,7 +12,6 @@ import { useModalBackdrop } from '../../hooks/useModalBackdrop'
 import { useScrollLock, useModalScroll } from '../../hooks/useScrollLock'
 import { cities, searchCities, popularCities } from '../../data/cities'
 import { generateWebSiteSchema, generateItemListSchema } from '../../utils/schemaMarkup'
-import axios from 'axios'
 
 import PopularLocations from '../../components/PopularLocations'
 import KeywordsSection from '../../components/KeywordsSection'
@@ -27,27 +26,40 @@ export async function getStaticProps() {
     const response = await fetch(`${baseUrl}/api/profiles?limit=24&page=1`)
     const data = await response.json()
 
-    // Загружаем лайки и медиа для каждого профиля
+    // Загружаем медиа только для первых 4 профилей (которые видны сразу и критичны для LCP)
+    // Для остальных используем fallback изображения
     const profilesWithLikes = await Promise.all(
-      (data.profiles || []).map(async (profile) => {
+      (data.profiles || []).map(async (profile, index) => {
         try {
-          const [likesResponse, mediaResponse] = await Promise.all([
-            fetch(`${baseUrl}/api/profiles/${profile.id}/likes`),
-            fetch(`${baseUrl}/api/profiles/${profile.id}/media`)
-          ])
-          
-          const likesData = likesResponse.ok ? await likesResponse.json() : { likesCount: 0 }
-          const mediaData = mediaResponse.ok ? await mediaResponse.json() : []
-          
-          // Используем первое фото из медиа, как на странице профиля
-          const firstPhoto = mediaData.find(media => media.type === 'photo')
-          const imageUrl = firstPhoto ? firstPhoto.url : (profile.main_photo_url || profile.image_url || profile.first_photo_url)
-          
-          return {
-            ...profile,
-            image: imageUrl,
-            rating: 4.8,
-            likes_count: likesData.likesCount || 0
+          // Загружаем медиа только для первых 4 профилей
+          if (index < 4) {
+            const [likesResponse, mediaResponse] = await Promise.all([
+              fetch(`${baseUrl}/api/profiles/${profile.id}/likes`),
+              fetch(`${baseUrl}/api/profiles/${profile.id}/media`)
+            ])
+            
+            const likesData = likesResponse.ok ? await likesResponse.json() : { likesCount: 0 }
+            const mediaData = mediaResponse.ok ? await mediaResponse.json() : []
+            
+            // Используем первое фото из медиа, как на странице профиля
+            const firstPhoto = mediaData.find(media => media.type === 'photo')
+            const imageUrl = firstPhoto ? firstPhoto.url : (profile.main_photo_url || profile.image_url || profile.first_photo_url)
+            
+            return {
+              ...profile,
+              image: imageUrl,
+              rating: 4.8,
+              likes_count: likesData.likesCount || 0
+            }
+          } else {
+            // Для остальных профилей используем fallback изображения без дополнительных запросов
+            // Лайки будут загружены на клиенте
+            return {
+              ...profile,
+              image: profile.main_photo_url || profile.image_url || profile.first_photo_url,
+              rating: 4.8,
+              likes_count: 0 // Будет загружено на клиенте
+            }
           }
         } catch (error) {
           console.error(`Failed to fetch data for profile ${profile.id}:`, error)
@@ -201,6 +213,23 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
   // Текущая страница для условного отображения SEO секций
   const currentPage = parseInt(page) || 1
 
+  // Обработка initialProfiles для правильного отображения изображений
+  useEffect(() => {
+    if (initialProfiles && initialProfiles.length > 0) {
+      startTransition(() => {
+        setProfiles(initialProfiles)
+      })
+      // Загружаем лайки для профилей, которые не имеют likes_count (после первых 4)
+      const profilesWithoutLikes = initialProfiles.filter((p, index) => index >= 4 && (p.likes_count === 0 || p.likes_count === undefined))
+      if (profilesWithoutLikes.length > 0) {
+        // Загружаем лайки асинхронно после рендера
+        setTimeout(() => {
+          fetchAllLikes(profilesWithoutLikes, false)
+        }, 100)
+      }
+    }
+  }, [initialProfiles])
+
   // Загрузка профилей с фильтрами (Client-side)
   const fetchProfiles = async (pageNum = null, append = false) => {
     try {
@@ -295,8 +324,9 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
       const likesPromises = profilesData.map(async (profile) => {
         try {
           const API_URL = process.env.NEXT_PUBLIC_API_URL || ''
-          const response = await axios.get(`${API_URL}/api/profiles/${profile.id}/likes`)
-          return { profileId: profile.id, likesCount: response.data.likesCount }
+          const response = await fetch(`${API_URL}/api/profiles/${profile.id}/likes`)
+          const data = await response.json()
+          return { profileId: profile.id, likesCount: data.likesCount }
         } catch (error) {
           console.error(`Failed to fetch likes for profile ${profile.id}:`, error)
           return { profileId: profile.id, likesCount: 0 }
@@ -321,9 +351,16 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
           setProfileLikes(prev => ({ ...prev, ...likesMap }))
         })
       } else {
+        // Для initialProfiles обновляем существующие профили в state
         startTransition(() => {
-          setProfiles(updatedProfiles)
-          setProfileLikes(likesMap)
+          setProfiles(prev => {
+            const updated = prev.map(p => {
+              const updatedProfile = updatedProfiles.find(up => up.id === p.id)
+              return updatedProfile || p
+            })
+            return updated
+          })
+          setProfileLikes(prev => ({ ...prev, ...likesMap }))
         })
       }
     } catch (error) {
