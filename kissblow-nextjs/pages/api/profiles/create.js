@@ -93,16 +93,44 @@ export default async function handler(req, res) {
     const { turnstileToken } = req.body
 
     // 1. Validate input
+    log('Received request body', { 
+      hasTurnstileToken: !!turnstileToken,
+      turnstileTokenLength: turnstileToken ? turnstileToken.length : 0,
+      turnstileTokenPrefix: turnstileToken ? turnstileToken.substring(0, 20) + '...' : 'missing'
+    })
+
     if (!turnstileToken) {
       log('No turnstile token provided')
       return res.status(400).json({ error: 'Security verification is required' })
     }
 
     // 2. Verify Cloudflare Turnstile
-    log('Verifying Turnstile token')
+    log('Verifying Turnstile token', {
+      tokenLength: turnstileToken.length,
+      tokenPrefix: turnstileToken.substring(0, 30) + '...',
+      hasSecretKey: !!process.env.TURNSTILE_SECRET_KEY,
+      secretKeyPrefix: process.env.TURNSTILE_SECRET_KEY ? process.env.TURNSTILE_SECRET_KEY.substring(0, 20) + '...' : 'missing',
+      nodeEnv: process.env.NODE_ENV
+    })
+    
     const turnstileResult = await validateTurnstile(turnstileToken)
+    
+    log('Turnstile verification result', {
+      success: turnstileResult.success,
+      errors: turnstileResult.errors,
+      errorDetails: turnstileResult.errorDetails || null
+    })
+    
     if (!turnstileResult.success) {
-      log('Turnstile verification failed', { errors: turnstileResult.errors })
+      log('Turnstile verification failed', { 
+        errors: turnstileResult.errors,
+        errorDetails: turnstileResult.errorDetails || null
+      })
+      logger.error('Turnstile verification failed in profile creation', {
+        errors: turnstileResult.errors,
+        userId: user.id,
+        errorDetails: turnstileResult.errorDetails
+      })
       return res.status(400).json({
         error: 'Security verification failed',
         details: turnstileResult.errors

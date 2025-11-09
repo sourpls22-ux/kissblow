@@ -103,12 +103,37 @@ export const verifyTurnstileToken = async (token) => {
 
 // Validate Turnstile token with custom error handling
 export const validateTurnstile = async (token, action = null) => {
+  const logger = await getLogger()
+  
   try {
     const formData = new URLSearchParams()
     
     const secretKey = process.env.NODE_ENV === 'development' 
       ? '1x0000000000000000000000000000000AA'
       : process.env.TURNSTILE_SECRET_KEY
+    
+    // Логирование перед запросом
+    logger.info('Turnstile validation request', {
+      hasToken: !!token,
+      tokenLength: token ? token.length : 0,
+      tokenPrefix: token ? token.substring(0, 30) + '...' : 'missing',
+      hasSecretKey: !!secretKey,
+      secretKeyPrefix: secretKey ? secretKey.substring(0, 20) + '...' : 'missing',
+      nodeEnv: process.env.NODE_ENV,
+      action: action || 'none'
+    })
+    
+    if (!secretKey) {
+      logger.error('TURNSTILE_SECRET_KEY is not set!', {
+        nodeEnv: process.env.NODE_ENV,
+        hasSecretKey: !!process.env.TURNSTILE_SECRET_KEY
+      })
+      return {
+        success: false,
+        errors: ['missing-secret-key'],
+        errorDetails: { message: 'TURNSTILE_SECRET_KEY is not configured' }
+      }
+    }
     
     formData.append('secret', secretKey)
     formData.append('response', token)
@@ -117,37 +142,82 @@ export const validateTurnstile = async (token, action = null) => {
       formData.append('action', action)
     }
     
+    logger.info('Sending Turnstile verification request to Cloudflare', {
+      url: 'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+      hasToken: !!token,
+      hasSecretKey: !!secretKey
+    })
+    
     const response = await axios.post('https://challenges.cloudflare.com/turnstile/v0/siteverify', formData, {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
-      }
+      },
+      timeout: 10000 // 10 секунд таймаут
+    })
+    
+    logger.info('Turnstile API response received', {
+      status: response.status,
+      success: response.data.success,
+      errorCodes: response.data['error-codes'] || [],
+      challengeTs: response.data['challenge_ts'],
+      hostname: response.data.hostname
     })
     
     const { success, 'error-codes': errorCodes } = response.data
     
     if (!success) {
-      const logger = await getLogger()
-      logger.error('Turnstile validation failed', { errorCodes })
+      logger.error('Turnstile validation failed', { 
+        errorCodes: errorCodes || ['unknown-error'],
+        fullResponse: response.data
+      })
       return {
         success: false,
-        errors: errorCodes || ['unknown-error']
+        errors: errorCodes || ['unknown-error'],
+        errorDetails: {
+          errorCodes: errorCodes,
+          fullResponse: response.data
+        }
       }
     }
     
+    logger.info('Turnstile validation successful')
     return {
       success: true,
       errors: []
     }
   } catch (error) {
-    const logger = await getLogger()
-    logger.error('Turnstile validation error', {
+    // Детальное логирование ошибки
+    const errorDetails = {
       message: error.message,
-      stack: error.stack,
-      response: error.response?.data
-    })
+      code: error.code,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      config: {
+        url: error.config?.url,
+        method: error.config?.method,
+        timeout: error.config?.timeout,
+        headers: error.config?.headers ? Object.keys(error.config.headers) : null
+      },
+      stack: error.stack
+    }
+    
+    logger.error('Turnstile validation network error - FULL DETAILS', errorDetails)
+    
+    // Определяем тип ошибки
+    let errorCode = 'network-error'
+    if (error.code === 'ECONNREFUSED') {
+      errorCode = 'connection-refused'
+    } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
+      errorCode = 'timeout'
+    } else if (error.response) {
+      errorCode = error.response.data?.['error-codes']?.[0] || 'api-error'
+    }
+    
     return {
       success: false,
-      errors: ['network-error']
+      errors: [errorCode],
+      errorDetails: errorDetails
     }
   }
 }
