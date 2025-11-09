@@ -8,6 +8,21 @@ import { LanguageProvider } from '../contexts/LanguageContext'
 import { ToastProvider } from '../contexts/ToastContext'
 import Layout from '../components/Layout'
 import AgeVerificationModal from '../components/AgeVerificationModal'
+import { useLanguage } from '../contexts/LanguageContext'
+
+// Компонент для обновления lang атрибута в HTML при изменении языка
+function LanguageUpdater() {
+  const { language } = useLanguage()
+
+  useEffect(() => {
+    // Обновляем lang атрибут в HTML элементе
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = language
+    }
+  }, [language])
+
+  return null
+}
 
 function MyApp({ Component, pageProps }) {
   const [mounted, setMounted] = useState(false)
@@ -337,6 +352,7 @@ function MyApp({ Component, pageProps }) {
           <BalanceProvider>
             <LanguageProvider>
               <ToastProvider>
+                <LanguageUpdater />
                 <div suppressHydrationWarning>
                   {mounted && <AgeVerificationModal />}
                   <Layout>

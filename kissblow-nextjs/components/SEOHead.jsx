@@ -7,6 +7,9 @@ const SEOHead = ({
   description, 
   keywords, 
   image = '/og-image.jpg',
+  imageWidth = 1200,
+  imageHeight = 630,
+  imageAlt,
   url,
   canonical,
   type = 'website',
@@ -41,6 +44,9 @@ const SEOHead = ({
     ? image 
     : `${baseUrl}${image.startsWith('/') ? image : `/${image}`}`
 
+  // Генерируем alt текст для изображения, если не указан
+  const ogImageAlt = imageAlt || fullTitle
+
   const ogLocale = language === 'ru' ? 'ru_RU' : 'en_US'
 
   return (
@@ -67,6 +73,10 @@ const SEOHead = ({
       <meta property="og:type" content={type} />
       <meta property="og:url" content={canonicalUrl} />
       <meta property="og:image" content={fullImage} />
+      <meta property="og:image:width" content={String(imageWidth)} />
+      <meta property="og:image:height" content={String(imageHeight)} />
+      <meta property="og:image:alt" content={ogImageAlt} />
+      <meta property="og:image:type" content="image/jpeg" />
       <meta property="og:site_name" content="KissBlow.me" />
       
       {/* Twitter Card Tags */}
@@ -74,6 +84,7 @@ const SEOHead = ({
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={fullDescription} />
       <meta name="twitter:image" content={fullImage} />
+      <meta name="twitter:image:alt" content={ogImageAlt} />
       
       {/* Additional SEO Tags */}
       <meta name="robots" content={noindex || nofollow ? `${noindex ? 'noindex' : 'index'}, ${nofollow ? 'nofollow' : 'follow'}` : robots} />
