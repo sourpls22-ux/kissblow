@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, startTransition, useMemo, memo } from 'react'
+import { useState, useEffect, useRef, startTransition, useMemo, memo, useCallback } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -195,6 +195,7 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
   const [loadingMore, setLoadingMore] = useState(false)
   const [profileLikes, setProfileLikes] = useState({})
   const [showFilters, setShowFilters] = useState(false)
+  const [isHydrated, setIsHydrated] = useState(false)
   
   const [searchQuery, setSearchQuery] = useState('')
   const [filteredCities, setFilteredCities] = useState([])
@@ -240,13 +241,24 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
       // Загружаем лайки для профилей, которые не имеют likes_count (после первых 4)
       const profilesWithoutLikes = initialProfiles.filter((p, index) => index >= 4 && (p.likes_count === 0 || p.likes_count === undefined))
       if (profilesWithoutLikes.length > 0) {
-        // Загружаем лайки асинхронно после рендера
-        setTimeout(() => {
-          fetchAllLikes(profilesWithoutLikes, false)
-        }, 100)
+        // Использовать requestIdleCallback для отложенной загрузки лайков
+        if (typeof requestIdleCallback !== 'undefined') {
+          requestIdleCallback(() => {
+            fetchAllLikes(profilesWithoutLikes, false)
+          }, { timeout: 2000 })
+        } else {
+          setTimeout(() => {
+            fetchAllLikes(profilesWithoutLikes, false)
+          }, 1000) // Увеличить задержку для не критичных данных
+        }
       }
     }
   }, [initialProfiles])
+
+  // Отмечаем, что гидратация завершена (для оптимизации первого рендера)
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
 
   // Загрузка профилей с фильтрами (Client-side)
   const fetchProfiles = async (pageNum = null, append = false) => {
@@ -549,7 +561,8 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
     })
   }
 
-  const applyFilters = (profile) => {
+  // Мемоизируем функцию фильтрации для предотвращения пересоздания при каждом рендере
+  const applyFilters = useCallback((profile) => {
     // Фильтр по городу (только из URL параметра, не из searchQuery)
     if (city && !profile.city.toLowerCase().includes(city.toLowerCase())) {
       return false
@@ -624,7 +637,7 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
     }
 
     return true
-  }
+  }, [filters, city, service])
 
   // useEffect для автокомплита
   useEffect(() => {
@@ -694,8 +707,10 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
     }
   }
 
-  // Применяем фильтры к профилям
-  const filteredProfiles = profiles.filter(applyFilters)
+  // Мемоизируем отфильтрованные профили для предотвращения пересчета при каждом рендере
+  const filteredProfiles = useMemo(() => {
+    return profiles.filter(applyFilters)
+  }, [profiles, applyFilters])
 
   // Generate structured data
   const structuredData = []
@@ -958,70 +973,141 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
                 
                 {/* Profiles Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 smooth-transition">
-                {filteredProfiles.map((profile, index) => (
-                  <Link
-                    key={profile.id}
-                    href={`/${profile.city.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}/escorts/${profile.id}`}
-                    className="theme-surface rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300 border theme-border"
-                    style={{ contain: 'layout style paint' }}
-                  >
-                    {/* Верхняя часть - только изображение */}
-                    <div className="relative h-96 max-sm:h-[500px] bg-gradient-to-br from-onlyfans-accent/20 to-onlyfans-dark/20">
-                      {profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url ? (
-                        <Image
-                          src={profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url}
-                          alt={profile.name}
-                          width={500}
-                          height={500}
-                          sizes={index === 0 ? "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 500px" : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"}
-                          className="w-full h-full object-cover object-center"
-                          loading={index < 4 ? "eager" : "lazy"}
-                          priority={index < 4}
-                          quality={index < 4 ? 75 : 85}
-                          fetchPriority={index === 0 ? "high" : "auto"}
-                          onError={(e) => {
-                            console.error('Failed to load profile image:', profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url)
-                            e.target.style.display = 'none'
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <User size={64} className="text-onlyfans-accent/50" />
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Нижняя часть - информация о профиле */}
-                    <div className="p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                          <h3 className="theme-text font-semibold text-lg">{profile.name || 'No Name'}</h3>
-                          {profile.is_verified === 1 && (
-                            <div className="bg-green-500 text-white px-2 py-1 rounded text-xs font-medium">
-                              Verified
+                {filteredProfiles.length > 0 && (
+                  <>
+                    {/* Первый профиль - критичен для LCP, рендерим сразу */}
+                    {filteredProfiles.slice(0, 1).map((profile, index) => (
+                      <Link
+                        key={profile.id}
+                        href={`/${profile.city.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}/escorts/${profile.id}`}
+                        className="theme-surface rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300 border theme-border"
+                        style={{ contain: 'layout style paint' }}
+                      >
+                        {/* Верхняя часть - только изображение */}
+                        <div className="relative h-96 max-sm:h-[500px] bg-gradient-to-br from-onlyfans-accent/20 to-onlyfans-dark/20">
+                          {profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url ? (
+                            <Image
+                              src={profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url}
+                              alt={profile.name}
+                              width={500}
+                              height={500}
+                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 500px"
+                              className="w-full h-full object-cover object-center"
+                              loading="eager"
+                              priority
+                              quality={75}
+                              fetchPriority="high"
+                              onError={(e) => {
+                                console.error('Failed to load profile image:', profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url)
+                                e.target.style.display = 'none'
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <User size={64} className="text-onlyfans-accent/50" />
                             </div>
                           )}
                         </div>
-                        {getMinPrice(profile) && (
-                          <span className="text-onlyfans-accent font-semibold">
-                            {formatPrice(getMinPrice(profile).amount, getMinPrice(profile).currency)}
-                          </span>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-1 theme-text-secondary">
-                          <MapPin size={14} />
-                          <span className="text-sm">{profile.city || 'No City'}</span>
+                        
+                        {/* Нижняя часть - информация о профиле */}
+                        <div className="p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                              <h3 className="theme-text font-semibold text-lg">{profile.name || 'No Name'}</h3>
+                              {profile.is_verified === 1 && (
+                                <div className="bg-green-500 text-white px-2 py-1 rounded text-xs font-medium">
+                                  Verified
+                                </div>
+                              )}
+                            </div>
+                            {getMinPrice(profile) && (
+                              <span className="text-onlyfans-accent font-semibold">
+                                {formatPrice(getMinPrice(profile).amount, getMinPrice(profile).currency)}
+                              </span>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-1 theme-text-secondary">
+                              <MapPin size={14} />
+                              <span className="text-sm">{profile.city || 'No City'}</span>
+                            </div>
+                            <div className="flex items-center space-x-1 text-red-500">
+                              <Heart size={14} fill="currentColor" />
+                              <span className="text-sm font-medium">{profile.likes_count || 0}</span>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex items-center space-x-1 text-red-500">
-                          <Heart size={14} fill="currentColor" />
-                          <span className="text-sm font-medium">{profile.likes_count || 0}</span>
+                      </Link>
+                    ))}
+                    
+                    {/* Остальные профили - после гидратации для оптимизации первого рендера */}
+                    {isHydrated && filteredProfiles.slice(1).map((profile, index) => (
+                      <Link
+                        key={profile.id}
+                        href={`/${profile.city.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}/escorts/${profile.id}`}
+                        className="theme-surface rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300 border theme-border"
+                        style={{ contain: 'layout style paint' }}
+                      >
+                        {/* Верхняя часть - только изображение */}
+                        <div className="relative h-96 max-sm:h-[500px] bg-gradient-to-br from-onlyfans-accent/20 to-onlyfans-dark/20">
+                          {profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url ? (
+                            <Image
+                              src={profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url}
+                              alt={profile.name}
+                              width={500}
+                              height={500}
+                              sizes={index < 3 ? "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw" : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"}
+                              className="w-full h-full object-cover object-center"
+                              loading={index < 3 ? "eager" : "lazy"}
+                              priority={index < 3}
+                              quality={index < 3 ? 75 : 85}
+                              fetchPriority="auto"
+                              onError={(e) => {
+                                console.error('Failed to load profile image:', profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url)
+                                e.target.style.display = 'none'
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <User size={64} className="text-onlyfans-accent/50" />
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
+                        
+                        {/* Нижняя часть - информация о профиле */}
+                        <div className="p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                              <h3 className="theme-text font-semibold text-lg">{profile.name || 'No Name'}</h3>
+                              {profile.is_verified === 1 && (
+                                <div className="bg-green-500 text-white px-2 py-1 rounded text-xs font-medium">
+                                  Verified
+                                </div>
+                              )}
+                            </div>
+                            {getMinPrice(profile) && (
+                              <span className="text-onlyfans-accent font-semibold">
+                                {formatPrice(getMinPrice(profile).amount, getMinPrice(profile).currency)}
+                              </span>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-1 theme-text-secondary">
+                              <MapPin size={14} />
+                              <span className="text-sm">{profile.city || 'No City'}</span>
+                            </div>
+                            <div className="flex items-center space-x-1 text-red-500">
+                              <Heart size={14} fill="currentColor" />
+                              <span className="text-sm font-medium">{profile.likes_count || 0}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </>
+                )}
               </div>
 
                 {/* Load More Button */}
