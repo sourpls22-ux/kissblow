@@ -747,28 +747,9 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
     structuredData: structuredData.length > 0 ? structuredData : undefined
   }
 
-  // Получаем URL первого изображения для resource hints
-  const firstImageUrl = filteredProfiles.length > 0 && (filteredProfiles[0].image || filteredProfiles[0].main_photo_url || filteredProfiles[0].image_url || filteredProfiles[0].first_photo_url)
-    ? filteredProfiles[0].image || filteredProfiles[0].main_photo_url || filteredProfiles[0].image_url || filteredProfiles[0].first_photo_url
-    : null
-
-  // Определяем домен для preconnect
-  const imageDomain = firstImageUrl && firstImageUrl.startsWith('http') 
-    ? new URL(firstImageUrl).origin 
-    : 'https://kissblow.me'
-
   return (
     <>
       <SEOHead {...seoData} />
-        {firstImageUrl && (
-          <Head>
-            {/* Resource hints для ускорения загрузки первого изображения */}
-            <link rel="preconnect" href={imageDomain} crossOrigin="anonymous" />
-            <link rel="dns-prefetch" href={imageDomain} />
-            {/* Явный preload для первого изображения для гарантированной загрузки */}
-            <link rel="preload" as="image" href={firstImageUrl} fetchPriority="high" />
-          </Head>
-        )}
       <div className="min-h-screen theme-bg py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
