@@ -11,33 +11,37 @@ export const useLanguage = () => {
   return context
 }
 
+// Синхронная функция для получения начального языка (выполняется до гидратации)
+const getInitialLanguage = () => {
+  if (typeof window === 'undefined') return 'en'
+  try {
+    const savedLanguage = localStorage.getItem('kissblow-language')
+    if (savedLanguage === 'en' || savedLanguage === 'ru') {
+      return savedLanguage
+    }
+  } catch (e) {
+    // localStorage может быть недоступен
+  }
+  return 'en'
+}
+
 export const LanguageProvider = ({ children }) => {
   const router = useRouter()
   
-  // Всегда начинаем с языка по умолчанию для SSR
-  const [language, setLanguage] = useState('en')
-  const [isLoaded, setIsLoaded] = useState(false)
+  // Синхронная инициализация языка - ускоряет гидратацию
+  const [language, setLanguage] = useState(getInitialLanguage)
+  const [isLoaded, setIsLoaded] = useState(true) // Уже загружено синхронно
 
+  // Сохраняем язык в localStorage при изменении (не блокирует гидратацию)
   useEffect(() => {
-    // Загружаем язык из localStorage только на клиенте
     if (typeof window !== 'undefined') {
-      // Используем startTransition для отложенного обновления во время гидратации
-      startTransition(() => {
-        const savedLanguage = localStorage.getItem('kissblow-language')
-        if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'ru')) {
-          setLanguage(savedLanguage)
-        }
-        setIsLoaded(true)
-      })
+      try {
+        localStorage.setItem('kissblow-language', language)
+      } catch (e) {
+        // localStorage может быть недоступен
+      }
     }
-  }, [])
-
-  useEffect(() => {
-    // Сохраняем язык в localStorage только после загрузки
-    if (typeof window !== 'undefined' && isLoaded) {
-      localStorage.setItem('kissblow-language', language)
-    }
-  }, [language, isLoaded])
+  }, [language])
 
   // Универсальная функция для получения локализованного пути
   const isRuPath = (p) => p === '/ru' || p.startsWith('/ru/')

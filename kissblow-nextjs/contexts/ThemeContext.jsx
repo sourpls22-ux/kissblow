@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, startTransition } from 'react'
+import React, { createContext, useContext, useState, useEffect } from 'react'
 
 const ThemeContext = createContext()
 
@@ -10,52 +10,58 @@ export const useTheme = () => {
   return context
 }
 
+// Синхронная функция для получения начальной темы (выполняется до гидратации)
+const getInitialTheme = () => {
+  if (typeof window === 'undefined') return 'dark'
+  try {
+    const savedTheme = localStorage.getItem('kissblow-theme')
+    if (savedTheme === 'dark' || savedTheme === 'light') {
+      return savedTheme
+    }
+    // Check system preference синхронно
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+      return 'light'
+    }
+  } catch (e) {
+    // localStorage может быть недоступен
+  }
+  return 'dark'
+}
+
 export const ThemeProvider = ({ children }) => {
-  // Всегда начинаем с темы по умолчанию для SSR
-  const [theme, setTheme] = useState('dark')
-  const [isLoaded, setIsLoaded] = useState(false)
+  // Синхронная инициализация темы - ускоряет гидратацию
+  const [theme, setTheme] = useState(getInitialTheme)
+  const [isLoaded, setIsLoaded] = useState(true) // Уже загружено синхронно
 
+  // useEffect только для применения темы к документу (не блокирует гидратацию)
   useEffect(() => {
-    // Загружаем тему из localStorage только на клиенте
-    if (typeof window !== 'undefined') {
-      // Используем startTransition для отложенного обновления во время гидратации
-      startTransition(() => {
-        const savedTheme = localStorage.getItem('kissblow-theme')
-        if (savedTheme && (savedTheme === 'dark' || savedTheme === 'light')) {
-          setTheme(savedTheme)
-        } else {
-          // Check system preference
-          if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-            setTheme('light')
-          }
-        }
-        setIsLoaded(true)
-      })
-    }
-  }, [])
-
-  useEffect(() => {
-    // Save theme to localStorage and apply theme only after loading
-    if (typeof window !== 'undefined' && isLoaded && typeof document !== 'undefined') {
-      localStorage.setItem('kissblow-theme', theme)
-      
-      // Apply theme to document только после hydration (отложенное выполнение)
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+      // Применяем тему к документу после гидратации
       requestAnimationFrame(() => {
-        if (typeof document !== 'undefined') {
-          document.documentElement.setAttribute('data-theme', theme)
-          
-          // Update body classes
-          if (theme === 'light') {
-            document.body.classList.remove('dark-theme')
-            document.body.classList.add('light-theme')
-          } else {
-            document.body.classList.remove('light-theme')
-            document.body.classList.add('dark-theme')
-          }
+        document.documentElement.setAttribute('data-theme', theme)
+        
+        // Update body classes
+        if (theme === 'light') {
+          document.body.classList.remove('dark-theme')
+          document.body.classList.add('light-theme')
+        } else {
+          document.body.classList.remove('light-theme')
+          document.body.classList.add('dark-theme')
         }
       })
     }
-  }, [theme, isLoaded])
+  }, [theme])
+
+  // Сохраняем тему в localStorage при изменении (не блокирует гидратацию)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('kissblow-theme', theme)
+      } catch (e) {
+        // localStorage может быть недоступен
+      }
+    }
+  }, [theme])
 
   const toggleTheme = () => {
     setTheme(prevTheme => prevTheme === 'dark' ? 'light' : 'dark')
@@ -75,6 +81,7 @@ export const ThemeProvider = ({ children }) => {
     </ThemeContext.Provider>
   )
 }
+
 
 
 
