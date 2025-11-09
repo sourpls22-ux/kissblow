@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Heart, Star, Shield, Video, MessageCircle } from 'lucide-react'
 import { useTranslation } from '../hooks/useTranslation'
 
@@ -25,12 +26,15 @@ const ProfileCard = ({ profile }) => {
         {/* Фото профиля */}
         <div className="relative aspect-[4/5] overflow-hidden">
           {profile.image_url ? (
-            <img
+            <Image
               src={profile.image_url}
               alt={profile.name}
+              width={400}
+              height={500}
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               loading="lazy"
-              decoding="async"
+              quality={85}
             />
           ) : (
             <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">

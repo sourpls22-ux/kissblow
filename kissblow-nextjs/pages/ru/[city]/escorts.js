@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Search, Filter, Globe, RefreshCw, Star, User, MapPin, Heart, X, Loader2 } from 'lucide-react'
 import SEOHead from '../../../components/SEOHead'
 import Breadcrumbs from '../../../components/Breadcrumbs'
@@ -891,10 +892,16 @@ const CityPage = ({ initialProfiles, initialPagination, cityName, citySlug, last
                     {/* Верхняя часть - только изображение */}
                     <div className="relative h-96 max-sm:h-[500px] bg-gradient-to-br from-onlyfans-accent/20 to-onlyfans-dark/20">
                       {profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url ? (
-                        <img
+                        <Image
                           src={profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url}
                           alt={profile.name}
+                          width={500}
+                          height={500}
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
                           className="w-full h-full object-cover object-center"
+                          loading={index < 4 ? "eager" : "lazy"}
+                          priority={index < 4}
+                          quality={85}
                           onError={(e) => {
                             console.error('Failed to load profile image:', profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url)
                             e.target.style.display = 'none'

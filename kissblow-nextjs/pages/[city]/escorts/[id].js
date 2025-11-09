@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Search } from 'lucide-react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
+import Image from 'next/image'
 import Head from 'next/head'
 import SEOHead from '../../../components/SEOHead'
 import ScrollToTopButton from '../../../components/ScrollToTopButton'
@@ -500,13 +501,16 @@ export default function Girl({ profile, profileMedia, initialReviews, cityName: 
                         onError={() => handleMediaError(currentPhotoIndex)}
                       />
                     ) : (
-                      <img
+                      <Image
                         src={currentMedia.url}
                         alt={profile.name}
+                        width={500}
+                        height={650}
+                        sizes="(max-width: 768px) 100vw, 500px"
                         className="w-full h-full object-cover cursor-pointer"
                         onClick={handlePhotoClick}
-                        loading="eager"
-                        decoding="async"
+                        priority
+                        quality={90}
                         onError={() => handleMediaError(currentPhotoIndex)}
                       />
                     )
@@ -575,12 +579,15 @@ export default function Girl({ profile, profileMedia, initialReviews, cityName: 
                                 onError={() => handleMediaError(index)}
                               />
                             ) : (
-                              <img
+                              <Image
                                 src={media.url}
                                 alt={`${profile.name} photo`}
+                                width={150}
+                                height={150}
+                                sizes="(max-width: 768px) 25vw, 150px"
                                 className="w-full h-full object-cover hover:opacity-80 transition-opacity"
-                                loading="eager"
-                                decoding="async"
+                                loading="lazy"
+                                quality={75}
                                 onError={() => handleMediaError(index)}
                               />
                             )}

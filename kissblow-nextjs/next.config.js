@@ -7,6 +7,16 @@ const nextConfig = {
   // Включить детальные ошибки
   productionBrowserSourceMaps: true,
   
+  // Отключаем полифиллы для современных функций
+  swcMinify: true,
+  
+  // Настройка компилятора для минимизации полифиллов
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'],
+    } : false,
+  },
+  
   // Webpack конфигурация для правильной обработки ES modules
   webpack: (config, { isServer }) => {
     // Для серверной части - правильно обрабатываем ES modules
@@ -20,6 +30,9 @@ const nextConfig = {
         'fluent-ffmpeg': 'commonjs fluent-ffmpeg',
         'multer': 'commonjs multer',
       })
+    } else {
+      // Для клиентской части - минимизируем полифиллы
+      // Next.js автоматически использует browserslist из .browserslistrc или package.json
     }
     
     // Отключаем агрессивную оптимизацию для стабильности

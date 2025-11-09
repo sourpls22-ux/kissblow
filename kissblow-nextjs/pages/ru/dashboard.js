@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/router'
+import Image from 'next/image'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
 import { useBalance } from '../../contexts/BalanceContext'
@@ -63,12 +64,15 @@ function SortableMediaItem({ media, onDeleteMedia, isMainPhoto, onMoveUp, onMove
     >
       <div className="aspect-[4/5] rounded-lg overflow-hidden bg-gradient-to-br from-onlyfans-accent/20 to-onlyfans-dark/20">
         {media.type === 'photo' ? (
-          <img
+          <Image
             src={media.url}
             alt={`${media.filename}`}
+            width={200}
+            height={250}
+            sizes="(max-width: 640px) 50vw, 200px"
             className="w-full h-full object-cover"
             loading="eager"
-            decoding="async"
+            quality={85}
             onError={(e) => {
               console.error('Failed to load image:', media.url)
               e.target.style.display = 'none'
@@ -1595,12 +1599,16 @@ export default function Dashboard() {
                             onClick={() => router.push(`/${profile.city.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}/escorts/${profile.id}?from=dashboard`)}
                             className="block w-full h-full"
                           >
-                            <img 
+                            <Image 
                               src={profile.main_photo_url || profile.image_url || profile.first_photo_url} 
                               alt={profile.name}
+                              width={400}
+                              height={400}
+                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                               className="w-full h-full object-cover object-center cursor-pointer hover:scale-105 transition-transform duration-300 will-change-transform"
                               loading={idx === 0 ? "eager" : "lazy"}
-                              decoding="async"
+                              priority={idx === 0}
+                              quality={85}
                               onError={(e) => {
                                 console.error('Failed to load profile image:', profile.main_photo_url || profile.image_url || profile.first_photo_url)
                                 e.target.style.display = 'none'
