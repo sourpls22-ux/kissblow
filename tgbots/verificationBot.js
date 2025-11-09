@@ -305,22 +305,7 @@ bot.on('callback_query', async (callbackQuery) => {
       
       bot.answerCallbackQuery(callbackQuery.id, { text: '✅ Верификация одобрена!' })
       
-      // Показываем следующую верификацию или сообщение об отсутствии
-      try {
-        const response = await axios.get(`${API_BASE_URL}/api/admin/verifications`, {
-          headers: { 'X-Admin-Key': process.env.ADMIN_API_KEY || 'kissblow-admin-2024-verification-bot-key-12345' }
-        })
-        
-        if (response.data.length === 0) {
-          bot.sendMessage(chatId, '✅ Нет ожидающих верификаций')
-        } else {
-          // Показываем следующую верификацию
-          await sendSingleVerification(chatId, response.data[0])
-        }
-      } catch (error) {
-        console.error('Error checking remaining verifications:', error)
-      }
-      
+      // Обновляем сообщение с кнопками
       bot.editMessageText(
         `✅ Верификация #${verificationId} одобрена!`,
         { 
@@ -328,6 +313,25 @@ bot.on('callback_query', async (callbackQuery) => {
           message_id: callbackQuery.message.message_id 
         }
       )
+      
+      // Показываем следующую верификацию или сообщение об отсутствии
+      try {
+        const response = await axios.get(`${API_BASE_URL}/api/admin/verifications`, {
+          headers: { 
+            'X-Admin-Key': process.env.ADMIN_API_KEY || 'a7f3b9c2d8e1f4a6b5c9d2e7f1a4b8c3d6e9f2a5b8c1d4e7f0a3b6c9d2e5f8a1b4c7d0e3f6a9b2c5d8e1f4a7b0c3d6e9f2a5b8c1d4e7f0a3b6c9d2e5f8a1b4c7d0e3f6a9b2c5d8e1f4a7b0c3d6e9f2a5b8c1d4e7f0a3b6c9d2e5f8a1b4c7d0e3f6a9b2c5d8e1f4a7b0c3d6e9f'
+          }
+        })
+        
+        if (response.data.length === 0) {
+          bot.sendMessage(chatId, '✅ Больше нет анкет, ожидающих верификации')
+        } else {
+          // Показываем следующую верификацию
+          await sendSingleVerification(chatId, response.data[0])
+        }
+      } catch (error) {
+        console.error('Error checking remaining verifications:', error)
+        bot.sendMessage(chatId, '❌ Ошибка при проверке оставшихся верификаций')
+      }
       
     } else if (data.startsWith('verify_reject_')) {
       const verificationId = data.replace('verify_reject_', '')
@@ -340,22 +344,7 @@ bot.on('callback_query', async (callbackQuery) => {
       
       bot.answerCallbackQuery(callbackQuery.id, { text: '❌ Верификация отклонена!' })
       
-      // Показываем следующую верификацию или сообщение об отсутствии
-      try {
-        const response = await axios.get(`${API_BASE_URL}/api/admin/verifications`, {
-          headers: { 'X-Admin-Key': process.env.ADMIN_API_KEY || 'kissblow-admin-2024-verification-bot-key-12345' }
-        })
-        
-        if (response.data.length === 0) {
-          bot.sendMessage(chatId, '✅ Нет ожидающих верификаций')
-        } else {
-          // Показываем следующую верификацию
-          await sendSingleVerification(chatId, response.data[0])
-        }
-      } catch (error) {
-        console.error('Error checking remaining verifications:', error)
-      }
-      
+      // Обновляем сообщение с кнопками
       bot.editMessageText(
         `❌ Верификация #${verificationId} отклонена!`,
         { 
@@ -363,6 +352,25 @@ bot.on('callback_query', async (callbackQuery) => {
           message_id: callbackQuery.message.message_id 
         }
       )
+      
+      // Показываем следующую верификацию или сообщение об отсутствии
+      try {
+        const response = await axios.get(`${API_BASE_URL}/api/admin/verifications`, {
+          headers: { 
+            'X-Admin-Key': process.env.ADMIN_API_KEY || 'a7f3b9c2d8e1f4a6b5c9d2e7f1a4b8c3d6e9f2a5b8c1d4e7f0a3b6c9d2e5f8a1b4c7d0e3f6a9b2c5d8e1f4a7b0c3d6e9f2a5b8c1d4e7f0a3b6c9d2e5f8a1b4c7d0e3f6a9b2c5d8e1f4a7b0c3d6e9f2a5b8c1d4e7f0a3b6c9d2e5f8a1b4c7d0e3f6a9b2c5d8e1f4a7b0c3d6e9f'
+          }
+        })
+        
+        if (response.data.length === 0) {
+          bot.sendMessage(chatId, '✅ Больше нет анкет, ожидающих верификации')
+        } else {
+          // Показываем следующую верификацию
+          await sendSingleVerification(chatId, response.data[0])
+        }
+      } catch (error) {
+        console.error('Error checking remaining verifications:', error)
+        bot.sendMessage(chatId, '❌ Ошибка при проверке оставшихся верификаций')
+      }
     }
   } catch (error) {
     console.error('Callback error:', error)

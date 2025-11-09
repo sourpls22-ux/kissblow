@@ -327,12 +327,28 @@ export default function Dashboard() {
   
   // Проверка авторизации на клиенте
   useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        router.push('/')
-      } else if (user.accountType !== 'model') {
-        router.push('/')
-      }
+    // Не редиректим, пока идет загрузка
+    if (loading) {
+      return
+    }
+    
+    // Проверяем наличие токена перед редиректом
+    // Это предотвращает редирект при обновлении страницы, когда user еще не загружен
+    const token = typeof window !== 'undefined' ? localStorage.getItem('kissblow-token') : null
+    
+    // Если есть токен, но user еще не загружен, ждем еще немного
+    if (token && !user) {
+      return
+    }
+    
+    // Редиректим только если точно знаем, что пользователь не авторизован
+    if (!user) {
+      router.push('/')
+      return
+    }
+    
+    if (user.accountType !== 'model') {
+      router.push('/')
     }
   }, [user, loading, router])
   
