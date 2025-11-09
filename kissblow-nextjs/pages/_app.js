@@ -5,6 +5,7 @@ import { useState, useEffect, startTransition } from 'react'
 import { ThemeProvider } from '../contexts/ThemeContext'
 import { AuthProvider } from '../contexts/AuthContext'
 import { LanguageProvider } from '../contexts/LanguageContext'
+import { ToastProvider } from '../contexts/ToastContext'
 import Layout from '../components/Layout'
 import { useLanguage } from '../contexts/LanguageContext'
 import ConsoleInterceptor from '../components/ConsoleInterceptor'
@@ -18,11 +19,6 @@ const AgeVerificationModal = dynamic(() => import('../components/AgeVerification
 const BalanceProvider = dynamic(
   () => import('../contexts/BalanceContext').then(mod => ({ default: mod.BalanceProvider })),
   { ssr: false } // Balance не нужен для SSR
-)
-
-const ToastProvider = dynamic(
-  () => import('../contexts/ToastContext').then(mod => ({ default: mod.ToastProvider })),
-  { ssr: false } // Toast не нужен для SSR
 )
 
 // Компонент для обновления lang атрибута в HTML при изменении языка
@@ -60,15 +56,15 @@ function MyApp({ Component, pageProps }) {
           <BalanceProvider>
             <LanguageProvider>
               <LanguageUpdater />
-              <div suppressHydrationWarning>
-                {mounted && <AgeVerificationModal />}
-                <Layout>
-                  <Component {...pageProps} />
-                </Layout>
-              </div>
-              {/* ToastProvider и ConsoleInterceptor загружаются после гидратации */}
               <ToastProvider>
-                <ConsoleInterceptor />
+                <div suppressHydrationWarning>
+                  {mounted && <AgeVerificationModal />}
+                  <Layout>
+                    <Component {...pageProps} />
+                  </Layout>
+                </div>
+                {/* ConsoleInterceptor загружается после гидратации */}
+                {mounted && <ConsoleInterceptor />}
               </ToastProvider>
             </LanguageProvider>
           </BalanceProvider>

@@ -13,6 +13,11 @@ export const useToast = () => {
 
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([])
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const addToast = (message, type = 'info', duration = 5000) => {
     const id = Date.now() + Math.random()
@@ -75,7 +80,8 @@ export const ToastProvider = ({ children }) => {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <ToastContainer toasts={toasts} removeToast={removeToast} />
+      {/* ToastContainer рендерится только после монтирования, чтобы не замедлять гидратацию */}
+      {mounted && <ToastContainer toasts={toasts} removeToast={removeToast} />}
     </ToastContext.Provider>
   )
 }

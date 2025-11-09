@@ -3,9 +3,17 @@
 @tailwind utilities;
 
 /* Prevent lazy loading intervention errors */
-img {
+/* Убрано content-visibility: auto, так как оно блокирует клики на изображениях внутри Link */
+/* img {
   content-visibility: auto;
   contain-intrinsic-size: 400px 500px;
+} */
+
+/* Разрешаем pointer-events для изображений внутри ссылок */
+a img,
+a picture,
+a [role="img"] {
+  pointer-events: auto;
 }
 
 body {

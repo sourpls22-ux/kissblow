@@ -883,11 +883,24 @@ const CityPage = ({ initialProfiles, initialPagination, cityName, citySlug, last
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 smooth-transition">
-                {filteredProfiles.map((profile, index) => (
+                {filteredProfiles.map((profile, index) => {
+                  const profileUrl = cityName ? `/ru/${cityName}/escorts/${profile.id}` : `/ru/escorts/${profile.id}`
+                  return (
                   <Link
                     key={profile.id}
-                    href={cityName ? `/ru/${cityName}/escorts/${profile.id}` : `/ru/escorts/${profile.id}`}
-                    className="theme-surface rounded-lg overflow-hidden hover:transform hover:scale-105 transition-all duration-300 border theme-border will-change-transform"
+                    href={profileUrl}
+                    className="theme-surface rounded-lg overflow-hidden hover:transform hover:scale-105 transition-all duration-300 border theme-border"
+                    onClick={(e) => {
+                      // Если клик был на изображении или другой дочерний элемент, убеждаемся что навигация работает
+                      // Используем router.push как fallback для гарантии навигации
+                      const target = e.target
+                      const isImageClick = target.tagName === 'IMG' || target.closest('img')
+                      if (isImageClick) {
+                        // Для кликов на изображении используем router.push напрямую
+                        e.preventDefault()
+                        router.push(profileUrl)
+                      }
+                    }}
                   >
                     {/* Верхняя часть - только изображение */}
                     <div className="relative h-96 max-sm:h-[500px] bg-gradient-to-br from-onlyfans-accent/20 to-onlyfans-dark/20">
@@ -944,7 +957,8 @@ const CityPage = ({ initialProfiles, initialPagination, cityName, citySlug, last
                       </div>
                     </div>
                   </Link>
-                ))}
+                  )
+                })}
               </div>
 
               {/* Load More Button */}

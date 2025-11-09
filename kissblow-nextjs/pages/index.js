@@ -994,12 +994,24 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
                 {filteredProfiles.length > 0 && (
                   <>
                     {/* Первый профиль - критичен для LCP, рендерим сразу */}
-                    {filteredProfiles.slice(0, 1).map((profile, index) => (
+                    {filteredProfiles.slice(0, 1).map((profile, index) => {
+                      const profileUrl = `/${profile.city.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}/escorts/${profile.id}`
+                      return (
                       <Link
                         key={profile.id}
-                        href={`/${profile.city.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}/escorts/${profile.id}`}
+                        href={profileUrl}
                         className="theme-surface rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300 border theme-border"
-                        style={{ contain: 'layout style paint' }}
+                        onClick={(e) => {
+                          // Если клик был на изображении или другой дочерний элемент, убеждаемся что навигация работает
+                          // Используем router.push как fallback для гарантии навигации
+                          const target = e.target
+                          const isImageClick = target.tagName === 'IMG' || target.closest('img')
+                          if (isImageClick) {
+                            // Для кликов на изображении используем router.push напрямую
+                            e.preventDefault()
+                            router.push(profileUrl)
+                          }
+                        }}
                       >
                         {/* Верхняя часть - только изображение */}
                         <div className="relative h-96 max-sm:h-[500px] bg-gradient-to-br from-onlyfans-accent/20 to-onlyfans-dark/20">
@@ -1016,10 +1028,6 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
                               priority={true}
                               fetchPriority="high"
                               quality={75}
-                              style={{ 
-                                contentVisibility: 'auto',
-                                contain: 'layout style paint'
-                              }}
                               onError={(e) => {
                                 console.error('Failed to load profile image:', profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url)
                                 e.target.style.display = 'none'
@@ -1062,15 +1070,28 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
                           </div>
                         </div>
                       </Link>
-                    ))}
+                      )
+                    })}
                     
                     {/* Остальные профили - после гидратации для оптимизации первого рендера */}
-                    {isHydrated && filteredProfiles.slice(1).map((profile, index) => (
+                    {isHydrated && filteredProfiles.slice(1).map((profile, index) => {
+                      const profileUrl = `/${profile.city.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}/escorts/${profile.id}`
+                      return (
                       <Link
                         key={profile.id}
-                        href={`/${profile.city.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}/escorts/${profile.id}`}
+                        href={profileUrl}
                         className="theme-surface rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300 border theme-border"
-                        style={{ contain: 'layout style paint' }}
+                        onClick={(e) => {
+                          // Если клик был на изображении или другой дочерний элемент, убеждаемся что навигация работает
+                          // Используем router.push как fallback для гарантии навигации
+                          const target = e.target
+                          const isImageClick = target.tagName === 'IMG' || target.closest('img')
+                          if (isImageClick) {
+                            // Для кликов на изображении используем router.push напрямую
+                            e.preventDefault()
+                            router.push(profileUrl)
+                          }
+                        }}
                       >
                         {/* Верхняя часть - только изображение */}
                         <div className="relative h-96 max-sm:h-[500px] bg-gradient-to-br from-onlyfans-accent/20 to-onlyfans-dark/20">
@@ -1128,7 +1149,8 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
                           </div>
                         </div>
                       </Link>
-                    ))}
+                      )
+                    })}
                   </>
                 )}
               </div>
