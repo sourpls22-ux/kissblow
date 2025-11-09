@@ -33,56 +33,18 @@ export const useTranslation = () => {
   const language = languageContext?.language || 'en'
   const isLoaded = languageContext?.isLoaded || false
   
-  // Безопасно определяем язык из URL пути для SSR
-  let isRuPath = false
-  if (typeof window !== 'undefined') {
-    // На клиенте используем router
-    isRuPath = router?.asPath?.startsWith('/ru') || router?.pathname?.startsWith('/ru')
-  } else {
-    // На сервере определяем из router или используем fallback
-    // Для SSR на русских страницах нужно загрузить русскую локаль синхронно
-    try {
-      const path = router?.asPath || router?.pathname || ''
-      isRuPath = path.startsWith('/ru')
-    } catch (e) {
-      // Если router недоступен, используем fallback
-      isRuPath = false
-    }
-  }
-  
+  // Определяем язык из URL пути для SSR
+  const isRuPath = router.asPath?.startsWith('/ru') || router.pathname?.startsWith('/ru')
   const initialLanguage = isRuPath ? 'ru' : 'en'
   
-  // Для SSR на русских страницах загружаем русскую локаль синхронно
-  // Иначе инициализируем только с английской локалью
-  const [translations, setTranslations] = useState(() => {
-    if (typeof window === 'undefined' && initialLanguage === 'ru') {
-      // На сервере для русских страниц загружаем русскую локаль синхронно
-      // Это нужно для SSR, чтобы переводы были доступны сразу
-      try {
-        // Используем require для синхронной загрузки на сервере
-        const { ru } = require('../locales/ru')
-        translationsCache.ru = ru
-        return {
-          en: enLocale,
-          ru: ru
-        }
-      } catch (error) {
-        console.error('Failed to load ru locale on server:', error)
-        return {
-          en: enLocale,
-          ru: null
-        }
-      }
-    }
-    // На клиенте или для английских страниц - только английская
-    return {
-      en: enLocale,
-      ru: null
-    }
+  // Инициализируем только с английской локалью
+  const [translations, setTranslations] = useState({
+    en: enLocale,
+    ru: null // Загрузится при необходимости
   })
-  const [isRuLoaded, setIsRuLoaded] = useState(typeof window === 'undefined' && initialLanguage === 'ru')
+  const [isRuLoaded, setIsRuLoaded] = useState(false)
   
-  // Загружаем русскую локаль динамически на клиенте, если нужна
+  // Загружаем русскую локаль динамически, если нужна
   useEffect(() => {
     if (typeof window !== 'undefined' && (language === 'ru' || initialLanguage === 'ru')) {
       if (!translationsCache.ru && !isRuLoaded) {
