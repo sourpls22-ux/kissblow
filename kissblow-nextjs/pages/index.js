@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, startTransition, useMemo, memo } from 'rea
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import Image from 'next/image'
+import Head from 'next/head'
 import { Search, Filter, Globe, RefreshCw, Star, User, MapPin, Heart, X, Loader2 } from 'lucide-react'
 import SEOHead from '../components/SEOHead'
 import PaginationControls from '../components/PaginationControls'
@@ -12,7 +13,6 @@ import { useModalBackdrop } from '../hooks/useModalBackdrop'
 import { useScrollLock, useModalScroll } from '../hooks/useScrollLock'
 import { cities, searchCities, popularCities } from '../data/cities'
 import { generateWebSiteSchema, generateItemListSchema } from '../utils/schemaMarkup'
-import axios from 'axios'
 
 import dynamic from 'next/dynamic'
 
@@ -41,27 +41,40 @@ export async function getStaticProps() {
     const response = await fetch(`${baseUrl}/api/profiles?limit=24&page=1`)
     const data = await response.json()
 
-    // Загружаем лайки и медиа для каждого профиля
+    // Загружаем медиа только для первых 4 профилей (которые видны сразу и критичны для LCP)
+    // Для остальных используем fallback изображения
     const profilesWithLikes = await Promise.all(
-      (data.profiles || []).map(async (profile) => {
+      (data.profiles || []).map(async (profile, index) => {
         try {
-          const [likesResponse, mediaResponse] = await Promise.all([
-            fetch(`${baseUrl}/api/profiles/${profile.id}/likes`),
-            fetch(`${baseUrl}/api/profiles/${profile.id}/media`)
-          ])
-          
-          const likesData = likesResponse.ok ? await likesResponse.json() : { likesCount: 0 }
-          const mediaData = mediaResponse.ok ? await mediaResponse.json() : []
-          
-          // Используем первое фото из медиа, как на странице профиля
-          const firstPhoto = mediaData.find(media => media.type === 'photo')
-          const imageUrl = firstPhoto ? firstPhoto.url : (profile.main_photo_url || profile.image_url || profile.first_photo_url)
-          
-          return {
-            ...profile,
-            image: imageUrl,
-            rating: 4.8,
-            likes_count: likesData.likesCount || 0
+          // Загружаем медиа только для первых 4 профилей
+          if (index < 4) {
+            const [likesResponse, mediaResponse] = await Promise.all([
+              fetch(`${baseUrl}/api/profiles/${profile.id}/likes`),
+              fetch(`${baseUrl}/api/profiles/${profile.id}/media`)
+            ])
+            
+            const likesData = likesResponse.ok ? await likesResponse.json() : { likesCount: 0 }
+            const mediaData = mediaResponse.ok ? await mediaResponse.json() : []
+            
+            // Используем первое фото из медиа, как на странице профиля
+            const firstPhoto = mediaData.find(media => media.type === 'photo')
+            const imageUrl = firstPhoto ? firstPhoto.url : (profile.main_photo_url || profile.image_url || profile.first_photo_url)
+            
+            return {
+              ...profile,
+              image: imageUrl,
+              rating: 4.8,
+              likes_count: likesData.likesCount || 0
+            }
+          } else {
+            // Для остальных профилей используем fallback изображения без дополнительных запросов
+            // Лайки будут загружены на клиенте
+            return {
+              ...profile,
+              image: profile.main_photo_url || profile.image_url || profile.first_photo_url,
+              rating: 4.8,
+              likes_count: 0 // Будет загружено на клиенте
+            }
           }
         } catch (error) {
           console.error(`Failed to fetch data for profile ${profile.id}:`, error)
@@ -225,6 +238,14 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
       startTransition(() => {
         setProfiles(initialProfiles)
       })
+      // Загружаем лайки для профилей, которые не имеют likes_count (после первых 4)
+      const profilesWithoutLikes = initialProfiles.filter((p, index) => index >= 4 && (p.likes_count === 0 || p.likes_count === undefined))
+      if (profilesWithoutLikes.length > 0) {
+        // Загружаем лайки асинхронно после рендера
+        setTimeout(() => {
+          fetchAllLikes(profilesWithoutLikes, false)
+        }, 100)
+      }
     }
   }, [initialProfiles])
 
@@ -255,8 +276,9 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
       }
       
       const API_URL = process.env.NEXT_PUBLIC_API_URL || ''
-      const response = await axios.get(`${API_URL}/api/profiles?${params}`)
-      const { profiles: profilesData, pagination: paginationData } = response.data
+      const response = await fetch(`${API_URL}/api/profiles?${params}`)
+      const data = await response.json()
+      const { profiles: profilesData, pagination: paginationData } = data
       
       // Загружаем медиа для каждого профиля
       const formattedProfiles = await Promise.all(
@@ -322,8 +344,9 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
       const likesPromises = profilesData.map(async (profile) => {
         try {
           const API_URL = process.env.NEXT_PUBLIC_API_URL || ''
-          const response = await axios.get(`${API_URL}/api/profiles/${profile.id}/likes`)
-          return { profileId: profile.id, likesCount: response.data.likesCount }
+          const response = await fetch(`${API_URL}/api/profiles/${profile.id}/likes`)
+          const data = await response.json()
+          return { profileId: profile.id, likesCount: data.likesCount }
         } catch (error) {
           console.error(`Failed to fetch likes for profile ${profile.id}:`, error)
           return { profileId: profile.id, likesCount: 0 }
@@ -348,9 +371,16 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
           setProfileLikes(prev => ({ ...prev, ...likesMap }))
         })
       } else {
+        // Для initialProfiles обновляем существующие профили в state
         startTransition(() => {
-          setProfiles(updatedProfiles)
-          setProfileLikes(likesMap)
+          setProfiles(prev => {
+            const updated = prev.map(p => {
+              const updatedProfile = updatedProfiles.find(up => up.id === p.id)
+              return updatedProfile || p
+            })
+            return updated
+          })
+          setProfileLikes(prev => ({ ...prev, ...likesMap }))
         })
       }
     } catch (error) {
@@ -702,9 +732,24 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
     structuredData: structuredData.length > 0 ? structuredData : undefined
   }
 
+  // Получаем URL первого изображения для preload
+  const firstImageUrl = filteredProfiles.length > 0 && (filteredProfiles[0].image || filteredProfiles[0].main_photo_url || filteredProfiles[0].image_url || filteredProfiles[0].first_photo_url)
+    ? filteredProfiles[0].image || filteredProfiles[0].main_photo_url || filteredProfiles[0].image_url || filteredProfiles[0].first_photo_url
+    : null
+
   return (
     <>
       <SEOHead {...seoData} />
+      {firstImageUrl && (
+        <Head>
+          <link
+            rel="preload"
+            as="image"
+            href={firstImageUrl}
+            fetchPriority="high"
+          />
+        </Head>
+      )}
       <div className="min-h-screen theme-bg py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
@@ -944,11 +989,12 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
                           alt={profile.name}
                           width={500}
                           height={500}
-                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
+                          sizes={index === 0 ? "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 500px" : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"}
                           className="w-full h-full object-cover object-center"
                           loading={index < 4 ? "eager" : "lazy"}
                           priority={index < 4}
-                          quality={85}
+                          quality={index < 4 ? 75 : 85}
+                          fetchPriority={index === 0 ? "high" : "auto"}
                           onError={(e) => {
                             console.error('Failed to load profile image:', profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url)
                             e.target.style.display = 'none'

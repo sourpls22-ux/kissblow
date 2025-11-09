@@ -1,16 +1,63 @@
 import { useLanguage } from '../contexts/LanguageContext'
-import { en } from '../locales/en'
-import { ru } from '../locales/ru'
+import { useState, useEffect } from 'react'
 
-const translations = {
-  en,
-  ru
+// Кеш для загруженных локалей
+const translationsCache = {
+  en: null,
+  ru: null
+}
+
+// Функция для динамической загрузки локали
+const loadLocale = async (lang) => {
+  if (translationsCache[lang]) {
+    return translationsCache[lang]
+  }
+  
+  try {
+    if (lang === 'ru') {
+      const { ru } = await import('../locales/ru')
+      translationsCache.ru = ru
+      return ru
+    } else {
+      const { en } = await import('../locales/en')
+      translationsCache.en = en
+      return en
+    }
+  } catch (error) {
+    console.error(`Failed to load locale ${lang}:`, error)
+    // Fallback на английский
+    if (lang !== 'en') {
+      const { en } = await import('../locales/en')
+      translationsCache.en = en
+      return en
+    }
+    return {}
+  }
 }
 
 export const useTranslation = () => {
   const languageContext = useLanguage()
   const language = languageContext?.language || 'en'
   const isLoaded = languageContext?.isLoaded || false
+  
+  const [translations, setTranslations] = useState({})
+  const [isTranslationsLoaded, setIsTranslationsLoaded] = useState(false)
+  
+  // Загружаем локаль динамически
+  useEffect(() => {
+    if (isLoaded) {
+      loadLocale(language).then((locale) => {
+        setTranslations({ [language]: locale })
+        setIsTranslationsLoaded(true)
+      })
+    } else {
+      // Для SSR используем английский по умолчанию
+      loadLocale('en').then((locale) => {
+        setTranslations({ en: locale })
+        setIsTranslationsLoaded(true)
+      })
+    }
+  }, [language, isLoaded])
   
   const t = (key, params = {}) => {
     if (!key || typeof key !== 'string') {
@@ -20,16 +67,17 @@ export const useTranslation = () => {
     
     // Если контекст еще не загружен, используем английский язык для предотвращения гидратации
     const currentLanguage = isLoaded ? language : 'en'
+    const currentTranslations = translations[currentLanguage] || translations.en || {}
     
     const keys = key.split('.')
-    let value = translations[currentLanguage]
+    let value = currentTranslations
     
     for (const k of keys) {
       if (value && typeof value === 'object') {
         value = value[k]
       } else {
-        console.warn(`Translation key not found: ${key} for language: ${language}`)
-        return key // Return key if translation not found
+        // Если перевод не найден, возвращаем ключ (не логируем, чтобы не засорять консоль)
+        return key
       }
     }
     
@@ -48,15 +96,13 @@ export const useTranslation = () => {
     
     // Handle non-string values more gracefully
     if (value !== undefined && value !== null) {
-      console.warn(`Translation value is not a string: ${key} -> ${typeof value} (${value}) (language: ${language})`)
       return String(value)
     }
     
-    console.warn(`Translation value is undefined: ${key} (language: ${language})`)
     return key
   }
   
-  return { t, language, isLoaded }
+  return { t, language, isLoaded: isLoaded && isTranslationsLoaded }
 }
 
 
