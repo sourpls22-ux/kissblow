@@ -9,11 +9,6 @@ const Privacy = ({ translations, lastUpdated }) => {
   // Для русской страницы приоритет русскому языку, но без JS показываем русский
   const currentTranslations = translations.ru
   const t = (key, params = {}) => {
-    if (!currentTranslations || typeof currentTranslations !== 'object') {
-      console.warn(`Translation not found for key: ${key} (translations object is invalid)`)
-      return key
-    }
-    
     const keys = key.split('.')
     let value = currentTranslations
     
@@ -247,11 +242,15 @@ export async function getStaticProps() {
   const { en } = await import('../../locales/en')
   const { ru } = await import('../../locales/ru')
   
+  if (!en?.privacy || !ru?.privacy) {
+    console.error('Privacy translations not found in locale files')
+  }
+  
   return {
     props: {
       translations: {
-        en: en.privacy,
-        ru: ru.privacy
+        en: en?.privacy || {},
+        ru: ru?.privacy || {}
       },
       lastUpdated: new Date().toLocaleDateString('ru-RU', {
         year: 'numeric',

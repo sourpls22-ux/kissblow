@@ -8,11 +8,6 @@ const Terms = ({ translations, lastUpdated }) => {
   // Для английской страницы приоритет английскому языку, но без JS показываем английский
   const currentTranslations = translations.en
   const t = (key, params = {}) => {
-    if (!currentTranslations || typeof currentTranslations !== 'object') {
-      console.warn(`Translation not found for key: ${key} (translations object is invalid)`)
-      return key
-    }
-    
     const keys = key.split('.')
     let value = currentTranslations
     
@@ -202,11 +197,15 @@ export async function getStaticProps() {
   const { en } = await import('../locales/en')
   const { ru } = await import('../locales/ru')
   
+  if (!en?.rules || !ru?.rules) {
+    console.error('Terms translations not found in locale files')
+  }
+  
   return {
     props: {
       translations: {
-        en: en.rules,
-        ru: ru.rules
+        en: en?.rules || {},
+        ru: ru?.rules || {}
       },
       lastUpdated: new Date().toLocaleDateString('en-US', {
         year: 'numeric',
