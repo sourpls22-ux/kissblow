@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
+import Script from 'next/script'
 import { ArrowLeft, Bitcoin } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useBalance } from '../../contexts/BalanceContext'
@@ -297,6 +298,10 @@ export default function TopUp() {
 
   return (
     <>
+      <Script 
+        src="https://atlos.io/packages/app/atlos.js"
+        strategy="afterInteractive"
+      />
       <SEOHead {...seoData} />
       <div className="min-h-screen theme-bg py-8">
         <div className="max-w-lg mx-auto px-4 sm:px-6 lg:px-8">

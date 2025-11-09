@@ -343,10 +343,6 @@ function MyApp({ Component, pageProps }) {
         src="https://challenges.cloudflare.com/turnstile/v0/api.js" 
         strategy="lazyOnload"
       />
-      <Script 
-        src="https://atlos.io/packages/app/atlos.js"
-        strategy="afterInteractive"
-      />
       <ThemeProvider>
         <AuthProvider>
           <BalanceProvider>
