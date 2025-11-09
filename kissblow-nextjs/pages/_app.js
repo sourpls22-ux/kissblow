@@ -6,9 +6,13 @@ import { ThemeProvider } from '../contexts/ThemeContext'
 import { AuthProvider } from '../contexts/AuthContext'
 import { LanguageProvider } from '../contexts/LanguageContext'
 import Layout from '../components/Layout'
-import AgeVerificationModal from '../components/AgeVerificationModal'
 import { useLanguage } from '../contexts/LanguageContext'
 import ConsoleInterceptor from '../components/ConsoleInterceptor'
+
+// Lazy load AgeVerificationModal - показывается только после mounted, не нужен для SSR
+const AgeVerificationModal = dynamic(() => import('../components/AgeVerificationModal'), {
+  ssr: false
+})
 
 // Откладываем некритичные провайдеры для ускорения гидратации
 const BalanceProvider = dynamic(

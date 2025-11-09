@@ -31,15 +31,47 @@ const nextConfig = {
         'multer': 'commonjs multer',
       })
     } else {
-      // Для клиентской части - минимизируем полифиллы
-      // Next.js автоматически использует browserslist из .browserslistrc или package.json
-    }
-    
-    // Оптимизация для минимизации
-    // Next.js уже имеет встроенную оптимизацию tree-shaking, не нужно добавлять usedExports
-    config.optimization = {
-      ...config.optimization,
-      moduleIds: 'deterministic',
+      // Для клиентской части - улучшенный code splitting
+      config.optimization = {
+        ...config.optimization,
+        moduleIds: 'deterministic',
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            default: false,
+            vendors: false,
+            // Framework chunk - React, React-DOM
+            framework: {
+              name: 'framework',
+              chunks: 'all',
+              test: /(?<!node_modules.*)[\\/]node_modules[\\/](react|react-dom|scheduler|prop-types)[\\/]/,
+              priority: 40,
+              enforce: true,
+            },
+            // Большие библиотеки в отдельные chunks
+            lib: {
+              test(module) {
+                return module.size() > 160000 && /node_modules[/\\]/.test(module.identifier())
+              },
+              name(module) {
+                const packageName = module.identifier().match(/[\\/]node_modules[\\/](.*?)([\\/]|$)/)
+                return packageName ? `lib-${packageName[1].replace('@', '').replace('/', '-')}` : 'lib'
+              },
+              priority: 30,
+              minChunks: 1,
+              reuseExistingChunk: true,
+            },
+            // Общие модули
+            commons: {
+              name: 'commons',
+              minChunks: 2,
+              priority: 20,
+            },
+          },
+          maxInitialRequests: 25,
+          minSize: 20000,
+        },
+      }
     }
     
     return config
