@@ -1016,10 +1016,10 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
                         }}
                       >
                         {/* Верхняя часть - только изображение */}
+                        {/* Используем next/image с priority={true} для LCP оптимизации
+                            unoptimized={true} отключает серверную оптимизацию, чтобы избежать задержки на конвертацию WebP/AVIF */}
                         <div className="relative h-96 max-sm:h-[500px] bg-gradient-to-br from-onlyfans-accent/20 to-onlyfans-dark/20">
                           {profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url ? (
-                            {/* Используем next/image с priority={true} для LCP оптимизации
-                                unoptimized={true} отключает серверную оптимизацию, чтобы избежать задержки на конвертацию WebP/AVIF */}
                             <Image
                               src={profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url}
                               alt={profile.name}
