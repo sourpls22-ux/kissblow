@@ -760,13 +760,15 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
   return (
     <>
       <SEOHead {...seoData} />
-      {firstImageUrl && (
-        <Head>
-          {/* Resource hints для ускорения загрузки первого изображения */}
-          <link rel="preconnect" href={imageDomain} crossOrigin="anonymous" />
-          <link rel="dns-prefetch" href={imageDomain} />
-        </Head>
-      )}
+        {firstImageUrl && (
+          <Head>
+            {/* Resource hints для ускорения загрузки первого изображения */}
+            <link rel="preconnect" href={imageDomain} crossOrigin="anonymous" />
+            <link rel="dns-prefetch" href={imageDomain} />
+            {/* Явный preload для первого изображения для гарантированной загрузки */}
+            <link rel="preload" as="image" href={firstImageUrl} fetchPriority="high" />
+          </Head>
+        )}
       <div className="min-h-screen theme-bg py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
@@ -1016,8 +1018,8 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
                         {/* Верхняя часть - только изображение */}
                         <div className="relative h-96 max-sm:h-[500px] bg-gradient-to-br from-onlyfans-accent/20 to-onlyfans-dark/20">
                           {profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url ? (
-                            // Используем next/image с priority={true} для LCP оптимизации
-                            // Next.js автоматически добавит <link rel="preload"> в <head>, делая изображение discoverable из HTML
+                            {/* Используем next/image с priority={true} для LCP оптимизации
+                                unoptimized={true} отключает серверную оптимизацию, чтобы избежать задержки на конвертацию WebP/AVIF */}
                             <Image
                               src={profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url}
                               alt={profile.name}
@@ -1028,6 +1030,7 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
                               priority={true}
                               fetchPriority="high"
                               quality={75}
+                              unoptimized={true}
                               onError={(e) => {
                                 console.error('Failed to load profile image:', profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url)
                                 e.target.style.display = 'none'
