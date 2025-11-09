@@ -37,7 +37,7 @@ export default async function handler(req, res) {
          FROM profiles p 
          LEFT JOIN media m ON p.main_photo_id = m.id 
          WHERE p.user_id = ? 
-         ORDER BY p.is_active DESC, p.created_at DESC`,
+         ORDER BY p.created_at DESC`,
         [user.id],
         (err, profiles) => {
           if (err) reject(err)

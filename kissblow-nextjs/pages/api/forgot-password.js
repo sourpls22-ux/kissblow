@@ -2,11 +2,13 @@ import { verifyTurnstileToken } from '../../lib/utils/turnstile.js'
 import crypto from 'crypto'
 
 export default async function handler(req, res) {
-  // Direct file logging to ensure we see what's happening
+  // Direct file logging only in development
+  const isDevelopment = process.env.NODE_ENV !== 'production'
   const fs = await import('fs')
   const path = await import('path')
   const logFile = path.join(process.cwd(), 'logs', 'forgot-password-debug.log')
   const log = (msg, data = {}) => {
+    if (!isDevelopment) return // Skip debug logs in production
     const timestamp = new Date().toISOString()
     const logMsg = `[${timestamp}] ${msg} ${JSON.stringify(data)}\n`
     try {

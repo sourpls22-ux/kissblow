@@ -52,10 +52,14 @@ export default async function handler(req, res) {
       try {
         if (fs.existsSync(photoPath)) {
           fs.unlinkSync(photoPath)
-          console.log('Deleted verification photo:', photoPath)
+          // Логируем только в development
+          if (process.env.NODE_ENV !== 'production') {
+            console.log('Deleted verification photo:', photoPath)
+          }
         }
       } catch (err) {
-        console.log('Could not delete verification photo:', err.message)
+        // Ошибки удаления файлов логируем всегда
+        console.error('Could not delete verification photo:', err.message)
       }
     }
 

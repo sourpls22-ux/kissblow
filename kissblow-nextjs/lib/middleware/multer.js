@@ -17,8 +17,10 @@ const logFileOperation = async (operation, filePath, success, error = null) => {
       loggerModule.logFileOperation(operation, filePath, success, error)
     }
   } catch (err) {
-    // Fallback to console if logger import fails
-    console.log(`[File Operation] ${operation}: ${filePath} - ${success ? 'SUCCESS' : 'FAILED'}`, error || '')
+    // Fallback to console if logger import fails (только в development)
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[File Operation] ${operation}: ${filePath} - ${success ? 'SUCCESS' : 'FAILED'}`, error || '')
+    }
   }
 }
 
@@ -215,12 +217,14 @@ const upload = multer({
     } else if (file.mimetype.startsWith('video/')) {
       const validation = validateVideoFile(file)
       if (!validation.valid) {
-        // Логируем для отладки
-        console.log('Video validation failed:', {
-          mimetype: file.mimetype,
-          originalname: file.originalname,
-          size: file.size
-        })
+        // Логируем для отладки (только в development)
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('Video validation failed:', {
+            mimetype: file.mimetype,
+            originalname: file.originalname,
+            size: file.size
+          })
+        }
         return cb(new Error(validation.error), false)
       }
     } else {

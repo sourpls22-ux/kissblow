@@ -17,12 +17,16 @@ export default async function handler(req, res) {
       if (path) {
         // Если указан конкретный путь, обновляем только его
         await res.revalidate(path)
-        console.log(`✅ Homepage revalidated: ${path}`)
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`✅ Homepage revalidated: ${path}`)
+        }
       } else {
         // Если путь не указан, обновляем обе версии
         await res.revalidate('/')
         await res.revalidate('/ru')
-        console.log('✅ Homepage revalidated (both languages)')
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('✅ Homepage revalidated (both languages)')
+        }
       }
     }
 
@@ -31,12 +35,16 @@ export default async function handler(req, res) {
       if (path) {
         // Если указан конкретный путь, обновляем только его
         await res.revalidate(path)
-        console.log(`✅ Profile revalidated: ${path}`)
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`✅ Profile revalidated: ${path}`)
+        }
       } else {
         // Если путь не указан, обновляем обе версии
         await res.revalidate(`/${city}/escorts/${profileId}`)
         await res.revalidate(`/ru/${city}/escorts/${profileId}`)
-        console.log(`✅ Profile ${profileId} in ${city} revalidated (both languages)`)
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`✅ Profile ${profileId} in ${city} revalidated (both languages)`)
+        }
       }
     }
 
@@ -45,12 +53,16 @@ export default async function handler(req, res) {
       if (path) {
         // Если указан конкретный путь, обновляем только его
         await res.revalidate(path)
-        console.log(`✅ City page revalidated: ${path}`)
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`✅ City page revalidated: ${path}`)
+        }
       } else {
         // Если путь не указан, обновляем обе версии
         await res.revalidate(`/${city}/escorts`)
         await res.revalidate(`/ru/${city}/escorts`)
-        console.log(`✅ City page ${city} revalidated (both languages)`)
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`✅ City page ${city} revalidated (both languages)`)
+        }
       }
     }
 

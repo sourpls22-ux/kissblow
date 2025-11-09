@@ -5,10 +5,22 @@ const db = require('../database.js')
 
 // Указать путь к FFmpeg явно
 ffmpeg.setFfmpegPath('/usr/bin/ffmpeg')
-console.log('[FFmpeg] Using ffmpeg at: /usr/bin/ffmpeg')
+if (process.env.NODE_ENV !== 'production') {
+  console.log('[FFmpeg] Using ffmpeg at: /usr/bin/ffmpeg')
+}
 
-// Функция для логирования в файл
+// Функция для логирования в файл (только в development)
+const isDevelopment = process.env.NODE_ENV !== 'production'
+
+// Helper для условного console.log (только в development)
+const debugLog = (...args) => {
+  if (isDevelopment) {
+    console.log(...args)
+  }
+}
+
 const logToFile = (message, data = {}) => {
+  if (!isDevelopment) return // Skip debug logs in production
   try {
     const logDir = path.join(process.cwd(), 'logs')
     if (!fs.existsSync(logDir)) {
@@ -34,10 +46,12 @@ const convertVideo = (inputPath, outputPath, onProgress = null) => {
         ffmpeg.ffprobe(inputPath, (err, metadata) => {
           if (!err && metadata && metadata.format && metadata.format.duration) {
             videoDuration = metadata.format.duration
-            console.log(`[FFmpeg] Video duration: ${videoDuration} seconds`)
+            debugLog(`[FFmpeg] Video duration: ${videoDuration} seconds`)
             logToFile('FFmpeg video duration', { duration: videoDuration, inputPath })
           } else {
-            console.warn(`[FFmpeg] Could not get video duration:`, err?.message || 'No duration in metadata')
+            if (isDevelopment) {
+              console.warn(`[FFmpeg] Could not get video duration:`, err?.message || 'No duration in metadata')
+            }
             logToFile('FFmpeg duration error', { error: err?.message, inputPath })
           }
           resolveDuration(videoDuration)
@@ -56,13 +70,13 @@ const convertVideo = (inputPath, outputPath, onProgress = null) => {
       .audioBitrate('128k')
       .videoFilter('scale=1280:720:force_original_aspect_ratio=decrease:force_divisible_by=2')
       .on('start', (commandLine) => {
-        console.log('[FFmpeg] Process started:', commandLine)
+        debugLog('[FFmpeg] Process started:', commandLine)
         logToFile('FFmpeg process started', { commandLine, inputPath, outputPath })
       })
       .on('progress', (progress) => {
         // Логируем весь объект progress для отладки (только первые несколько раз)
         if (!convertVideo._progressLogged) {
-          console.log('[FFmpeg] Progress object structure:', JSON.stringify(progress, null, 2))
+          debugLog('[FFmpeg] Progress object structure:', JSON.stringify(progress, null, 2))
           convertVideo._progressLogged = true
         }
         
@@ -71,7 +85,7 @@ const convertVideo = (inputPath, outputPath, onProgress = null) => {
         // Пробуем разные способы получить прогресс
         if (progress.percent && !isNaN(progress.percent)) {
           percent = parseFloat(progress.percent)
-          console.log('[FFmpeg] Processing: ' + percent + '% done (from progress.percent)')
+          debugLog('[FFmpeg] Processing: ' + percent + '% done (from progress.percent)')
           logToFile('FFmpeg progress', { percent, source: 'progress.percent', timemark: progress.timemark })
         } else if (videoDuration && progress.timemark) {
           // Рассчитываем прогресс на основе timemark и длительности
@@ -82,7 +96,7 @@ const convertVideo = (inputPath, outputPath, onProgress = null) => {
                                parseFloat(timeParts[2])
             if (currentTime > 0 && videoDuration > 0) {
               percent = Math.min(100, (currentTime / videoDuration) * 100)
-              console.log('[FFmpeg] Processing: ' + percent.toFixed(1) + '% done (calculated from timemark: ' + progress.timemark + ' / ' + videoDuration.toFixed(1) + 's)')
+              debugLog('[FFmpeg] Processing: ' + percent.toFixed(1) + '% done (calculated from timemark: ' + progress.timemark + ' / ' + videoDuration.toFixed(1) + 's)')
               logToFile('FFmpeg progress', { 
                 percent: percent.toFixed(1), 
                 source: 'timemark', 
@@ -93,7 +107,7 @@ const convertVideo = (inputPath, outputPath, onProgress = null) => {
             }
           }
         } else {
-          console.log('[FFmpeg] Progress event received but percent unavailable:', {
+          debugLog('[FFmpeg] Progress event received but percent unavailable:', {
             hasPercent: !!progress.percent,
             timemark: progress.timemark,
             frames: progress.frames,
@@ -124,7 +138,7 @@ const convertVideo = (inputPath, outputPath, onProgress = null) => {
         }
       })
       .on('end', () => {
-        console.log('Video conversion completed')
+        debugLog('Video conversion completed')
         logToFile('FFmpeg conversion completed', { inputPath, outputPath })
         if (onProgress && typeof onProgress === 'function') {
           onProgress(100)
@@ -155,16 +169,16 @@ const convertVideo = (inputPath, outputPath, onProgress = null) => {
         .audioBitrate('128k')
         .videoFilter('scale=1280:720:force_original_aspect_ratio=decrease:force_divisible_by=2')
         .on('start', (commandLine) => {
-          console.log('[FFmpeg] Process started:', commandLine)
+          debugLog('[FFmpeg] Process started:', commandLine)
           logToFile('FFmpeg process started', { commandLine, inputPath, outputPath })
         })
         .on('progress', (progress) => {
           // Без длительности можем только логировать события
-          console.log('[FFmpeg] Progress event (no duration):', progress.timemark)
+          debugLog('[FFmpeg] Progress event (no duration):', progress.timemark)
           logToFile('FFmpeg progress (no duration)', { timemark: progress.timemark })
         })
         .on('end', () => {
-          console.log('Video conversion completed')
+          debugLog('Video conversion completed')
           logToFile('FFmpeg conversion completed', { inputPath, outputPath })
           if (onProgress && typeof onProgress === 'function') {
             onProgress(100)
@@ -250,7 +264,7 @@ const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
       inputPath,
       outputPath
     })
-    console.log(`Starting background video conversion for media ID: ${mediaId} (attempt ${currentAttempt}/${MAX_ATTEMPTS})`)
+    debugLog(`Starting background video conversion for media ID: ${mediaId} (attempt ${currentAttempt}/${MAX_ATTEMPTS})`)
     
     // Функция для обновления прогресса в базе данных
     const updateProgress = async (percent) => {
@@ -258,7 +272,7 @@ const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
       try {
         const progressValue = Math.min(100, Math.max(0, percent))
         logToFile('updateProgress - calculated value', { mediaId, percent, progressValue })
-        console.log(`[Progress Update] Media ${mediaId}: ${progressValue.toFixed(1)}%`)
+        debugLog(`[Progress Update] Media ${mediaId}: ${progressValue.toFixed(1)}%`)
         
         await new Promise((resolve) => {
           conversionDb.run(
@@ -271,7 +285,7 @@ const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
               } else {
                 logToFile('Progress update DB result', { mediaId, progress: progressValue, rowsChanged: this.changes })
                 if (this.changes > 0) {
-                  console.log(`[Progress Updated] Media ${mediaId}: ${progressValue.toFixed(1)}% (rows changed: ${this.changes})`)
+                  debugLog(`[Progress Updated] Media ${mediaId}: ${progressValue.toFixed(1)}% (rows changed: ${this.changes})`)
                 } else {
                   logToFile('Progress update - no rows changed', { mediaId, progress: progressValue })
                 }
@@ -320,7 +334,7 @@ const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
       )
     })
     
-    console.log('Background video conversion completed:', finalUrl)
+    debugLog('Background video conversion completed:', finalUrl)
     logToFile('convertVideoAsync - SUCCESS', { mediaId, finalUrl })
     
     // Ревалидируем страницу профиля после завершения конвертации
@@ -337,11 +351,10 @@ const convertVideoAsync = async (inputPath, outputPath, mediaId, profileId) => {
       if (profileData && profileData.city) {
         const citySlug = profileData.city.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
         await revalidateProfileUpdates(profileId, citySlug)
-        console.log(`Profile page revalidated after video conversion: ${profileId} in ${citySlug}`)
+        debugLog(`Profile page revalidated after video conversion: ${profileId} in ${citySlug}`)
       }
     } catch (revalidateError) {
-      console.error('Revalidation failed after video conversion (non-critical):', revalidateError.message)
-      // Не критично, продолжаем
+      // Не критично, продолжаем - ошибки ревалидации не логируем
     }
   } catch (error) {
     logToFile('convertVideoAsync - ERROR', { 

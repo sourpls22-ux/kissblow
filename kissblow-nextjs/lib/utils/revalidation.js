@@ -38,7 +38,9 @@ export const revalidateHomepage = async () => {
     const ruData = ruResponse.ok ? await ruResponse.json() : null
     
     if (enResponse.ok && ruResponse.ok) {
-      console.log('✅ Homepage revalidated (both languages)', { en: enData, ru: ruData })
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('✅ Homepage revalidated (both languages)', { en: enData, ru: ruData })
+      }
       return { success: true, data: { en: enData, ru: ruData } }
     } else {
       console.error(`❌ Homepage revalidation failed: EN=${enResponse.status}, RU=${ruResponse.status}`)
@@ -91,7 +93,9 @@ export const revalidateCity = async (city) => {
     const ruData = ruResponse.ok ? await ruResponse.json() : null
     
     if (enResponse.ok && ruResponse.ok) {
-      console.log(`✅ City ${city} revalidated (both languages)`, { en: enData, ru: ruData })
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`✅ City ${city} revalidated (both languages)`, { en: enData, ru: ruData })
+      }
       return { success: true, data: { en: enData, ru: ruData } }
     } else {
       console.error(`❌ City revalidation failed: EN=${enResponse.status}, RU=${ruResponse.status}`)
@@ -146,7 +150,9 @@ export const revalidateProfile = async (profileId, city) => {
     const ruData = ruResponse.ok ? await ruResponse.json() : null
     
     if (enResponse.ok && ruResponse.ok) {
-      console.log(`✅ Profile ${profileId} revalidated (both languages)`, { en: enData, ru: ruData })
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`✅ Profile ${profileId} revalidated (both languages)`, { en: enData, ru: ruData })
+      }
       return { success: true, data: { en: enData, ru: ruData } }
     } else {
       console.error(`❌ Profile revalidation failed: EN=${enResponse.status}, RU=${ruResponse.status}`)

@@ -13,13 +13,15 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// Проверка соединения
-transporter.verify((error, success) => {
-  if (error) {
-    console.log('❌ SMTP Error:', error);
-  } else {
-    console.log('✅ SMTP Server is ready to take our messages');
-  }
-});
+// Проверка соединения (только в development)
+if (process.env.NODE_ENV !== 'production') {
+  transporter.verify((error, success) => {
+    if (error) {
+      console.log('❌ SMTP Error:', error);
+    } else {
+      console.log('✅ SMTP Server is ready to take our messages');
+    }
+  });
+}
 
 module.exports = transporter

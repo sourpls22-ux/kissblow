@@ -45,7 +45,7 @@ const logger = winston.createLogger({
       datePattern: 'YYYY-MM-DD',
       level: 'error',
       maxSize: '20m',
-      maxFiles: '14d',
+      maxFiles: '7d',
       zippedArchive: true
     }),
     
@@ -54,7 +54,7 @@ const logger = winston.createLogger({
       filename: path.join(logDir, 'combined-%DATE%.log'),
       datePattern: 'YYYY-MM-DD',
       maxSize: '20m',
-      maxFiles: '30d',
+      maxFiles: '7d',
       zippedArchive: true
     }),
     
@@ -64,7 +64,7 @@ const logger = winston.createLogger({
       datePattern: 'YYYY-MM-DD',
       level: 'info',
       maxSize: '20m',
-      maxFiles: '7d',
+      maxFiles: '3d',
       zippedArchive: true
     })
   ]
@@ -99,66 +99,11 @@ if (process.env.NODE_ENV !== 'production') {
       })
     )
   }))
-  
-  // Also add console transport for errorLogger
-  errorLogger.add(new winston.transports.Console({
-    level: 'error',
-    format: winston.format.combine(
-      winston.format.timestamp({
-        format: 'YYYY-MM-DD HH:mm:ss'
-      }),
-      winston.format.errors({ stack: true }),
-      winston.format.printf(({ timestamp, level, message, ...meta }) => {
-        let msg = `${timestamp} [${level}]: ${message}`
-        if (meta.error) {
-          msg += `\nError: ${meta.error}`
-        }
-        if (meta.stack) {
-          msg += `\nStack: ${meta.stack}`
-        }
-        if (Object.keys(meta).length > 0) {
-          msg += `\nMeta: ${JSON.stringify(meta, null, 2)}`
-        }
-        return msg
-      })
-    )
-  }))
 }
-
-// Create specialized loggers
-const apiLogger = winston.createLogger({
-  level: 'info',
-  format: logFormat,
-  defaultMeta: { service: 'kissblow-api', type: 'api' },
-  transports: [
-    new DailyRotateFile({
-      filename: path.join(logDir, 'api-%DATE%.log'),
-      datePattern: 'YYYY-MM-DD',
-      maxSize: '20m',
-      maxFiles: '7d',
-      zippedArchive: true
-    })
-  ]
-})
-
-const errorLogger = winston.createLogger({
-  level: 'error',
-  format: logFormat,
-  defaultMeta: { service: 'kissblow-api', type: 'error' },
-  transports: [
-    new DailyRotateFile({
-      filename: path.join(logDir, 'error-%DATE%.log'),
-      datePattern: 'YYYY-MM-DD',
-      maxSize: '20m',
-      maxFiles: '14d',
-      zippedArchive: true
-    })
-  ]
-})
 
 // Helper functions
 const logApiRequest = (req, res, responseTime) => {
-  apiLogger.info('API Request', {
+  logger.info('API Request', {
     method: req.method,
     url: req.url,
     statusCode: res.statusCode,
@@ -180,9 +125,6 @@ const logApiError = (req, error, additionalInfo = {}) => {
     ...additionalInfo
   }
   
-  errorLogger.error('API Error', errorData)
-  
-  // Дополнительно логируем в основной logger для консоли в продакшн
   logger.error('API Error', errorData)
 }
 
@@ -194,9 +136,6 @@ const logDatabaseError = (operation, error, query = null) => {
     query: query ? query.substring(0, 200) + '...' : null
   }
   
-  errorLogger.error('Database Error', errorData)
-  
-  // Дополнительно логируем в основной logger для консоли в продакшн
   logger.error('Database Error', errorData)
 }
 
@@ -212,8 +151,6 @@ const logFileOperation = (operation, filePath, success, error = null) => {
 
 module.exports = {
   logger,
-  apiLogger,
-  errorLogger,
   logApiRequest,
   logApiError,
   logDatabaseError,

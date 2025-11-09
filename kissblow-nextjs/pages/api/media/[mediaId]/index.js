@@ -60,7 +60,10 @@ export default async function handler(req, res) {
       )
     })
 
-    console.log('Media deleted successfully:', mediaId)
+    // Логируем только в development
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Media deleted successfully:', mediaId)
+    }
     res.json({ message: 'Media deleted successfully' })
 
   } catch (error) {

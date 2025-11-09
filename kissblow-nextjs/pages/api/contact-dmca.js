@@ -76,11 +76,13 @@ Submitted at: ${new Date().toISOString()}
 }
 
 export default async function handler(req, res) {
-  // Direct file logging
+  // Direct file logging only in development
+  const isDevelopment = process.env.NODE_ENV !== 'production'
   const fs = await import('fs')
   const path = await import('path')
   const logFile = path.join(process.cwd(), 'logs', 'contact-dmca-debug.log')
   const log = (msg, data = {}) => {
+    if (!isDevelopment) return // Skip debug logs in production
     const timestamp = new Date().toISOString()
     const logMsg = `[${timestamp}] ${msg} ${JSON.stringify(data)}\n`
     try {
@@ -203,8 +205,10 @@ export default async function handler(req, res) {
       throw emailError
     }
 
-    // Логирование успешной отправки
-    console.log(`Contact form submitted successfully: ${email} - ${category}`)
+    // Логирование успешной отправки (только в development)
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`Contact form submitted successfully: ${email} - ${category}`)
+    }
     log('Contact form submitted successfully', { email: email.substring(0, 20) + '...', category })
 
     return res.status(200).json({ 

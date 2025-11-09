@@ -33,9 +33,13 @@ const sendPasswordResetEmail = async (email, resetToken) => {
     }
     
     const result = await transporter.sendMail(mailOptions)
-    console.log('✅ Password reset email sent:', result.messageId)
+    // Логируем только в development
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('✅ Password reset email sent:', result.messageId)
+    }
     return result
   } catch (error) {
+    // Ошибки отправки email всегда логируем
     console.error('❌ Error sending password reset email:', error)
     throw error
   }

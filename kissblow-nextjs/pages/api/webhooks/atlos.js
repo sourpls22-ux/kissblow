@@ -1,9 +1,11 @@
 export default async function handler(req, res) {
-  // Direct file logging
+  // Direct file logging only in development
+  const isDevelopment = process.env.NODE_ENV !== 'production'
   const fs = await import('fs')
   const pathModule = await import('path')
   const logFile = pathModule.join(process.cwd(), 'logs', 'atlos-webhook-debug.log')
   const log = (msg, data = {}) => {
+    if (!isDevelopment) return // Skip debug logs in production
     const timestamp = new Date().toISOString()
     const logMsg = `[${timestamp}] ${msg} ${JSON.stringify(data)}\n`
     try {
@@ -63,7 +65,10 @@ export default async function handler(req, res) {
       invoiceId: req.body.InvoiceId,
       rawBodyKeys: Object.keys(req.body)
     })
-    console.log(`Received webhook for order: ${orderId}, status: ${status} (code: ${statusCode})`)
+    // Логируем только в development
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`Received webhook for order: ${orderId}, status: ${status} (code: ${statusCode})`)
+    }
     
     if (!orderId) {
       log('Order ID missing', { bodyKeys: Object.keys(req.body) })
@@ -224,7 +229,10 @@ export default async function handler(req, res) {
         )
       })
 
-      console.log(`Added ${existingPayment.credit_amount} to user ${existingPayment.user_id} balance`)
+      // Логируем только в development
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`Added ${existingPayment.credit_amount} to user ${existingPayment.user_id} balance`)
+      }
     } else {
       log('Payment not processed', { 
         reason: shouldProcess ? 'Already completed' : 'Status not completed',

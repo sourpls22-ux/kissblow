@@ -38,7 +38,10 @@ export default async function handler(req, res) {
     const { orderId } = req.params
     const { status = 'completed', amount } = req.body
     
-    console.log(`Simulating webhook for order: ${orderId}, status: ${status}`)
+    // Логируем только в development
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`Simulating webhook for order: ${orderId}, status: ${status}`)
+    }
     
     // Update payment status
     await new Promise((resolve, reject) => {
@@ -78,7 +81,10 @@ export default async function handler(req, res) {
           )
         })
 
-        console.log(`Added ${payment.credit_amount} to user ${payment.user_id} balance`)
+        // Логируем только в development
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`Added ${payment.credit_amount} to user ${payment.user_id} balance`)
+        }
       }
     }
 
