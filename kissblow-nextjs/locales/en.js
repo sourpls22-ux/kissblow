@@ -1384,6 +1384,11 @@ const en = {
     backToBrowse: 'Back to Browse',
     title: 'Terms of Use',
     lastUpdated: 'Last updated',
+    seo: {
+      title: 'Terms of Use - KissBlow.me',
+      description: 'Read our Terms of Use to understand the rules and guidelines for using KissBlow.me. Learn about user conduct, verification requirements, and platform policies.',
+      keywords: 'terms of use, rules, escort directory, KissBlow, legal terms, user agreement, terms and conditions'
+    },
     partiesAcceptance: {
       title: '1. Parties & Acceptance',
       content1: 'These Terms of Use ("Terms") govern your use of {siteName} ("we," "us," or "our"). By accessing or using our website, you agree to be bound by these Terms.',
@@ -1458,6 +1463,11 @@ const en = {
     backToBrowse: 'Back to Browse',
     title: 'Privacy Policy',
     effectiveDate: 'Effective Date',
+    seo: {
+      title: 'Privacy Policy - KissBlow.me',
+      description: 'Learn how KissBlow.me protects your privacy and personal information. Read our comprehensive privacy policy covering data collection, usage, and security measures.',
+      keywords: 'privacy policy, data protection, escort directory, KissBlow, privacy, data security, personal information'
+    },
     whoWeAre: {
       title: '1. Who We Are',
       content1: '{siteName} is an advertising and information platform for adults (18+ only). We are not an escort agency and do not arrange meetings.',
