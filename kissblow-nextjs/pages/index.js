@@ -1004,17 +1004,18 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
                         {/* Верхняя часть - только изображение */}
                         <div className="relative h-96 max-sm:h-[500px] bg-gradient-to-br from-onlyfans-accent/20 to-onlyfans-dark/20">
                           {profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url ? (
-                            // Используем обычный img для первого изображения (критично для LCP) для максимальной скорости
-                            // Это избегает задержки оптимизации Next.js Image
-                            <img
+                            // Используем next/image с priority={true} для LCP оптимизации
+                            // Next.js автоматически добавит <link rel="preload"> в <head>, делая изображение discoverable из HTML
+                            <Image
                               src={profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url}
                               alt={profile.name}
                               width={500}
                               height={500}
+                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 500px"
                               className="w-full h-full object-cover object-center"
-                              loading="eager"
+                              priority={true}
                               fetchPriority="high"
-                              decoding="async"
+                              quality={75}
                               style={{ 
                                 contentVisibility: 'auto',
                                 contain: 'layout style paint'
