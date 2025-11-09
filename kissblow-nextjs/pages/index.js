@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, startTransition } from 'react'
+import { useState, useEffect, useRef, startTransition, useMemo, memo } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -14,10 +14,24 @@ import { cities, searchCities, popularCities } from '../data/cities'
 import { generateWebSiteSchema, generateItemListSchema } from '../utils/schemaMarkup'
 import axios from 'axios'
 
-import PopularLocations from '../components/PopularLocations'
-import KeywordsSection from '../components/KeywordsSection'
-import CountriesSection from '../components/CountriesSection'
-import BlogSection from '../components/BlogSection'
+import dynamic from 'next/dynamic'
+
+// Lazy load тяжелых компонентов для улучшения производительности
+const PopularLocations = dynamic(() => import('../components/PopularLocations'), {
+  ssr: true // Нужен для SEO
+})
+
+const KeywordsSection = dynamic(() => import('../components/KeywordsSection'), {
+  ssr: true // Нужен для SEO
+})
+
+const CountriesSection = dynamic(() => import('../components/CountriesSection'), {
+  ssr: true // Нужен для SEO
+})
+
+const BlogSection = dynamic(() => import('../components/BlogSection'), {
+  ssr: true // Нужен для SEO
+})
 
 // 🔥 ISR: данные загружаются на сервере при build/revalidate
 export async function getStaticProps() {
@@ -131,32 +145,36 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
     return value
   }
   
-  // Функция для получения минимальной цены профиля
-  const getMinPrice = (profile) => {
-    const prices = [
-      profile.price_30min,
-      profile.price_1hour,
-      profile.price_2hours,
-      profile.price_night
-    ].filter(price => price && price > 0)
-    
-    if (prices.length === 0) return null
-    
-    return {
-      amount: Math.min(...prices),
-      currency: profile.currency || 'USD'
+  // Функция для получения минимальной цены профиля - мемоизирована
+  const getMinPrice = useMemo(() => {
+    return (profile) => {
+      const prices = [
+        profile.price_30min,
+        profile.price_1hour,
+        profile.price_2hours,
+        profile.price_night
+      ].filter(price => price && price > 0)
+      
+      if (prices.length === 0) return null
+      
+      return {
+        amount: Math.min(...prices),
+        currency: profile.currency || 'USD'
+      }
     }
-  }
+  }, [])
 
-  // Функция форматирования цены
-  const formatPrice = (amount, currency) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency || 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(Math.round(amount))
-  }
+  // Функция форматирования цены - мемоизирована
+  const formatPrice = useMemo(() => {
+    return (amount, currency) => {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currency || 'USD',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(Math.round(amount))
+    }
+  }, [])
   
   // State переменные из оригинала
   const [profiles, setProfiles] = useState(initialProfiles)
@@ -915,7 +933,8 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
                   <Link
                     key={profile.id}
                     href={`/${profile.city.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}/escorts/${profile.id}`}
-                    className="theme-surface rounded-lg overflow-hidden hover:transform hover:scale-105 transition-all duration-300 border theme-border will-change-transform"
+                    className="theme-surface rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300 border theme-border"
+                    style={{ contain: 'layout style paint' }}
                   >
                     {/* Верхняя часть - только изображение */}
                     <div className="relative h-96 max-sm:h-[500px] bg-gradient-to-br from-onlyfans-accent/20 to-onlyfans-dark/20">
@@ -1099,10 +1118,18 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
           {/* SEO Sections - ТОЛЬКО на первой странице */}
           {currentPage === 1 && (
             <div className="mt-16 space-y-16">
-              <PopularLocations />
-              <KeywordsSection />
-              <CountriesSection />
-              <BlogSection />
+              <div style={{ contentVisibility: 'auto' }}>
+                <PopularLocations />
+              </div>
+              <div style={{ contentVisibility: 'auto' }}>
+                <KeywordsSection />
+              </div>
+              <div style={{ contentVisibility: 'auto' }}>
+                <CountriesSection />
+              </div>
+              <div style={{ contentVisibility: 'auto' }}>
+                <BlogSection />
+              </div>
             </div>
           )}
         </div>
