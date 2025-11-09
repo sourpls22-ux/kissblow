@@ -10,6 +10,8 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3000,
+        TURNSTILE_SECRET_KEY: '0x4AAAAAAB55qsaYXMTML0UBUxGnVJv-DrQ',
+        TURNSTILE_SITE_KEY: '0x4AAAAAAB55qr99duHk2JQk',
         ADMIN_API_KEY: 'a7f3b9c2d8e1f4a6b5c9d2e7f1a4b8c3d6e9f2a5b8c1d4e7f0a3b6c9d2e5f8a1b4c7d0e3f6a9b2c5d8e1f4a7b0c3d6e9f2a5b8c1d4e7f0a3b6c9d2e5f8a1b4c7d0e3f6a9b2c5d8e1f4a7b0c3d6e9f2a5b8c1d4e7f0a3b6c9d2e5f8a1b4c7d0e3f6a9b2c5d8e1f4a7b0c3d6e9f2a5b8c1d4e7f0a3b6c9d2e5f8a1b4c7d0e3f6a9b2c5d8e1f4a7b0c3d6e9f'
       },
       error_file: './logs/nextjs-err.log',
