@@ -992,7 +992,7 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
                 <h2 className="text-2xl font-semibold theme-text mb-6">{t('browse.availableProfiles')}</h2>
                 
                 {/* Profiles Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 smooth-transition">
+                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6 smooth-transition">
                 {filteredProfiles.length > 0 && (
                   <>
                     {/* Первый профиль - критичен для LCP, рендерим сразу */}
@@ -1018,14 +1018,14 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
                         {/* Верхняя часть - только изображение */}
                         {/* Используем next/image с priority={true} для LCP оптимизации
                             unoptimized={true} отключает серверную оптимизацию, чтобы избежать задержки на конвертацию WebP/AVIF */}
-                        <div className="relative h-96 max-sm:h-[500px] bg-gradient-to-br from-onlyfans-accent/20 to-onlyfans-dark/20">
+                        <div className="relative h-96 max-sm:h-64 bg-gradient-to-br from-onlyfans-accent/20 to-onlyfans-dark/20">
                           {profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url ? (
                             <Image
                               src={profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url}
                               alt={profile.name}
                               width={500}
                               height={500}
-                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 500px"
+                              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 500px"
                               className="w-full h-full object-cover object-center"
                               priority={true}
                               fetchPriority="high"
@@ -1044,18 +1044,18 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
                         </div>
                         
                         {/* Нижняя часть - информация о профиле */}
-                        <div className="p-4">
+                        <div className="p-2 md:p-4">
                           <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                              <h3 className="theme-text font-semibold text-lg">{profile.name || 'No Name'}</h3>
+                            <div className="flex items-center space-x-1 md:space-x-2">
+                              <h3 className="theme-text font-semibold text-sm md:text-lg truncate">{profile.name || 'No Name'}</h3>
                               {profile.is_verified === 1 && (
-                                <div className="bg-green-500 text-white px-2 py-1 rounded text-xs font-medium">
+                                <div className="bg-green-500 text-white px-1 py-0.5 md:px-2 md:py-1 rounded text-xs font-medium flex-shrink-0">
                                   Verified
                                 </div>
                               )}
                             </div>
                             {getMinPrice(profile) && (
-                              <span className="text-onlyfans-accent font-semibold">
+                              <span className="text-onlyfans-accent font-semibold text-xs md:text-base flex-shrink-0 ml-1">
                                 {formatPrice(getMinPrice(profile).amount, getMinPrice(profile).currency)}
                               </span>
                             )}
@@ -1063,12 +1063,12 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
                           
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-1 theme-text-secondary">
-                              <MapPin size={14} />
-                              <span className="text-sm">{profile.city || 'No City'}</span>
+                              <MapPin size={12} className="md:w-[14px] md:h-[14px]" />
+                              <span className="text-xs md:text-sm truncate">{profile.city || 'No City'}</span>
                             </div>
                             <div className="flex items-center space-x-1 text-red-500">
-                              <Heart size={14} fill="currentColor" />
-                              <span className="text-sm font-medium">{profile.likes_count || 0}</span>
+                              <Heart size={12} className="md:w-[14px] md:h-[14px]" fill="currentColor" />
+                              <span className="text-xs md:text-sm font-medium">{profile.likes_count || 0}</span>
                             </div>
                           </div>
                         </div>
@@ -1097,14 +1097,14 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
                         }}
                       >
                         {/* Верхняя часть - только изображение */}
-                        <div className="relative h-96 max-sm:h-[500px] bg-gradient-to-br from-onlyfans-accent/20 to-onlyfans-dark/20">
+                        <div className="relative h-96 max-sm:h-64 bg-gradient-to-br from-onlyfans-accent/20 to-onlyfans-dark/20">
                           {profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url ? (
                             <Image
                               src={profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url}
                               alt={profile.name}
                               width={500}
                               height={500}
-                              sizes={index < 3 ? "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw" : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"}
+                              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
                               className="w-full h-full object-cover object-center"
                               loading={index < 3 ? "eager" : "lazy"}
                               priority={index < 3}
@@ -1123,18 +1123,18 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
                         </div>
                         
                         {/* Нижняя часть - информация о профиле */}
-                        <div className="p-4">
+                        <div className="p-2 md:p-4">
                           <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                              <h3 className="theme-text font-semibold text-lg">{profile.name || 'No Name'}</h3>
+                            <div className="flex items-center space-x-1 md:space-x-2">
+                              <h3 className="theme-text font-semibold text-sm md:text-lg truncate">{profile.name || 'No Name'}</h3>
                               {profile.is_verified === 1 && (
-                                <div className="bg-green-500 text-white px-2 py-1 rounded text-xs font-medium">
+                                <div className="bg-green-500 text-white px-1 py-0.5 md:px-2 md:py-1 rounded text-xs font-medium flex-shrink-0">
                                   Verified
                                 </div>
                               )}
                             </div>
                             {getMinPrice(profile) && (
-                              <span className="text-onlyfans-accent font-semibold">
+                              <span className="text-onlyfans-accent font-semibold text-xs md:text-base flex-shrink-0 ml-1">
                                 {formatPrice(getMinPrice(profile).amount, getMinPrice(profile).currency)}
                               </span>
                             )}
@@ -1142,12 +1142,12 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
                           
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-1 theme-text-secondary">
-                              <MapPin size={14} />
-                              <span className="text-sm">{profile.city || 'No City'}</span>
+                              <MapPin size={12} className="md:w-[14px] md:h-[14px]" />
+                              <span className="text-xs md:text-sm truncate">{profile.city || 'No City'}</span>
                             </div>
                             <div className="flex items-center space-x-1 text-red-500">
-                              <Heart size={14} fill="currentColor" />
-                              <span className="text-sm font-medium">{profile.likes_count || 0}</span>
+                              <Heart size={12} className="md:w-[14px] md:h-[14px]" fill="currentColor" />
+                              <span className="text-xs md:text-sm font-medium">{profile.likes_count || 0}</span>
                             </div>
                           </div>
                         </div>
