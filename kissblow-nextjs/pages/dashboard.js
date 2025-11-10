@@ -285,39 +285,6 @@ export default function Dashboard() {
       }
     }
   }, [editFormData, editingProfile?.id])
-
-  // Обработка успешной оплаты после возврата с платежной системы
-  useEffect(() => {
-    if (router.query.payment === 'success' && router.query.orderId) {
-      // Обновляем баланс после успешной оплаты
-      const updateBalanceAfterPayment = async () => {
-        try {
-          // Небольшая задержка, чтобы webhook успел обработаться
-          await new Promise(resolve => setTimeout(resolve, 2000))
-          
-          // Пытаемся обновить баланс несколько раз с интервалами
-          for (let i = 0; i < 3; i++) {
-            await updateBalance()
-            if (i < 2) {
-              await new Promise(resolve => setTimeout(resolve, 1000))
-            }
-          }
-          
-          success('Payment completed successfully! Your balance has been updated.')
-          
-          // Очищаем параметры из URL
-          router.replace('/dashboard', undefined, { shallow: true })
-        } catch (error) {
-          console.error('Failed to update balance after payment:', error)
-          // Все равно обновляем баланс, даже если есть ошибка
-          updateBalance()
-        }
-      }
-      
-      updateBalanceAfterPayment()
-    }
-  }, [router.query.payment, router.query.orderId, updateBalance, success, router])
-
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false)
   const [activeTab, setActiveTab] = useState('basicInfo')
   const [cityError, setCityError] = useState(false)
