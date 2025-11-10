@@ -86,26 +86,32 @@ const LoginForm = () => {
     setTurnstileToken(token)
     setShowTurnstile(false) // Скрываем виджет после успешной проверки
     
+    // loading уже true от первого нажатия кнопки, не сбрасываем его
     // Автоматически продолжаем отправку формы
     try {
       const result = await login(formData.email, formData.password, token)
       
       if (result.success) {
+        // Сбрасываем флаг при успешном входе
+        setTurnstileFailed(false)
+        // Редирект произойдет, loading можно не сбрасывать
         router.push('/dashboard')
       } else {
         console.log('Login failed:', result.error)
         setError(result.error)
         // Сбрасываем токен при неудачной попытке входа
         setTurnstileToken('')
+        setLoading(false) // Сбрасываем loading только при ошибке
       }
     } catch (error) {
       console.error('Login error:', error)
       setError(t('auth.loginFailed'))
       // Сбрасываем токен при ошибке
       setTurnstileToken('')
+      setLoading(false) // Сбрасываем loading только при ошибке
     }
-    
-    setLoading(false)
+    // НЕ сбрасываем loading здесь - он остается true во время успешного логина
+    // и будет сброшен только при ошибке или после редиректа
   }
 
   const handleTurnstileError = (error) => {
