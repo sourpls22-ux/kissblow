@@ -1,10 +1,13 @@
 // Import webhook verification utilities
 const { verifyAtlosWebhook } = require('../../../lib/webhooks/verifyAtlos')
 const getRawBody = require('../../../lib/webhooks/getRawBody')
-const { disableBodyParser } = require('../../../lib/auth')
 
 // Disable body parser to get raw body for signature verification
-export const config = disableBodyParser
+export const config = {
+  api: {
+    bodyParser: false
+  }
+}
 
 export default async function handler(req, res) {
   // Direct file logging only in development
