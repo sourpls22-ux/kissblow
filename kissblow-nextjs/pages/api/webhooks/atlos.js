@@ -1,3 +1,11 @@
+// Import webhook verification utilities
+const { verifyAtlosWebhook } = require('../../../lib/webhooks/verifyAtlos')
+const getRawBody = require('../../../lib/webhooks/getRawBody')
+const { disableBodyParser } = require('../../../lib/auth')
+
+// Disable body parser to get raw body for signature verification
+export const config = disableBodyParser
+
 export default async function handler(req, res) {
   // Direct file logging only in development
   const isDevelopment = process.env.NODE_ENV !== 'production'
@@ -23,8 +31,51 @@ export default async function handler(req, res) {
   }
 
   try {
+    // WEBHOOK VERIFICATION - Must be done before processing
+    const apiSecret = process.env.ATLOS_API_SECRET
+    
+    if (!apiSecret) {
+      log('ATLOS_API_SECRET not configured')
+      console.error('ATLOS_API_SECRET is not configured in environment variables')
+      return res.status(500).json({ error: 'Server configuration error' })
+    }
+
+    // Get raw body for signature verification
+    const rawBody = await getRawBody(req)
+    
+    // Verify webhook signature
+    const verification = verifyAtlosWebhook(
+      { ...req, body: rawBody },
+      apiSecret
+    )
+
+    if (!verification.valid) {
+      log('Webhook verification failed', { 
+        error: verification.error,
+        hasSignature: !!(req.headers['signature'] || req.headers['Signature']),
+        headers: Object.keys(req.headers)
+      })
+      console.warn('Webhook verification failed:', verification.error)
+      return res.status(401).json({ 
+        error: 'Unauthorized',
+        message: 'Invalid webhook signature'
+      })
+    }
+
+    log('Webhook verified successfully')
+
+    // Parse body after verification
+    let body
+    try {
+      body = JSON.parse(rawBody)
+    } catch (parseError) {
+      log('Failed to parse webhook body', { error: parseError.message })
+      return res.status(400).json({ error: 'Invalid JSON in request body' })
+    }
+
     log('ATLOS WEBHOOK RECEIVED', { 
-      body: req.body, 
+      orderId: body.OrderId || body.orderId,
+      status: body.Status || body.status,
       headers: Object.keys(req.headers),
       method: req.method 
     })
@@ -36,9 +87,9 @@ export default async function handler(req, res) {
     db = new sqlite3.Database(dbPath)
     
     // Atlas sends OrderId (PascalCase) and Status as number
-    const orderId = req.body.OrderId || req.body.orderId
-    const statusCode = req.body.Status || req.body.status
-    const amount = req.body.Amount || req.body.amount || req.body.PaidAmount
+    const orderId = body.OrderId || body.orderId
+    const statusCode = body.Status || body.status
+    const amount = body.Amount || body.amount || body.PaidAmount
     
     // Convert status code to string (100 = completed/paid in Atlas)
     // Atlas status codes: 100 = completed/paid, 200 = confirmed, etc.
@@ -61,9 +112,9 @@ export default async function handler(req, res) {
       statusCode, 
       status, 
       amount,
-      transactionId: req.body.TransactionId,
-      invoiceId: req.body.InvoiceId,
-      rawBodyKeys: Object.keys(req.body)
+      transactionId: body.TransactionId,
+      invoiceId: body.InvoiceId,
+      rawBodyKeys: Object.keys(body)
     })
     // Логируем только в development
     if (process.env.NODE_ENV !== 'production') {
@@ -71,7 +122,7 @@ export default async function handler(req, res) {
     }
     
     if (!orderId) {
-      log('Order ID missing', { bodyKeys: Object.keys(req.body) })
+      log('Order ID missing', { bodyKeys: Object.keys(body) })
       return res.status(400).json({ error: 'Order ID is required' })
     }
 
