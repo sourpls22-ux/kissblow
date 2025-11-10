@@ -13,6 +13,17 @@ export default async function handler(req, res) {
     const dbPath = path.join(process.cwd(), 'database.sqlite')
     db = new sqlite3.Database(dbPath)
 
+    // Check JWT secrets before proceeding
+    if (!process.env.JWT_SECRET) {
+      console.error('JWT_SECRET is not defined in environment variables')
+      return res.status(500).json({ error: 'Server configuration error' })
+    }
+
+    if (!process.env.JWT_REFRESH_SECRET) {
+      console.error('JWT_REFRESH_SECRET is not defined in environment variables')
+      return res.status(500).json({ error: 'Server configuration error' })
+    }
+
     const { refreshToken } = req.body
 
     if (!refreshToken) {
@@ -48,7 +59,7 @@ export default async function handler(req, res) {
 
     const newRefreshToken = jwt.sign(
       { id: user.id },
-      process.env.JWT_SECRET,
+      process.env.JWT_REFRESH_SECRET,
       { expiresIn: '7d' }
     )
 

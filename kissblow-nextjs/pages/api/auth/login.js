@@ -80,6 +80,11 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Server configuration error' })
     }
 
+    // Warn if JWT_REFRESH_SECRET is not set (fallback to JWT_SECRET for backward compatibility)
+    if (!process.env.JWT_REFRESH_SECRET) {
+      logger.warn('JWT_REFRESH_SECRET is not defined, using JWT_SECRET as fallback. This is not recommended for production.')
+    }
+
     if (!email || !password) {
       log('Missing email or password')
       return res.status(400).json({ error: 'Email and password are required' })
@@ -203,7 +208,7 @@ export default async function handler(req, res) {
 
     const refreshToken = jwtLib.sign(
       { id: user.id },
-      process.env.JWT_SECRET,
+      process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
       { expiresIn: '7d' }
     )
 

@@ -194,6 +194,17 @@ export default async function handler(req, res) {
 
     log('User created', { userId: result.lastID })
 
+    // Check JWT_SECRET before proceeding
+    if (!process.env.JWT_SECRET) {
+      logger.error('JWT_SECRET is not defined in environment variables')
+      return res.status(500).json({ error: 'Server configuration error' })
+    }
+
+    // Warn if JWT_REFRESH_SECRET is not set (fallback to JWT_SECRET for backward compatibility)
+    if (!process.env.JWT_REFRESH_SECRET) {
+      logger.warn('JWT_REFRESH_SECRET is not defined, using JWT_SECRET as fallback. This is not recommended for production.')
+    }
+
     // Generate tokens
     const jwtLib = jwt.default || jwt
     const accessToken = jwtLib.sign(
@@ -204,7 +215,7 @@ export default async function handler(req, res) {
 
     const refreshToken = jwtLib.sign(
       { id: result.lastID },
-      process.env.JWT_SECRET,
+      process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
       { expiresIn: '7d' }
     )
 
