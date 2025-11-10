@@ -64,15 +64,11 @@ function SortableMediaItem({ media, onDeleteMedia, isMainPhoto, onMoveUp, onMove
     >
       <div className="aspect-[4/5] rounded-lg overflow-hidden bg-gradient-to-br from-onlyfans-accent/20 to-onlyfans-dark/20">
         {media.type === 'photo' ? (
-          <NextImage
+          <img
             src={media.url}
-            alt={`${media.filename}`}
-            width={200}
-            height={250}
-            sizes="(max-width: 640px) 50vw, 200px"
+            alt={media.filename || 'Media'}
             className="w-full h-full object-cover"
             loading="eager"
-            quality={85}
             onError={(e) => {
               console.error('Failed to load image:', media.url)
               e.target.style.display = 'none'
