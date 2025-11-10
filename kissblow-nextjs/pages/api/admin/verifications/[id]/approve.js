@@ -18,7 +18,14 @@ export default async function handler(req, res) {
     const adminKeyHeaderName = headerKeys.find(key => key.toLowerCase() === 'x-admin-key')
     const adminKey = adminKeyHeaderName ? req.headers[adminKeyHeaderName] : null
     
-    const expectedAdminKey = process.env.ADMIN_API_KEY || 'a7f3b9c2d8e1f4a6b5c9d2e7f1a4b8c3d6e9f2a5b8c1d4e7f0a3b6c9d2e5f8a1b4c7d0e3f6a9b2c5d8e1f4a7b0c3d6e9f2a5b8c1d4e7f0a3b6c9d2e5f8a1b4c7d0e3f6a9b2c5d8e1f4a7b0c3d6e9f2a5b8c1d4e7f0a3b6c9d2e5f8a1b4c7d0e3f6a9b2c5d8e1f4a7b0c3d6e9f2a5b8c1d4e7f0a3b6c9d2e5f8a1b4c7d0e3f6a9b2c5d8e1f4a7b0c3d6e9f'
+    const expectedAdminKey = process.env.ADMIN_API_KEY
+    
+    if (!expectedAdminKey) {
+      console.error('ADMIN_API_KEY is not configured in environment variables')
+      return res.status(500).json({ error: 'Server configuration error' })
+    }
+    
+'a7f3b9c2d8e1f4a6b5c9d2e7f1a4b8c3d6e9f2a5b8c1d4e7f0a3b6c9d2e5f8a1b4c7d0e3f6a9b2c5d8e1f4a7b0c3d6e9f2a5b8c1d4e7f0a3b6c9d2e5f8a1b4c7d0e3f6a9b2c5d8e1f4a7b0c3d6e9f2a5b8c1d4e7f0a3b6c9d2e5f8a1b4c7d0e3f6a9b2c5d8e1f4a7b0c3d6e9f2a5b8c1d4e7f0a3b6c9d2e5f8a1b4c7d0e3f6a9b2c5d8e1f4a7b0c3d6e9f'
     
     if (!adminKey || adminKey !== expectedAdminKey) {
       return res.status(401).json({ error: 'Unauthorized' })

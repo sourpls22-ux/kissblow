@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/router'
-import Image from 'next/image'
+import NextImage from 'next/image'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useBalance } from '../contexts/BalanceContext'
@@ -64,7 +64,7 @@ function SortableMediaItem({ media, onDeleteMedia, isMainPhoto, onMoveUp, onMove
     >
       <div className="aspect-[4/5] rounded-lg overflow-hidden bg-gradient-to-br from-onlyfans-accent/20 to-onlyfans-dark/20">
         {media.type === 'photo' ? (
-          <Image
+          <NextImage
             src={media.url}
             alt={`${media.filename}`}
             width={200}
@@ -1745,7 +1745,7 @@ export default function Dashboard() {
                             onClick={() => router.push(`/${profile.city.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}/escorts/${profile.id}?from=dashboard`)}
                             className="block w-full h-full"
                           >
-                            <Image 
+                            <NextImage 
                               src={profile.main_photo_url || profile.image_url || profile.first_photo_url} 
                               alt={profile.name}
                               width={400}
