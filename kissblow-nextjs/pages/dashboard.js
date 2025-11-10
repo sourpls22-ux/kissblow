@@ -1753,7 +1753,6 @@ export default function Dashboard() {
                               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                               className="w-full h-full object-cover object-center cursor-pointer hover:scale-105 transition-transform duration-300 will-change-transform"
                               loading={idx === 0 ? "eager" : "lazy"}
-                              priority={idx === 0}
                               quality={85}
                               onError={(e) => {
                                 console.error('Failed to load profile image:', profile.main_photo_url || profile.image_url || profile.first_photo_url)

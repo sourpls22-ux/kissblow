@@ -942,7 +942,7 @@ const Home = ({ initialProfiles, initialPagination, lastUpdated, translations })
                           sizes={index === 0 ? "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 500px" : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"}
                           className="w-full h-full object-cover object-center"
                           loading={index < 4 ? "eager" : "lazy"}
-                          priority={index < 4}
+                          priority={index === 0}
                           quality={index < 4 ? 75 : 85}
                           fetchPriority={index === 0 ? "high" : "auto"}
                           onError={(e) => {

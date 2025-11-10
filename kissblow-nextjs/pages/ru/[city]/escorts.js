@@ -913,7 +913,7 @@ const CityPage = ({ initialProfiles, initialPagination, cityName, citySlug, last
                           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
                           className="w-full h-full object-cover object-center"
                           loading={index < 4 ? "eager" : "lazy"}
-                          priority={index < 4}
+                          priority={index === 0}
                           quality={85}
                           onError={(e) => {
                             console.error('Failed to load profile image:', profile.image || profile.main_photo_url || profile.image_url || profile.first_photo_url)
