@@ -1,0 +1,178 @@
+@import "tailwindcss";
+
+/* Hide scrollbar for overflow-x-auto */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Hide server-rendered content when JS is loaded (fallback - content is removed via useEffect in client components) */
+.js-loaded .server-rendered-content {
+  display: none !important;
+}
+
+:root {
+  /* Основные цвета (используются везде) */
+  --primary-blue: #00AFF0;
+  --primary-blue-hover: #0099d6;
+}
+
+[data-theme="dark"] {
+  /* Текст */
+  --text-primary: #ededed;
+  --text-secondary: #9CA3AF;
+  
+  /* Навбар и футер */
+  --nav-footer-bg: #2a2a2a;
+  --nav-footer-border: #374151;
+  
+  /* Placeholder для изображений профилей */
+  --profile-placeholder-bg: #2a2a2a;
+  --profile-placeholder-icon: #9CA3AF;
+  
+  /* Фон страницы регистрации */
+  --register-page-bg: #1a1a1a;
+  
+  /* Поля ввода */
+  --input-bg: #2a2a2a;
+  --input-border: #374151;
+  --input-focus-border: #00AFF0;
+  --input-text: #ededed;
+  --input-placeholder: #9CA3AF;
+  --icon-color: #9CA3AF;
+  
+  /* Карточки Member */
+  --member-card-bg: #2a2a2a;
+  --member-card-border: #374151;
+  --member-card-text: #ededed;
+  --member-card-text-secondary: #9CA3AF;
+  --member-card-selected-bg: #00AFF0;
+  --member-card-selected-border: #0099d6;
+  --member-card-selected-text: #ffffff;
+  --member-card-selected-text-secondary: #ffffff;
+  
+  /* Карточки Model */
+  --model-card-bg: #2a2a2a;
+  --model-card-border: #374151;
+  --model-card-text: #ededed;
+  --model-card-text-secondary: #9CA3AF;
+  --model-card-selected-bg: #E91E63;
+  --model-card-selected-border: #C2185B;
+  --model-card-selected-text: #ffffff;
+  --model-card-selected-text-secondary: #ffffff;
+  
+  /* Ошибки */
+  --error-bg: #fee2e2;
+  --error-text: #dc2626;
+  --error-border: #fca5a5;
+}
+
+[data-theme="light"] {
+  /* Текст */
+  --text-primary: #111827;
+  --text-secondary: #6B7280;
+  
+  /* Навбар и футер */
+  --nav-footer-bg: #f9fafb;
+  --nav-footer-border: #E5E7EB;
+  
+  /* Placeholder для изображений профилей */
+  --profile-placeholder-bg: #ffffff;
+  --profile-placeholder-icon: #9CA3AF;
+  
+  /* Фон страницы регистрации */
+  --register-page-bg: #ffffff;
+  
+  /* Поля ввода */
+  --input-bg: #ffffff;
+  --input-border: #D1D5DB;
+  --input-focus-border: #00AFF0;
+  --input-text: #111827;
+  --input-placeholder: #9CA3AF;
+  --icon-color: #9CA3AF;
+  
+  /* Карточки Member */
+  --member-card-bg: #ffffff;
+  --member-card-border: #D1D5DB;
+  --member-card-text: #111827;
+  --member-card-text-secondary: #6B7280;
+  --member-card-selected-bg: #00AFF0;
+  --member-card-selected-border: #0099d6;
+  --member-card-selected-text: #ffffff;
+  --member-card-selected-text-secondary: #ffffff;
+  
+  /* Карточки Model */
+  --model-card-bg: #ffffff;
+  --model-card-border: #D1D5DB;
+  --model-card-text: #111827;
+  --model-card-text-secondary: #6B7280;
+  --model-card-selected-bg: #fce7f3;
+  --model-card-selected-border: #f472b6;
+  --model-card-selected-text: #111827;
+  --model-card-selected-text-secondary: #6B7280;
+  
+  /* Ошибки */
+  --error-bg: #fee2e2;
+  --error-text: #dc2626;
+  --error-border: #fca5a5;
+}
+
+body {
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+}
+
+/* Cursor pointer for all interactive elements */
+button,
+a,
+[role="button"],
+input[type="submit"],
+input[type="button"],
+input[type="reset"],
+input[type="checkbox"],
+input[type="radio"],
+label[for],
+label {
+  cursor: pointer;
+}
+
+/* Text inputs should have text cursor */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+input[type="url"],
+input[type="number"],
+input[type="search"],
+textarea {
+  cursor: text;
+}
+
+/* Select dropdowns should have pointer cursor */
+select {
+  cursor: pointer;
+}
+
+/* Disabled elements should have not-allowed cursor */
+button:disabled,
+input:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed !important;
+}
+
+/* Placeholder color for inputs */
+input::placeholder {
+  color: var(--input-placeholder);
+  opacity: 1;
+}
+
+/* 
+  Standardized container padding values:
+  - Основной контент: px-2 sm:px-4 lg:px-[25%]
+  - Узкие формы: px-2 sm:px-4 lg:px-[35%] 
+  - Широкий контент: px-2 sm:px-4 lg:px-[20%]
+*/
