@@ -162,13 +162,6 @@ export default async function CityPage({
     { label: cityName },
   ];
 
-  // Breadcrumbs items
-  const breadcrumbs = [
-    { label: 'Search', href: '/search' },
-    { label: 'Escorts', href: '/' },
-    { label: cityName },
-  ];
-
   // Structured Data - CollectionPage
   const collectionPageJsonLd = {
     '@context': 'https://schema.org',
